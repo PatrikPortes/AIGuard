@@ -66,17 +66,40 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 
 function watch(page, label) {
   const log = { consoleErrors: [], pageErrors: [], failedRequests: [], externalRequests: [], httpErrors: [] };
-  page.on('console', message => { if (message.type() === 'error') log.consoleErrors.push(message.text().slice(0, 200)); });
+  const consoleErrors = [], requestedUrls = new Set();
+  page.on('console', message => {
+    if (message.type() === 'error') consoleErrors.push({ text: message.text(), location: message.location() });
+  });
   page.on('pageerror', error => log.pageErrors.push(String(error.name)));
-  page.on('requestfailed', request => log.failedRequests.push(`${request.method()} ${new URL(request.url()).pathname} ${request.failure()?.errorText || ''}`));
+  page.on('requestfailed', request => {
+    requestedUrls.add(request.url());
+    log.failedRequests.push(`${request.method()} ${new URL(request.url()).pathname} ${request.failure()?.errorText || ''}`);
+  });
   page.on('request', request => {
+    requestedUrls.add(request.url());
     const url = new URL(request.url());
     if (!['data:', 'blob:'].includes(url.protocol) && url.origin !== base) log.externalRequests.push(url.origin);
   });
   page.on('response', response => { if (response.status() >= 400) log.httpErrors.push(`${response.status()} ${new URL(response.url()).pathname}`); });
-  return () => {
+  return async () => {
+    const hasDeclaredIcon = await page.locator('link[rel~="icon" i]').count() > 0;
+    const ignoredAutomaticFavicon404 = [];
+    for (const error of consoleErrors) {
+      // ASSETS.md records the favicon as pending; no icon is declared/shipped.
+      // Chromium probes /favicon.ico itself and reports the absent asset's
+      // 404 only as a console event, outside Playwright's page request events.
+      // Exempt ONLY that implicit probe; explicit page requests/icon declarations,
+      // query strings, other statuses/origins and every other error still fail.
+      if (!hasDeclaredIcon && !requestedUrls.has(error.location.url)
+        && error.location.url === `${base}/favicon.ico`
+        && error.location.lineNumber === 0 && error.location.columnNumber === 0
+        && error.text === 'Failed to load resource: the server responded with a status of 404 (Not Found)') {
+        ignoredAutomaticFavicon404.push(error);
+      } else log.consoleErrors.push(error.text.slice(0, 200));
+    }
     for (const [key, list] of Object.entries(log)) {
-      record(label, key, list.length ? 'REGRESSION' : 'TARGET MET', { count: list.length, samples: list.slice(0, 5) });
+      record(label, key, list.length ? 'REGRESSION' : 'TARGET MET', { count: list.length, samples: list.slice(0, 5),
+        ...(key === 'consoleErrors' ? { ignoredAutomaticFavicon404 } : {}) });
     }
   };
 }
@@ -157,7 +180,7 @@ try {
     await page.locator('#result').waitFor({ state: 'visible', timeout: 10000 });
     const result = await page.evaluate(measurePage);
     await page.screenshot({ path: join(outDir, `${viewport.name}-result.png`), fullPage: true });
-    done();
+    await done();
     await context.close();
     const isZoom = viewport === ZOOM;
     report[isZoom ? 'zoom' : 'viewports'] = isZoom ? { home, result } : { ...report.viewports, [viewport.name]: { home, result } };
@@ -193,7 +216,7 @@ try {
       return { name: a.animationName || a.transitionProperty || a.constructor.name, durationMs: Number(t.duration) || 0, iterations: t.iterations, target: target ? `${target.tagName.toLowerCase()}${target.className ? '.' + String(target.className).split(' ')[0] : ''}` : null };
     }));
     await page.locator('#result').waitFor({ state: 'visible', timeout: 10000 });
-    done(); await context.close();
+    await done(); await context.close();
     report.reducedMotion[reducedMotion] = { prefersReducedMotionRules: mediaRules, runningAnimationsDuringAnalysis: animations };
   }
   const reduced = report.reducedMotion.reduce;
@@ -233,7 +256,7 @@ try {
     const focusAfter = await page.evaluate(() => { const r = document.querySelector('#result'); return r === document.activeElement || r.contains(document.activeElement); });
     record('keyboard', 'keyboard-only submission shows result and moves focus to it', focusAfter ? 'TARGET MET' : 'SHORTFALL');
     report.keyboard = { tabOrder: order };
-    done(); await context.close();
+    await done(); await context.close();
   }
 } catch (error) {
   toolFailure = `${error.name}: ${error.message}`.slice(0, 500);
