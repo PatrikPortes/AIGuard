@@ -17,13 +17,23 @@ try {
     await page.setViewportSize({ width, height: 900 }); await page.goto(base);
     await page.waitForFunction(() => !document.querySelector('#submit').disabled);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    assert.ok(await page.locator('.hero-character img').evaluate(img => {
-      const rect=img.getBoundingClientRect();
-      return img.complete && img.naturalWidth>0 && getComputedStyle(img).objectFit==='contain'
-        && Math.abs(rect.height-rect.width*img.naturalHeight/img.naturalWidth)<1
-        && rect.x>=0 && rect.right<=innerWidth;
-    }));
-    assert.equal(await page.locator('.hero-character img').getAttribute('alt'),'Věrka a Robo – průvodci bezpečným ověřováním digitálního obsahu');
+    for (const [selector, asset, alt] of [
+      ['.hero-verka', 'verka-welcome', 'Věrka, vaše průvodkyně, mává na pozdrav'],
+      ['.hero-robo', 'robo-default', 'Robo, pomocník, který zpracovává kontrolu, mává na pozdrav'],
+    ]) {
+      const hero = page.locator(selector);
+      assert.equal(await hero.count(), 1);
+      assert.equal(await hero.evaluate(img => img.tagName), 'IMG');
+      assert.equal(await hero.getAttribute('src'), characterAssets[asset]);
+      assert.ok(await hero.isVisible());
+      assert.ok(await hero.evaluate(img => {
+        const rect=img.getBoundingClientRect();
+        return img.complete && img.naturalWidth>0 && getComputedStyle(img).objectFit==='contain'
+          && Math.abs(rect.height-rect.width*img.naturalHeight/img.naturalWidth)<1
+          && rect.x>=0 && rect.right<=innerWidth;
+      }));
+      assert.equal(await hero.getAttribute('alt'), alt);
+    }
     assert.equal(await page.locator('main').count(),1);
     assert.equal(await page.getByLabel('Obsah k ověření').count(),1);
     assert.equal(await page.getByLabel('Typ obsahu').count(),1);
