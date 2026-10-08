@@ -178,6 +178,21 @@ Při nejistotě vždy `text`. Frontend adresu neotevírá, nenačítá, nezobraz
 
 Pole má `spellcheck="false"` a `autocomplete="off"`, aby prohlížeč vložený text nenabízel k automatické kontrole pravopisu ani k uložení. Vkládání je nativní; stránka nečte schránku a nežádá o oprávnění. Na mobilu je pole vyšší (7,5 rem), primární akce zůstává na první obrazovce 360×640.
 
+## Načítání, chyby a obnova (F4)
+
+**Načítání.** Po odeslání tlačítko zůstává zaměřené, změní text na „Prověřuji…“ a má `aria-disabled="true"`. Opakované odeslání se ignoruje, takže odchází jen jeden požadavek. Formulář má `aria-busy="true"`. Pod tlačítkem se zobrazí Robo (`robo-analyzing`) s textem „Prověřuji zadaný obsah… Chvíli prosím počkejte.“ a neurčitým pruhem bez procent a bez vymyšlených kroků. Pruh se při `prefers-reduced-motion: reduce` nepohybuje. Stejný text oznamuje čtečkám `#status` (`role="status"`); vizuálně je během načítání skrytý, aby se nezdvojoval.
+
+**Chyby.** Mapování vychází jen z existujících kódů backendu (`src/server.js`) a z chyb na straně prohlížeče:
+
+| Druh | Kódy | Postava | Nabídka |
+|---|---|---|---|
+| Upravit obsah | `INVALID_INPUT`, `AI_INPUT_LIMIT`, `BODY_TOO_LARGE`, `AI_CONSENT_REQUIRED` | Věrka `warning` | Upravit zprávu |
+| Počkat | `RATE_LIMITED` (i 429 bez JSON), `AI_OVERLOADED`, `AI_CAPACITY_EXHAUSTED`, `BOT_CHECK_REQUIRED` | Robo `capacity` | Upravit zprávu; bez „Zkusit znovu“ |
+| Zkusit znovu | `AI_TIMEOUT`, `REQUEST_TIMEOUT`, výpadek sítě, vypršení 35 s v prohlížeči, neúplná odpověď, ostatní kódy a odpovědi bez JSON | Robo `error` | Zkusit znovu, Upravit zprávu |
+| Obnovit relaci | `SESSION_REQUIRED`, selhání `/api/session` při načtení | Robo `error` | Zkusit znovu (nejdřív obnoví relaci) |
+
+Každá chyba má nadpis, vysvětlení a větu „Výsledek teď nemáme. Neznamená to, že je zpráva bezpečná.“ Texty jsou pevné ve frontendu; text chyby ze serveru ani vložený obsah se nezobrazují. Chyba je v `role="alert"`, posune se do zorného pole, ale fokus zůstává na tlačítku. Obsah pole zůstává. Nic se neopakuje automaticky; „Zkusit znovu“ odešle stejný obsah jen po kliknutí. Pod 400 px se postava v panelech řadí nad text.
+
 ## Kanonické postavy a role
 
 Vzhled určuje `docs/design/VERIM_CHARACTER_REFERENCE.png`. Každá produkční varianta musí zachovat stejný výtvarný styl, proporce, obličej, barvy a znak štítu na oblečení. Znak je součástí schválené kresby a nemění se. Samostatné assety a jejich stav jsou v [ASSETS.md](ASSETS.md).

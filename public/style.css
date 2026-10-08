@@ -281,6 +281,20 @@ footer { border-top: 1px solid var(--border); font-size: var(--text-body); color
 /* Error panel: calm system information (Robo), not alarm red. */
 .error-panel { display: flex; align-items: flex-start; gap: 14px; padding: 16px; margin-top: 16px; border: 1px solid var(--knowledge-accent); border-radius: 16px; background: var(--knowledge-surface); }
 .error-panel #error { padding: 0; margin: 0; background: none; border: 0; }
+.error-panel > div { flex: 1; min-width: 0; }
+.error-panel #error p { margin: 0 0 8px; }
+.error-panel .error-title { font-weight: 750; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.secondary-action { background: #fff; color: var(--brand-action); border: 2px solid var(--brand-action); font-weight: 700; }
+.secondary-action:hover { background: var(--cool-background); }
+/* F4 loading: the button stays focusable while busy; a repeated submit is ignored. */
+button[type=submit][aria-disabled=true] { background: var(--disabled); cursor: progress; box-shadow: none; }
+.system-bubble .processing-title { font-weight: 750; }
+.operation-status.is-busy:not(:has(#status:empty)) { margin-top: 0; }
+.operation-status.is-busy #status { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 400px) {
+  .error-panel, .system-bubble { flex-direction: column; gap: 8px; }
+}
 @media (max-width: 600px) {
   .character-avatar { width: 48px; }
   .character-heading { gap: 10px; }
