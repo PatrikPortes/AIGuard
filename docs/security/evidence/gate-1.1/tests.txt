@@ -1,0 +1,82 @@
+
+> ai-strazce@0.1.0 test
+> node --test
+
+✔ Celý HTTP textový tok s opravdovým adaptérem a simulovaným LLM serverem (226.70341ms)
+✔ HTTP selhání providera neunikne s obsahem a klíčem, ani nepřejde na pravidla (24.884033ms)
+✔ HTTP souhlas a neplatný vstup jsou odmítnuty před AI (21.417739ms)
+✔ Rules → jedno AI volání → strukturovaný výsledek, bezpečné kroky a žádné citace (19.169339ms)
+✔ Jednoduchý scénář routuje levný model a bez důvodu nemá critic (9.781311ms)
+✔ Nejistota vyvolá nejvýše jeden zapnutý critic s novou rezervací (5.304597ms)
+✔ Rozpočet critic nepropustí: žádné druhé volání ani falešný úspěch (9.035666ms)
+✔ Fail closed: nulový limit nepustí ani první provider call (2.108688ms)
+✔ Input injection je oddělená od system instrukcí a doporučení (3.585863ms)
+✔ Schéma, důkazy a bezpečnost odmítnou vadné výstupy (1.009928ms)
+✔ Neplatný AI výstup nevyvolá retry ani rules fallback (2.379801ms)
+✔ Explicitní 503 může mít jeden retry; oba pokusy se započítají (254.413475ms)
+✔ Retry za hranicí budgetu neodešle další požadavek (260.837857ms)
+✔ Neznámý síťový výsledek se automaticky neopakuje (4.503965ms)
+✔ Timeout, zrušení a tokenový limit zabrání dalším voláním (28.079207ms)
+✔ AI vyžaduje souhlas, byte limit a dostupného providera; žádný skrytý fallback (2.564321ms)
+✔ Chybějící klíč/ceny/limity, neznámý režim a multihost jsou fail-closed (3.741747ms)
+✔ Rodinná žádost o peníze má výrazné signály a bezpečné ověření (6.165778ms)
+✔ Běžná zpráva není označena jako bezpečná jistota (2.878866ms)
+✔ Vstupní instrukce ani kontakty nemění ověřovací doporučení (2.121586ms)
+✔ URL se pouze rozebírá a nemá závěr o pravosti (1.182332ms)
+✔ Vstupní validace odmítá nepodporované vstupy a dlouhé texty (1.396775ms)
+✔ Rezervace přežije restart, půlnoc obnoví jen denní budget (9.053254ms)
+✔ Cena rezervace se nemůže vejít přes hranici denního budgetu (0.916453ms)
+✔ Nedostupná nebo poškozená účetní evidence nedovolí rezervaci (1.259861ms)
+✔ Čtyři souběžné workers nemohou překročit stejný atomický budget (183.268772ms)
+✔ Schválené PNG se servírují s přesnými bytes a správným MIME, jiné cesty zůstávají uzavřené (1111.424988ms)
+✔ Release helper při chybě Compose up nespustí smoke proti starému kontejneru (705.352682ms)
+✔ Rollback aktivuje jen app ve vlastním projektu a uloží image až po smoke PASS (1090.561825ms)
+✔ Rollback s neúspěšným smoke neuloží změněné image nastavení (993.906906ms)
+✔ Release helper odmítne starý Docker před jakoukoli Compose změnou (319.261045ms)
+✔ Deployment lock brání souběžnému rollbacku před Docker mutací (41.409053ms)
+✔ Neúplná/plovoucí upstream image je odmítnuta před Compose operací (200.903539ms)
+✔ Pouze přesný trusted ingress a právě jeden platný CF header; socket ignoruje všechny headery (16.696456ms)
+✔ Ekvivalentní IPv6 a IPv4-mapped adresy mají stejný limiter key (0.368648ms)
+✔ HTTP: klienti za jedním ingress mají vlastní IP kvóty; direct spoof je odmítnut před analýzou (196.73289ms)
+✔ HTTP: IPv6 spelling a nové anonymní cookies neobcházejí IP kvótu (12.974524ms)
+✔ Production guard odmítne AI, secrets, budget, vypnuté Secure i neurčitý ingress (11.609396ms)
+✔ Skutečný HTTP adaptér posílá oddělené role a strict JSON schema (119.575231ms)
+✔ Redirect, truncation, refusal, malformed a příliš velká odpověď se odmítnou (95.62274ms)
+✔ Pouze explicitní 429/503 jsou označené pro řízený retry; provider body neunikne (50.805156ms)
+✔ Endpointy s credentials, nešifrovaný cloud a neznámé protokoly nelze použít (1.074591ms)
+✔ Spike 10 000 jobů je omezen na jednoho workera a dvě čekající položky (500.890066ms)
+✔ Zrušený čekající job nespustí task a uvolní payload (4.766917ms)
+✔ Abort běžícího jobu neuvolní slot, dokud provider skutečně neskončí (113.641334ms)
+✔ Opakované fráze zachovávají ordered rules význam včetně hranic řádků (62.060866ms)
+✔ Strict routing odmítá traversal, encoded separators a absolute-form target (128.071749ms)
+✔ Interní soubory ani nepovolené obrázky nelze servírovat (142.724304ms)
+✔ HTTP method abuse: 405 a přesný Allow; neznámé endpointy 404 (34.101657ms)
+✔ Oversize Content-Length a chunked tělo, malformed UTF8/JSON, MIME a encoding (115.436376ms)
+✔ Slow body má vlastní deadline a uvolní admission slot (86.817983ms)
+✔ Cross-origin JSON POST, same-site subdoména a falešný forwarded host jsou odmítnuty (96.996847ms)
+✔ Produkční origin a platná Secure session jsou povinné, útok nerozhýbe pipeline (98.670213ms)
+✔ Globální API quota funguje i při rotaci klientských IP (15.785595ms)
+✔ Timeout neotevře další slot, pokud worker ignoruje cancellation (99.481836ms)
+✔ Request smuggling CL/TE, duplicate CL/Host a příliš velké headers selžou (53.428193ms)
+✔ XSS a URL vstup nejsou odraženy do rules výsledku a URL se nefetchuje (24.4131ms)
+✔ Bezpečné chyby, CSP podle frontend závislostí a citlivé no-store (13.040063ms)
+✔ Graceful shutdown nechá dokončit rozpracovaný požadavek (11.858535ms)
+✔ Homepage, privacy, health a skutečný HTTP textový scénář (113.839972ms)
+✔ Neplatný JSON, MIME, velikost, nepodporovaný upload a cesta (68.76462ms)
+✔ Limiter odmítne překročení a po expiraci znovu pustí požadavek (113.917557ms)
+✔ Podepsaná anonymní session má samostatný limit a cookie není klientem čitelná (39.556968ms)
+✔ X-Forwarded-For ani nové cookies neobcházejí IP limit (21.349913ms)
+✔ Vyžadovaná bot ochrana bez verifikátoru selže bezpečně (25.983447ms)
+ℹ tests 65
+ℹ suites 0
+ℹ pass 65
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4281.321808
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

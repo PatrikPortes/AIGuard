@@ -1,0 +1,194 @@
+[
+  {
+    "path": "public/assets/characters/verkarob.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "0748950319ad8100d65d317f9b941c17d3ce808b52d16b27790dc419d4306a8a"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/verka/verka-explaining.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "d9ac4ccbd3571d955de670c707c7f825bc546a79331665eab7fb4ac6a4b165db"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/verka/verka-warning.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 21881,
+        "sha256": "764bebdbdaaa1e3f644e2f1d895d542e42c871ef53ac48bbfd7edaf2f71a89ee"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/verka/verka-thinking.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "3669502188855d2bf86de5f510944d2ec6b99716dcc90ec8188f1758698724c0"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/verka/verka-success.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 21881,
+        "sha256": "b85c75215e5089bffa15deb7c4a96e23c2e4d51b61ccac61b09f0a5474dabd83"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/verka/verka-welcome.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "b446bf96ffb445d6e4f68b12c572e69499293cf8d3ed8f185ce020b5729decf6"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-analyzing.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "b41a3d5d105c79b08db99116c1a81b645840747a6e016cd0a3c4388884f00e9a"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-capacity.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "ec8821bf51ff059d902d35143bd4a9ae60cab1bee9902d444d2169ae12e1270f"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-warning.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "e121f0a49cc565213614c96d8a668ede5884aa09d27d07ee050c444d97a81fc7"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-searching.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 21881,
+        "sha256": "013c2147c40ccaf85d346e8e6568ae611b028150f5038357dbfab3ed0fe3e1cb"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-success.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "6014fc9f627d36ed19db3ccaec7c318ae908e331bb808e137db41200a4b6734d"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-default.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "4b851ace4652ce6e2d3253a1b769dfe1922190e88966a433dab3d988776ea03e"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-error.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "5e25db0ceebaba7a126bddd78b11514cc49ebc1ae4c6a8dcde29b3b01a0773af"
+      }
+    ]
+  },
+  {
+    "path": "public/assets/characters/robo/robo-tip.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "abdc75647d412f0031390dafffb18ffc935fa3040ca072663faf6d5cf3643278"
+      }
+    ]
+  },
+  {
+    "path": "docs/design/VERIM_VISUAL_REFERENCE.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 23654,
+        "sha256": "c8711c686da239a641fa1726f9063aad7d420798f8b2d820effee1f76a644b69"
+      }
+    ]
+  },
+  {
+    "path": "docs/design/VERIM_CHARACTER_REFERENCE.png",
+    "valid_crc": true,
+    "trailing_bytes": 0,
+    "nonpixel_chunks": [
+      {
+        "type": "caBX",
+        "bytes": 21881,
+        "sha256": "c28b86f54de35c747d090d2b065379d89236c32d69f18f83a998af8caa6da401"
+      }
+    ]
+  }
+]

@@ -1,0 +1,78 @@
+name: verimtomu
+services:
+  app:
+    image: ${VERIM_APP_IMAGE:?Set the approved release image}
+    env_file: ./env/app.env
+    environment:
+      GUARD_TRUSTED_PROXY_IP: ${VERIM_INGRESS_IP:?Choose an audited ingress IP}
+    ports:
+      - "127.0.0.1:43127:3000"
+    user: "65532:65532"
+    restart: unless-stopped
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+    mem_limit: 512m
+    cpus: 0.5
+    pids_limit: 64
+    stop_grace_period: 15s
+    healthcheck:
+      test: [CMD, node, scripts/healthcheck.js]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    logging:
+      driver: local
+      options: {max-size: "10m", max-file: "3"}
+    networks:
+      ingress:
+        ipv4_address: ${VERIM_APP_IP:?Choose an audited app IP}
+
+  cloudflared:
+    profiles: [cloudflare]
+    image: ${VERIM_CLOUDFLARED_IMAGE:?Set a verified cloudflared image digest}
+    user: "65532:65532"
+    command: [tunnel, --no-autoupdate, --metrics, "127.0.0.1:20241", --loglevel, fatal, run, --token-file, /run/secrets/cloudflared_token]
+    secrets: [cloudflared_token]
+    restart: unless-stopped
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=8m,mode=1777
+    mem_limit: 256m
+    cpus: 0.25
+    pids_limit: 64
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, cloudflared, tunnel, --metrics, "127.0.0.1:20241", ready]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: local
+      options: {max-size: "5m", max-file: "2"}
+    networks:
+      ingress:
+        ipv4_address: ${VERIM_INGRESS_IP:?Choose an audited ingress IP}
+      egress: {}
+
+networks:
+  ingress:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${VERIM_NETWORK_SUBNET:?Choose an unused RFC1918 subnet}
+  egress: {}
+
+secrets:
+  cloudflared_token:
+    file: ./secrets/cloudflared-token

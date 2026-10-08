@@ -1,0 +1,15 @@
+ARG CONNECTOR_SOURCE=cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
+ARG CONNECTOR_RUNTIME=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
+FROM ${CONNECTOR_SOURCE} AS upstream
+FROM ${CONNECTOR_RUNTIME}
+ARG VCS_REF=unreleased
+LABEL org.opencontainers.image.title="Verim tomu ingress" \
+      org.opencontainers.image.revision="${VCS_REF}"
+# The official Go binary is statically linked. Preserve its exact bytes; omit
+# unused upstream OpenSSL libraries and their HIGH CVEs. Keep CA certificates.
+COPY --from=upstream /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+USER 65532:65532
+ENTRYPOINT ["/usr/local/bin/cloudflared"]
+CMD ["--version"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["/usr/local/bin/cloudflared", "tunnel", "--metrics", "127.0.0.1:20241", "ready"]

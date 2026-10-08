@@ -1,0 +1,301 @@
+{
+  "audit_date": "2026-10-08",
+  "scope": "local automated audit; no pentest or production access",
+  "scanner": "Trivy 0.75.0",
+  "gitleaks": "8.30.1",
+  "gitleaks_default_config_sha256": "e163e53b9e7e8a8511e77271e2b323ed057759542a6d988258afe3a1fa329caf",
+  "images": {
+    "image": {
+      "image_id": "sha256:1b625b2e6890f2c14fb82267c571dda071f60d8d515990127861e04d4920e6b4",
+      "raw_report_sha256": "7f4cbec8cea6a90552504b1dd795fa7522217c2fe5a30d96b5d74856f3182366",
+      "package_finding_counts": {
+        "LOW": 78,
+        "HIGH": 60,
+        "MEDIUM": 113,
+        "CRITICAL": 4,
+        "UNKNOWN": 1
+      },
+      "findings": null
+    },
+    "image-final": {
+      "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+      "raw_report_sha256": "94561846a38dcb4b1f47a565e864ca37140362c24dc22c9c09a5a8e5c75ef4c9",
+      "package_finding_counts": {
+        "MEDIUM": 23,
+        "LOW": 8
+      },
+      "findings": [
+        {
+          "id": "CVE-2026-102010",
+          "package": "gcc-14-base",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-95619",
+          "package": "gcc-14-base",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-18374",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-19499",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-19542",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-5435",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-6238",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-6368",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-6791",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-77117",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-80489",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-8674",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-86805",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-89092",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-95818",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2010-4756",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2018-20796",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2019-1010022",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2019-1010023",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2019-1010024",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2019-1010025",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2019-9192",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-97399",
+          "package": "libc6",
+          "version": "2.41-12+deb13u4",
+          "severity": "LOW",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-102010",
+          "package": "libgcc-s1",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-95619",
+          "package": "libgcc-s1",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-102010",
+          "package": "libgomp1",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-95619",
+          "package": "libgomp1",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-102010",
+          "package": "libstdc++6",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-95619",
+          "package": "libstdc++6",
+          "version": "14.2.0-19",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-27171",
+          "package": "zlib1g",
+          "version": "1:1.3.dfsg+really1.3.1-1+b1",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        },
+        {
+          "id": "CVE-2026-85091",
+          "package": "zlib1g",
+          "version": "1:1.3.dfsg+really1.3.1-1+b1",
+          "severity": "MEDIUM",
+          "fixed_version": null
+        }
+      ]
+    },
+    "connector": {
+      "image_id": "sha256:db1c3fda7a50bdcbf0f4f1e606ed054d2802f55a41a7b9a25f1ab95dd420e8fa",
+      "raw_report_sha256": "273efb49ccd219d03c23682e9d3fefe4457a690d28f41913a4545f3d8f8f0c1f",
+      "package_finding_counts": {
+        "MEDIUM": 26,
+        "LOW": 10,
+        "HIGH": 2,
+        "UNKNOWN": 1
+      },
+      "findings": null
+    },
+    "connector-final": {
+      "image_id": "sha256:3d0a7b710bbced831dc303af25dbb831129834d13f4bdc0d304682dd75f566c9",
+      "raw_report_sha256": "ca820133b4f0a4bd3425c970eb07ac0c1a99faf2f5de562f4dfe62dbcbb0f723",
+      "package_finding_counts": {
+        "MEDIUM": 2,
+        "UNKNOWN": 1
+      },
+      "findings": [
+        {
+          "id": "CVE-2026-56855",
+          "package": "golang.org/x/crypto",
+          "version": "v0.55.0",
+          "severity": "MEDIUM",
+          "fixed_version": "0.56.0"
+        },
+        {
+          "id": "CVE-2026-78662",
+          "package": "golang.org/x/crypto",
+          "version": "v0.55.0",
+          "severity": "MEDIUM",
+          "fixed_version": "0.56.0"
+        },
+        {
+          "id": "GO-2026-5932",
+          "package": "golang.org/x/crypto",
+          "version": "v0.55.0",
+          "severity": "UNKNOWN",
+          "fixed_version": null
+        }
+      ]
+    }
+  },
+  "dockerfile_checks": {
+    "Dockerfile": {
+      "Successes": 27,
+      "Failures": 0
+    },
+    "Dockerfile.cloudflared": {
+      "Successes": 27,
+      "Failures": 0
+    }
+  },
+  "vendor_connector_binary_sha256": "6fb373461c6de859684477920d9c599c309751f162e08592857f310a68906c8e"
+}

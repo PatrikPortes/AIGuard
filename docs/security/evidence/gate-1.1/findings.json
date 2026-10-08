@@ -1,0 +1,1160 @@
+[
+  {
+    "id": "CVE-2026-102010",
+    "package": "gcc-14-base",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A01",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ PBDS binary_heap erase_if use-after-free",
+    "reachability": "Balíček je runtime metadata/source-family marker, nikoli spuštěný compiler. Compiler executable není v image. Trigger v jiných C++ knihovnách tím vyloučen není.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-102010.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-95619",
+    "package": "gcc-14-base",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A02",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ aligned operator new integer overflow při velkých velikostech",
+    "reachability": "Balíček je runtime metadata/source-family marker, nikoli spuštěný compiler. Compiler executable není v image. Trigger v jiných C++ knihovnách tím vyloučen není.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-95619.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7.7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "HIGH",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-18374",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A03",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "fopen s útočníkem ovládaným mode včetně prázdného ccs=; overflow při načítání konverze.",
+    "reachability": "Node importuje fopen64 (nikoli přímý fopen); fopen-family není proto vyloučena. Uživatel ovládá text, nikoliv mode argument. Statická mapa čte pevné soubory, upload/child process nejsou dostupné. Nepřímé nativní volání nelze vyloučit jen importy.",
+    "realistic_impact": "Podmíněná korupce paměti / pád procesu, pokud budoucí native kód zpřístupní škodlivý mode. Dnešní HTTP cesta nebyla prokázána.",
+    "remediation": "Zachovat pevné readFile cesty a žádný user mode; prověřit Node native callsites, aktualizovat pinned runtime po vydání opravy Debianu.",
+    "evidence": "src/server.js:createServer staticFiles; tests/security.test.js:static file allowlist; evidence/node-linkage.json (fopen64 přítomen).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "LOCAL",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "availabilityImpact": "LOW",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 4.9,
+          "vectorString": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-19499",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A04",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "strfmon/strfmon_l: nesprávné memmove při paddingu měnového formátu.",
+    "reachability": "Aplikace nevolá POSIX monetary formatter; přímý ELF import strfmon chybí. JS formátování nepředstavuje samo o sobě důkaz strfmon volání.",
+    "realistic_impact": "Pád či korupce paměti při zranitelném formátování; cesta z HTTP nebyla nalezena.",
+    "remediation": "Native dependency review; nevystavit útočníkem řízené POSIX formáty; opravený Debian runtime až dostupný.",
+    "evidence": "src/analysis.js; src/ai/schema.js; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "HIGH",
+          "integrityImpact": "LOW",
+          "availabilityImpact": "HIGH",
+          "baseSeverity": "HIGH",
+          "baseScore": 7.7,
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:H"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-19542",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A05",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "tdelete: hluboký strom může přepsat pomocné pole ukazatelů.",
+    "reachability": "JS Map limitery nejsou glibc tsearch/tdelete; import tdelete chybí. Neprokázaná nepřímá native cesta.",
+    "realistic_impact": "Korupce paměti při specifickém hlubokém nativním stromu; dnešní quota Map tento trigger nedokládá.",
+    "remediation": "Nevystavit nativní strom s user daty; prověřit native callers; čekat opravený runtime.",
+    "evidence": "src/limits.js:WindowLimiter.check; tests/server.test.js:rate limiting; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "availabilityImpact": "LOW",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 5.6,
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:L"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-5435",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A06",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "DNS debug printing ns_sprintrr/ns_sprintrrf/fp_nquery: TSIG out-of-bounds.",
+    "reachability": "Jde o debug tisk DNS, ne každé DNS resolve. Aplikace jej nevolá, přímé importy chybí.",
+    "realistic_impact": "OOB čtení / pád při tisku škodlivého DNS záznamu; bez prokázané HTTP cesty.",
+    "remediation": "Nepřidávat tisk raw DNS; aktualizovat runtime při dostupné vendor opravě.",
+    "evidence": "src/server.js; src/ai/provider.js; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2026-6238",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A07",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "Stejné DNS print helpery mohou číst neinicializovaná RDATA pole.",
+    "reachability": "Žádné DNS debug API v serveru; chybí přímé importy helperů.",
+    "realistic_impact": "Podmíněný pád nebo únik paměti v debug výstupu; obsah DNS se dnes nevypisuje.",
+    "remediation": "Zachovat zákaz raw DNS loggingu; native review a budoucí vendor patch.",
+    "evidence": "src/server.js:serviceError; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2026-6368",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A08",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "wordexp WRDE_APPEND s vadným word-vector vede k invalid memory access.",
+    "reachability": "HTTP text není shell příkaz, runtime nevolá wordexp ani child_process; import chybí. Deployment skripty jsou admin-only a nejsou runtime HTTP cesta.",
+    "realistic_impact": "Pád / memory corruption při chybném použití wordexp; uživatelská cesta nebyla nalezena.",
+    "remediation": "Nedovolit shell interpretaci dat; update libc po vendor fixu.",
+    "evidence": "src/server.js; src/ai/pipeline.js; evidence/node-linkage.json; tests/security.test.js:passive URL.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV4_0": {
+          "attackVector": "LOCAL",
+          "attackComplexity": "HIGH",
+          "attackRequirements": "PRESENT",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "vulnConfidentialityImpact": "LOW",
+          "subConfidentialityImpact": "LOW",
+          "vulnIntegrityImpact": "LOW",
+          "subIntegrityImpact": "LOW",
+          "vulnAvailabilityImpact": "LOW",
+          "subAvailabilityImpact": "LOW",
+          "exploitMaturity": "NOT_DEFINED",
+          "Safety": "PRESENT",
+          "Automatable": "YES",
+          "Recovery": "NOT_DEFINED",
+          "valueDensity": "NOT_DEFINED",
+          "vulnerabilityResponseEffort": "NOT_DEFINED",
+          "providerUrgency": "GREEN",
+          "version": "4.0",
+          "baseSeverity": "LOW",
+          "baseScore": 2.1,
+          "vectorString": "CVSS:4.0/AV:L/AC:H/AT:P/PR:N/UI:N/VC:L/VI:L/VA:L/SC:L/SI:L/SA:L/S:P/AU:Y/U:Green"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-6791",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A09",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "wordexp: dlouhé ~username může způsobit stack clash.",
+    "reachability": "Žádný wordexp/shell expansion uživatelského textu; přímý import chybí.",
+    "realistic_impact": "Podmíněné poškození stacku v shell expansion; analyzovaný text takto zpracován není.",
+    "remediation": "Zachovat data-only pipeline a nepoužívat shell; opravená libc až dostupná.",
+    "evidence": "src/ai/pipeline.js:TextAIWorker.call; tests/ai.test.js:prompt injection roles; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV4_0": {
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "attackRequirements": "NONE",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "vulnConfidentialityImpact": "LOW",
+          "subConfidentialityImpact": "NONE",
+          "vulnIntegrityImpact": "LOW",
+          "subIntegrityImpact": "LOW",
+          "vulnAvailabilityImpact": "HIGH",
+          "subAvailabilityImpact": "HIGH",
+          "exploitMaturity": "UNREPORTED",
+          "Safety": "NOT_DEFINED",
+          "Automatable": "NOT_DEFINED",
+          "Recovery": "NOT_DEFINED",
+          "valueDensity": "NOT_DEFINED",
+          "vulnerabilityResponseEffort": "NOT_DEFINED",
+          "providerUrgency": "NOT_DEFINED",
+          "version": "4.0",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 6.6,
+          "vectorString": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:L/VI:L/VA:H/SC:N/SI:L/SA:H/E:U"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-77117",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A10",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "glibc iconv SHIFT_JISX0213 decoder se nemusí posouvat a vytváří DoS.",
+    "reachability": "HTTP dekódování je fatal UTF-8 TextDecoder; Node má ICU. Přímý import glibc iconv chybí, neprokazuje to úplné pokrytí native kódu.",
+    "realistic_impact": "CPU DoS při této konkrétní konverzi; dnešní parser neakceptuje Shift-JIS stream.",
+    "remediation": "Nerozšiřovat podporované encodings bez review; vendor runtime update.",
+    "evidence": "src/http-security.js:readJson; tests/security.test.js:invalid UTF-8; evidence/node-runtime.json; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "NONE",
+          "availabilityImpact": "HIGH",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 5.9,
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-80489",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A11",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "glibc iconv EUC_JISX0213 decoder: non-progress DoS.",
+    "reachability": "Stejné omezení na UTF-8; žádný přímý glibc iconv import.",
+    "realistic_impact": "CPU DoS při native EUC-JIS konverzi, bez prokázané současné cesty.",
+    "remediation": "UTF-8 only; review budoucích dokumentových parserů; aktualizovat vendor runtime.",
+    "evidence": "src/http-security.js:readJson; tests/security.test.js:invalid UTF-8; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "NONE",
+          "availabilityImpact": "HIGH",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 5.9,
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-8674",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A12",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "DNS stub resolver assert při dlouhém search domain z resolv.conf / LOCALDOMAIN.",
+    "reachability": "getaddrinfo je importovaný. Uživatelský URL vstup se nyní nestahuje, ale konečná resolver konfigurace VPS není známa. Nelze prohlásit DNS nedosažitelné.",
+    "realistic_impact": "Pád aplikace při vadné admin/Docker DNS konfiguraci nebo budoucích síťových operacích; public text sám DNS search domain nenastaví.",
+    "remediation": "Před VPS ověřit resolver/env a native use; na VPS zkontrolovat resolv.conf/search, nepředávat LOCALDOMAIN; patch libc při vydání.",
+    "evidence": "evidence/node-linkage.json (getaddrinfo); tests/security.test.js:URL target never visited; deploy/compose.yaml:networks; VPS důkaz čeká.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "ADJACENT_NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "NONE",
+          "availabilityImpact": "HIGH",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 5.3,
+          "vectorString": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-86805",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A13",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "ld.so secure-mode $ORIGIN/.. TOCTOU při setuid/setgid a povolených hardlinks.",
+    "reachability": "Exportovaný app filesystem neobsahuje SUID/SGID files; UID65532, RO rootfs a no-new-privileges. Provoz hostu/systémové hardlinks nejsou ověřeny.",
+    "realistic_impact": "Lokální eskalace při dalších privilegovaných ELF/config předpokladech; dnešní kontejner je nedává k dispozici.",
+    "remediation": "Zachovat RO/nonroot/NNP/no SUID; na VPS prověřit fs.protected_hardlinks a host patching.",
+    "evidence": "evidence/runtime-files.json; Dockerfile; deploy/compose.yaml; scripts/security-config.js.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "LOCAL",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "LOW",
+          "userInteraction": "REQUIRED",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "HIGH",
+          "integrityImpact": "HIGH",
+          "availabilityImpact": "LOW",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 6.3,
+          "vectorString": "CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:U/C:H/I:H/A:L"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-89092",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A14",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "nscd DNS cache: stack overflow v degraded cache režimu při škodlivém DNS.",
+    "reachability": "nscd executable není v app image; žádný nscd service/socket mount. Stav nscd na budoucím VPS neověřen.",
+    "realistic_impact": "Podmíněný lokální resolver/cache pád či memory corruption; absentní nscd v app cestě.",
+    "remediation": "Nedoplňovat nscd; aktualizovat libc; zvlášť auditovat host resolver.",
+    "evidence": "evidence/runtime-files.json a popis exportu v evidence/README.md; Dockerfile; deploy/compose.yaml.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "ADJACENT_NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "LOW",
+          "availabilityImpact": "LOW",
+          "baseSeverity": "MEDIUM",
+          "baseScore": 4.2,
+          "vectorString": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:L"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-95818",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A15",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "ld.so AT_SECURE/setuid RPATH $ORIGIN může číst/zapisovat mimo stack.",
+    "reachability": "Žádný SUID/SGID ELF v image, nonroot/NNP/RO. Loader přítomen; nejde o tvrzení, že libc se nepoužívá.",
+    "realistic_impact": "Privilege escalation vyžaduje privilegovaný executable; tento předpoklad v app image nebyl nalezen.",
+    "remediation": "Zachovat isolation, žádné privilegované ELF/mounty; patch runtime a ověřit VPS loader.",
+    "evidence": "evidence/runtime-files.json; deploy/compose.yaml; scripts/security-config.js.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "LOCAL",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "LOW",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "availabilityImpact": "NONE",
+          "baseSeverity": "LOW",
+          "baseScore": 3.6,
+          "vectorString": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:L/I:L/A:N"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2010-4756",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A16",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "POSIX glob s mnoha zástupnými znaky spotřebuje CPU/paměť.",
+    "reachability": "Žádné glob patterns z uživatelských dat; Node import glob chybí; statické cesty explicitní.",
+    "realistic_impact": "DoS při nativním globování jako FTP STAT; AIGuard není FTP/glob API.",
+    "remediation": "Nerozšiřovat wildcard static serving; vendor patch pokud dostupný.",
+    "evidence": "src/server.js:staticFiles; tests/security.test.js:strict paths/static allowlist; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2018-20796",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A17",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "POSIX regexec recursion při crafted regex může způsobit DoS.",
+    "reachability": "Rule engine používá JavaScript RegExp (V8), nikoliv glibc regexec; chybí regexec/regcomp import. To nevylučuje případnou další native závislost.",
+    "realistic_impact": "POSIX regex DoS neprokázán; samostatné JS ReDoS riziko ověřuje ordered-rules test, ne tato CVE.",
+    "remediation": "Zachovat bounded input a pravidla; nepřidat native regex bez review; vendor patch.",
+    "evidence": "src/analysis.js; tests/security.test.js:ordered risk signals; evidence/node-linkage.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2019-1010022",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A18",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "NPTL stack guard ochrana může být obejita při existujícím memory-corruption primitivu.",
+    "reachability": "Node skutečně používá pthread_create; nelze vyloučit z důvodu JS. Záznam uvádí sporné hodnocení; spor není waiver.",
+    "realistic_impact": "Oslabení exploit mitigation při jiné nativní zranitelnosti; samostatná vzdálená exploit cesta nebyla prokázána.",
+    "remediation": "Native mitigations/runtime provenance review; prověřit upstream stanovisko a další memory corruption; zachovat isolation a patching.",
+    "evidence": "evidence/node-linkage.json (pthread_create); evidence/CVE-2019-1010022.json; deploy/compose.yaml.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2019-1010023",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A19",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "ldd na škodlivém ELF může spustit kód při kontrole vadných segmentů.",
+    "reachability": "ldd executable v image není; server žádné user ELF nespouští, upload není route.",
+    "realistic_impact": "Kód v kontextu analytika, který spustí ldd na untrusted ELF; runtime HTTP tuto cestu nemá.",
+    "remediation": "Nepoužívat ldd na user files; binární review readelf v izolaci; vendor patch pokud dostupný.",
+    "evidence": "Dockerfile; tests/security.test.js:upload/private paths forbidden; evidence/README.md:filesystem export.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2019-1010024",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A20",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "Thread stack/heap caching snižuje ASLR při navazujícím exploitu.",
+    "reachability": "Pthreads runtime přítomné; absence user thread API neprokazuje nedosažitelnost.",
+    "realistic_impact": "Pomoc jiné nativní exploitační cestě; ne samostatný důkaz RCE či vzdáleného čtení.",
+    "remediation": "Review ASLR/CET/native dependencies a upstream dispute; nepřijímat bez externího rozhodnutí.",
+    "evidence": "evidence/node-linkage.json; evidence/CVE-2019-1010024.json; deploy/compose.yaml isolation.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2019-1010025",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A21",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "Předvídatelné adresy pthread heap mohou oslabit ASLR.",
+    "reachability": "Pthread runtime se používá; útočník by potřeboval další memory/info-leak primitivum, které nebylo prokázáno.",
+    "realistic_impact": "Podmíněná pomoc při exploitu jiné chyby; možné zesílení nativních CVE vyžaduje review.",
+    "remediation": "Native threat/mitigation review a vendor stanovisko; runtime patching.",
+    "evidence": "evidence/node-linkage.json; evidence/CVE-2019-1010025.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2019-9192",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A22",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "POSIX regex check_dst_limits rekurze může vyčerpat stack; CNA uvádí spor.",
+    "reachability": "JS RegExp není POSIX regex; přímé regexec/regcomp importy chybí. Spor nesnižuje automaticky nález.",
+    "realistic_impact": "Podmíněný POSIX regex DoS; dnešní rules používají V8 a limitované vstupy.",
+    "remediation": "Zachovat bounded pravidla; review native dependencies a upstream stanoviska.",
+    "evidence": "src/analysis.js; tests/security.test.js:ordered rules; evidence/node-linkage.json; evidence/CVE-2019-9192.json.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2026-97399",
+    "package": "libc6",
+    "version": "2.41-12+deb13u4",
+    "severity": "LOW",
+    "fixed_version": null,
+    "row": "A23",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "Power8 optimalizace strncasecmp čte za unmapped page.",
+    "reachability": "Skutečný app runtime je x64/amd64; CNA explicitně uvádí Power8. Power8 implementace na této architektuře neběží. Platí pouze pro tento image/arch.",
+    "realistic_impact": "Pád na Power8; tato amd64 cesta vyloučena architekturou, balíček přesto zůstává ve scanneru.",
+    "remediation": "Pin amd64 a uchovat důkaz; při multiarch znovu posoudit a aktualizovat runtime.",
+    "evidence": "evidence/node-runtime.json:architecture=x64; evidence/CVE-2026-97399.json:platforms Power8.",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ],
+        "cvssV3_1": {
+          "version": "3.1",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "NONE",
+          "availabilityImpact": "LOW",
+          "baseSeverity": "LOW",
+          "baseScore": 3.7,
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-102010",
+    "package": "libgcc-s1",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A24",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ PBDS binary_heap erase_if use-after-free",
+    "reachability": "Node načítá libgcc_s unwind runtime; advisory míří na libstdc++ funkci, nikoli pouhou přítomnost unwind knihovny. Source-family přiřazení ověřit.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-102010.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-95619",
+    "package": "libgcc-s1",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A25",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ aligned operator new integer overflow při velkých velikostech",
+    "reachability": "Node načítá libgcc_s unwind runtime; advisory míří na libstdc++ funkci, nikoli pouhou přítomnost unwind knihovny. Source-family přiřazení ověřit.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-95619.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7.7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "HIGH",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-102010",
+    "package": "libgomp1",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A26",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ PBDS binary_heap erase_if use-after-free",
+    "reachability": "OpenMP runtime je v image, Node jej nemá v NEEDED ani startup maps. Advisory míří na libstdc++; možné source-package přiřazení je nutné ověřit.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-102010.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-95619",
+    "package": "libgomp1",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A27",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ aligned operator new integer overflow při velkých velikostech",
+    "reachability": "OpenMP runtime je v image, Node jej nemá v NEEDED ani startup maps. Advisory míří na libstdc++; možné source-package přiřazení je nutné ověřit.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-95619.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7.7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "HIGH",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-102010",
+    "package": "libstdc++6",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A28",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ PBDS binary_heap erase_if use-after-free",
+    "reachability": "libstdc++ je Node NEEDED a startup-loaded. PBDS template / aligned allocator používání Node native kódem nebylo prokázáno ani vyloučeno; 16 KiB input/512 MiB RAM není důkaz opravy.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-102010.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "LOW",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-95619",
+    "package": "libstdc++6",
+    "version": "14.2.0-19",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A29",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "libstdc++ aligned operator new integer overflow při velkých velikostech",
+    "reachability": "libstdc++ je Node NEEDED a startup-loaded. PBDS template / aligned allocator používání Node native kódem nebylo prokázáno ani vyloučeno; 16 KiB input/512 MiB RAM není důkaz opravy.",
+    "realistic_impact": "Podmíněná nativní korupce paměti, potenciálně vážnější než samotná severity MEDIUM. Vzdálená cesta z textové analýzy nebyla prokázána.",
+    "remediation": "Dohledat Debian source-package/backport a Node build/callsite provenance; nový pinned runtime po vendor opravě. Upstream/RPM affected range není Debian fixed_version.",
+    "evidence": "evidence/trivy-app.json; evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-95619.json; Dockerfile; tests/security.test.js:bounded input (ne native exploit test).",
+    "fix_evidence": "Debian: Trivy fixed_version prázdná; doložená opravená Debian package verze není k dispozici. Absence fixu není schválení rizika.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "NETWORK",
+          "availabilityImpact": "HIGH",
+          "baseScore": 7.7,
+          "baseSeverity": "HIGH",
+          "confidentialityImpact": "LOW",
+          "integrityImpact": "HIGH",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:H",
+          "version": "3.1"
+        },
+        "format": "CVSS"
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-27171",
+    "package": "zlib1g",
+    "version": "1:1.3.dfsg+really1.3.1-1+b1",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A30",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "MITIGATE",
+    "vulnerable_functionality": "crc32_combine64/crc32_combine_gen64 x2nmodp shift může uváznout.",
+    "reachability": "Debian libz přítomna, ale Node nemá libz NEEDED a při startu není načtena; jeho bundled zlib je 1.3.2.1-motley-8002e91. Žádný zlib CRC combine API v aplikaci.",
+    "realistic_impact": "CPU DoS při problematickém native combine; přítomnost shared library sama neprokazuje trigger. Bundled provenance ještě ověřit.",
+    "remediation": "Vendor Debian update až dostupný; upstream oprava 1.3.2. Nepřidávat CRC native binding bez review.",
+    "evidence": "evidence/node-linkage.json; evidence/node-runtime.json; evidence/CVE-2026-27171.json (upstream <1.3.2).",
+    "fix_evidence": "Debian: Trivy neuvádí opravenou package verzi. CNA upstream zlib 1.3.2; nesměšovat s Debian version.",
+    "cna_cvss": [
+      {
+        "cvssV3_1": {
+          "attackComplexity": "HIGH",
+          "attackVector": "LOCAL",
+          "availabilityImpact": "LOW",
+          "baseScore": 2.9,
+          "baseSeverity": "LOW",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "NONE",
+          "privilegesRequired": "NONE",
+          "scope": "UNCHANGED",
+          "userInteraction": "NONE",
+          "vectorString": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+          "version": "3.1"
+        },
+        "format": "CVSS",
+        "scenarios": [
+          {
+            "lang": "en",
+            "value": "GENERAL"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-85091",
+    "package": "zlib1g",
+    "version": "1:1.3.dfsg+really1.3.1-1+b1",
+    "severity": "MEDIUM",
+    "fixed_version": null,
+    "row": "A31",
+    "image": "image-final",
+    "image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "gz_vacate/nonblocking gzwrite + gzprintf stale buffer: heap overflow.",
+    "reachability": "CNA označuje 1.3.1.2 až 1.3.2, Debian verze říká really1.3.1; možný backport musí potvrdit vendor. Node bundled fork 1.3.2.1 také vyžaduje provenance. Shared lib není NEEDED/startup-loaded; HTTP nepřijímá gzip.",
+    "realistic_impact": "Podmíněná korupce paměti, pokud verze/backport a gz file-write cesta odpovídají. Rozpor rozsahu není automatický false positive.",
+    "remediation": "Prověřit zdrojové Debian patche a Node zlib fork; aktualizovat vendor runtime. CNA uvádí affected range 1.3.1.2–1.3.2, nikoli explicitní fixed_version; opravenou Debian/fork verzi je nutné doložit.",
+    "evidence": "evidence/CVE-2026-85091.json; evidence/node-runtime.json; evidence/node-linkage.json; src/http-security.js:readJson rejects gzip; tests/security.test.js.",
+    "fix_evidence": "Debian ani dodaný CNA snapshot neuvádí explicitní fixed_version pro tuto chybu. CNA affected range končí v 1.3.2; z toho nelze bez dalšího důkazu určit opravenou Debian/fork verzi.",
+    "cna_cvss": [
+      {
+        "cvssV4_0": {
+          "version": "4.0",
+          "vectorString": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:N/VI:H/VA:H/SC:N/SI:N/SA:N",
+          "baseScore": 8.3,
+          "baseSeverity": "HIGH",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "attackRequirements": "NONE",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "vulnConfidentialityImpact": "NONE",
+          "vulnIntegrityImpact": "HIGH",
+          "vulnAvailabilityImpact": "HIGH",
+          "subConfidentialityImpact": "NONE",
+          "subIntegrityImpact": "NONE",
+          "subAvailabilityImpact": "NONE"
+        }
+      },
+      {
+        "cvssV3_1": {
+          "version": "3.1",
+          "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H",
+          "baseScore": 7.4,
+          "baseSeverity": "HIGH",
+          "attackVector": "NETWORK",
+          "attackComplexity": "HIGH",
+          "privilegesRequired": "NONE",
+          "userInteraction": "NONE",
+          "scope": "UNCHANGED",
+          "confidentialityImpact": "NONE",
+          "integrityImpact": "HIGH",
+          "availabilityImpact": "HIGH"
+        }
+      }
+    ]
+  },
+  {
+    "id": "CVE-2026-56855",
+    "package": "golang.org/x/crypto",
+    "version": "v0.55.0",
+    "severity": "MEDIUM",
+    "fixed_version": "0.56.0",
+    "row": "C01",
+    "image": "connector-final",
+    "image_id": "sha256:3d0a7b710bbced831dc303af25dbb831129834d13f4bdc0d304682dd75f566c9",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "FIX",
+    "vulnerable_functionality": "SSH channel.handlePacket / mux může uváznout při crafted SSH zprávách.",
+    "reachability": "V cloudflared binárce je 198 x/crypto/ssh symbolů; SSH kód nelze prohlásit za nezlinkovaný. Zamýšlená HTTP-only Tunnel route by cestu omezila, živá konfigurace však neexistuje a CLI má další režimy.",
+    "realistic_impact": "DoS connectoru při dosažitelném SSH kanálu; ztráta dostupnosti veřejné služby. Dnešní HTTP-only runtime trigger neprokázán.",
+    "remediation": "Získat schválený vendor cloudflared s x/crypto >=0.56.0, pin digest, ověřit build metadata/binární identitu a rescany. Do té doby HTTP-only/no SSH origins nestačí jako schválení nálezu.",
+    "evidence": "evidence/connector-symbol-counts.json; evidence/cloudflared-2026.10.0-go.mod; evidence/CVE-2026-56855.json; deploy/compose.yaml:cloudflared command.",
+    "fix_evidence": "Scanner/CNA: x/crypto 0.56.0; nutné získat vendor binárku s touto nebo novější opravou.",
+    "cna_cvss": []
+  },
+  {
+    "id": "CVE-2026-78662",
+    "package": "golang.org/x/crypto",
+    "version": "v0.55.0",
+    "severity": "MEDIUM",
+    "fixed_version": "0.56.0",
+    "row": "C02",
+    "image": "connector-final",
+    "image_id": "sha256:3d0a7b710bbced831dc303af25dbb831129834d13f4bdc0d304682dd75f566c9",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "FIX",
+    "vulnerable_functionality": "SSH channel request flooding může zablokovat mux / channel.Accept.",
+    "reachability": "SSH funkce jsou v connectoru zlinkované; skutečné Tunnel ingress typy na VPS/Cloudflare čekají. HTTP-only nesmí být jen předpoklad.",
+    "realistic_impact": "Podmíněný connector DoS přes SSH traffic a výpadek webu; není prokázán vzdálený HTTP exploit.",
+    "remediation": "Vendor cloudflared s x/crypto >=0.56.0, exact digest + module metadata + scan; HTTP-only confinement ověřit stagingem.",
+    "evidence": "evidence/connector-symbol-counts.json; evidence/CVE-2026-78662.json; evidence/cloudflared-2026.10.0-go.mod; deploy/compose.yaml.",
+    "fix_evidence": "Scanner/CNA: x/crypto 0.56.0; nutné získat vendor binárku s touto nebo novější opravou.",
+    "cna_cvss": []
+  },
+  {
+    "id": "GO-2026-5932",
+    "package": "golang.org/x/crypto",
+    "version": "v0.55.0",
+    "severity": "UNKNOWN",
+    "fixed_version": null,
+    "row": "C03",
+    "image": "connector-final",
+    "image_id": "sha256:3d0a7b710bbced831dc303af25dbb831129834d13f4bdc0d304682dd75f566c9",
+    "component_phase": "runtime image (not just builder)",
+    "recommendation": "INVESTIGATE",
+    "vulnerable_functionality": "Neudržované a obecně nebezpečné OpenPGP subpackages v x/crypto; UNKNOWN není LOW.",
+    "reachability": "OSV affected imports jsou openpgp/*, nikoli celý SSH modul. GNU nm nenašlo openpgp symboly v ne-stripované binárce; 198 SSH symbolů potvrzuje funkční hledání. Nutný source/dead-code/module-specific review.",
+    "realistic_impact": "Unsafe crypto by ohrozilo OpenPGP komunikaci; AIGuard ani zamýšlený connector ji nepoužívají. Samotná module metadata neprokazují linkovaný OpenPGP kód.",
+    "remediation": "Ověřit linker/provenance, Go SBOM a správné subpackage přiřazení. Pokud by se OpenPGP použilo, nahradit udržovanou implementací; bump 0.56.0 tuto advisory sám neřeší.",
+    "evidence": "evidence/GO-2026-5932.json; evidence/connector-symbol-counts.json. Retrieved OSV má published/modified 0001-01-01: kvalita/datace je další otevřená otázka.",
+    "fix_evidence": "Bez fix version pro tuto OpenPGP advisory; pokud dosažitelné, odstranit/nahradit subpackage.",
+    "cna_cvss": []
+  }
+]

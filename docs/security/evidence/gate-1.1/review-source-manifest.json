@@ -1,0 +1,262 @@
+{
+  "date": "2026-10-08",
+  "scope": "source/config/tests/assets; no Git release exists; no secrets",
+  "files": {
+    ".dockerignore": {
+      "bytes": 382,
+      "sha256": "684c94629e559b9e2ec2afc6d03b308d8c0cbca6f43e509a97ba2553ec95ba5a"
+    },
+    ".env.example": {
+      "bytes": 1422,
+      "sha256": "53847e8b64d13581e363fcd190e099011cbdc21f411c459e60a0a1678fbfb5bf"
+    },
+    ".gitignore": {
+      "bytes": 95,
+      "sha256": "57179f3ea7877964a63145b92fc34876c03dbadae676b4e4622cf6b305343802"
+    },
+    "Dockerfile": {
+      "bytes": 1556,
+      "sha256": "71eb85c673dd0347a406dd9a1f90179e4e202983193d67d3379c22f81e9adf71"
+    },
+    "Dockerfile.cloudflared": {
+      "bytes": 931,
+      "sha256": "f8e02b186c175d966c251bd0c339483922deaa693455ce0de72a8d101b657791"
+    },
+    "deploy/compose.yaml": {
+      "bytes": 2097,
+      "sha256": "9793a55a3f7eab92f654bb1331e4bed7557aaadd20e6f8262f664294b4b46f9a"
+    },
+    "deploy/env/app.env.example": {
+      "bytes": 620,
+      "sha256": "f2df28f62e3c217ceeb91f8908b8db22da310c5ad64710a171e28ece6d256e2d"
+    },
+    "deploy/env/deployment.env.example": {
+      "bytes": 955,
+      "sha256": "4af4a1a657d4303ad8e064000135a748a7a314c0ba147adf3cff2a7e63a16d1b"
+    },
+    "deploy/scripts/build-connector.sh": {
+      "bytes": 1104,
+      "sha256": "de98e173f0a62f5c557e5bed8d3f794ba0f165a1430c0ebc92c9f592fc9d3af2"
+    },
+    "deploy/scripts/common.sh": {
+      "bytes": 2938,
+      "sha256": "1ca9ae2f4a05fb50c280664bcb9fbe9c79ca1067dbe5d1146e254eddb6bc2c17"
+    },
+    "deploy/scripts/deploy.sh": {
+      "bytes": 1881,
+      "sha256": "5792be5101de62a0c317fb605e907254483bcf813840564d46bc96fd9c8d2a8d"
+    },
+    "deploy/scripts/rollback.sh": {
+      "bytes": 438,
+      "sha256": "192793259dafed01e270f7fa6d2d47fefd56daa2963a5e978166c179cc1b3b62"
+    },
+    "package-lock.json": {
+      "bytes": 238,
+      "sha256": "5b4238519bd2e761d3d44c62470358fd8ce54e40a344e8aa0c192998381f2aaf"
+    },
+    "package.json": {
+      "bytes": 389,
+      "sha256": "155542d72113ee62e422f6f33e27ed5ee01a13ee695ca5522a48135deeb2b93f"
+    },
+    "public/app.js": {
+      "bytes": 6700,
+      "sha256": "fe8fe7eef69fceca624b1d13e2713830494cf1f27e097ec65f3372ec1a918148"
+    },
+    "public/assets/characters/robo/robo-analyzing.png": {
+      "bytes": 1409392,
+      "sha256": "2e3e2a293dd19debdb4c214d4635ce1a9bfe779fc55c63d3d67fda645cd721d0"
+    },
+    "public/assets/characters/robo/robo-capacity.png": {
+      "bytes": 1554288,
+      "sha256": "a8122bd98079d9967f9949632ea6d8dab80f7777a4b693b5edf13200676783b0"
+    },
+    "public/assets/characters/robo/robo-default.png": {
+      "bytes": 1401716,
+      "sha256": "ef61184e0144ceb72a4d678a3aa54f1a9ead5f7eb5025ce1c95d887cc7794d3e"
+    },
+    "public/assets/characters/robo/robo-error.png": {
+      "bytes": 1548547,
+      "sha256": "b3a5b0abaed26b99b0460722b3b8c771edf6a1bd5e4df166ef3549271e144a5e"
+    },
+    "public/assets/characters/robo/robo-searching.png": {
+      "bytes": 1482353,
+      "sha256": "e8d99aae8923e26f818793efe05bc9a398429d36d22ee2e61a01e8f778be4f03"
+    },
+    "public/assets/characters/robo/robo-success.png": {
+      "bytes": 1517245,
+      "sha256": "0f2343cba4a3a18612df16b971f828c9ad2e8fd40107e34c31745a4397e9e56c"
+    },
+    "public/assets/characters/robo/robo-tip.png": {
+      "bytes": 1653998,
+      "sha256": "0cba81ef2a164c2b3ed974a3ad1e7992a41055d5c865fcee94ff514179fd4e21"
+    },
+    "public/assets/characters/robo/robo-warning.png": {
+      "bytes": 1633183,
+      "sha256": "a4672f2a541a370a36a50d3d198db0517fe01a6da270d5ccbda21c769ae48d99"
+    },
+    "public/assets/characters/verka/verka-explaining.png": {
+      "bytes": 1796632,
+      "sha256": "997fb89230479a41312dbe88a72fb6053a23d28097f5a85f50b66851ef501e9a"
+    },
+    "public/assets/characters/verka/verka-success.png": {
+      "bytes": 1838111,
+      "sha256": "4f2f4482f6aa5740b4c25c796bf2ff7230b1ece044cdcf8757e113451b02ecca"
+    },
+    "public/assets/characters/verka/verka-thinking.png": {
+      "bytes": 1916893,
+      "sha256": "15dcb1664094fb458527542d021c220738bafcba30674af53ac95484e7a214bd"
+    },
+    "public/assets/characters/verka/verka-warning.png": {
+      "bytes": 1791426,
+      "sha256": "68520c03383fa0d04e4eee25c39687fe014f3e109d70d1db74e8aa1c143611d6"
+    },
+    "public/assets/characters/verka/verka-welcome.png": {
+      "bytes": 1922221,
+      "sha256": "3e85af706b0cc309d4066cf41213073b51b618f05829ab87b93b482b0ddf6ec0"
+    },
+    "public/assets/characters/verkarob.png": {
+      "bytes": 2193410,
+      "sha256": "b4387d12a8d19338e613e877efcfd6379edf300ac79a518cb4af7a39fd226af4"
+    },
+    "public/index.html": {
+      "bytes": 8151,
+      "sha256": "1beaf5fa743415bfd173467ea1b04aca098585338c18772b4908ba73818985e3"
+    },
+    "public/privacy.html": {
+      "bytes": 2696,
+      "sha256": "d110538d67f2a27e4a72ef4cf8a8a90af2308202adefa667791bef3955213055"
+    },
+    "public/style.css": {
+      "bytes": 12988,
+      "sha256": "c07d488c1e39b73ef53803888ecbda9dc87c21ffedf62cc5084f6c2796371628"
+    },
+    "scripts/check.js": {
+      "bytes": 517,
+      "sha256": "65569d9e689df48437e47690259c59c5565648940d87d438b13fe01b7ccbaf72"
+    },
+    "scripts/deployment-smoke.js": {
+      "bytes": 3329,
+      "sha256": "58e4892c35a34574f9e0b0c098f765e13331b4d1725ea23c65ae57e5a14fa3ad"
+    },
+    "scripts/healthcheck.js": {
+      "bytes": 423,
+      "sha256": "7ca0252db5217580b3eed61c798025240e782e0b717081b1750b54e5879ad2c8"
+    },
+    "scripts/live-ai-smoke.js": {
+      "bytes": 1082,
+      "sha256": "1e56b4192de6e63e273ac24f9cbab822b8c71f6a7516e343fca894c49fe2d2e0"
+    },
+    "scripts/production-guard.js": {
+      "bytes": 105,
+      "sha256": "5b1c0d8f401c3b7b2b22267d3f15b9c9c7f77169587bed4e9773d1c059ce6cf4"
+    },
+    "scripts/security-browser.js": {
+      "bytes": 2564,
+      "sha256": "d20d47f3ee0bae24aed71de1ed8f4eb05608dd91d5a5ca3817bc4765e7feb67f"
+    },
+    "scripts/security-config.js": {
+      "bytes": 3302,
+      "sha256": "cfbe7b4f55511508aae3c0cfaa46a145fc753735a51b64f711b552a91fc1ba94"
+    },
+    "src/ai/budget.js": {
+      "bytes": 2563,
+      "sha256": "e94b97da0dcdaef4c56bc7193d11b30c9b35860bab7424b0bd1384e62ce0bbd9"
+    },
+    "src/ai/errors.js": {
+      "bytes": 860,
+      "sha256": "69b2a6ec3befacb875fff591a7f089ff01cc816acb4038ef74965665e1292683"
+    },
+    "src/ai/pipeline.js": {
+      "bytes": 7298,
+      "sha256": "c922419ed7d4c10b56f69af3aa386944ec1fc63d3ebae2fba4e33579b5b3dff1"
+    },
+    "src/ai/provider.js": {
+      "bytes": 2533,
+      "sha256": "8ff1662dddb3271a3ef5ba3455c1cccbb8182cb1556ed622fd1dac47192ae4d3"
+    },
+    "src/ai/queue.js": {
+      "bytes": 2017,
+      "sha256": "6145908d75dfafb17e37004f600d30875831a3cddbaa98f896734fa4430def7d"
+    },
+    "src/ai/runtime.js": {
+      "bytes": 3333,
+      "sha256": "888c3a7295a933d2e5e4853e14b5506424990875f843b9441fb81136d27aa429"
+    },
+    "src/ai/schema.js": {
+      "bytes": 3135,
+      "sha256": "f31ce1ae157b479417a1989eabb5389d9a09284871aeb639e2a2d9cf99062cb9"
+    },
+    "src/analysis.js": {
+      "bytes": 6673,
+      "sha256": "b19be3f37cdd0a712606a1933fdb37ade398f14f693f6662d0ee109c27fb0e0b"
+    },
+    "src/client-ip.js": {
+      "bytes": 1671,
+      "sha256": "1c960d02ef1dbe5fe6c64b77d10a2292433093ceda1044ad16f174a2f089f126"
+    },
+    "src/http-security.js": {
+      "bytes": 3585,
+      "sha256": "7a6f89779cd3acb042f57c52d20fb0a990fce26c734b39ec7520c6f514b81f85"
+    },
+    "src/limits.js": {
+      "bytes": 2024,
+      "sha256": "d2f9fc324feb9865a8967d15bc0ad15d66c21b1cbdc91c98df2f80a309720580"
+    },
+    "src/production-config.js": {
+      "bytes": 1230,
+      "sha256": "be6c6e20a031e099a7d8acc484b3fce5496e43bc8b3e08008a49d4d9a5e81bf6"
+    },
+    "src/server.js": {
+      "bytes": 13267,
+      "sha256": "95549862a6e0a78681feb8fd1741565c512037ae29e5830b0f9cab0c0be12c96"
+    },
+    "test-support/ai.js": {
+      "bytes": 1547,
+      "sha256": "956a5477d2fb917ca698c73dffbfbf4cbde8d6a831fec16cd8d097e8d9986ed2"
+    },
+    "tests/ai-http.test.js": {
+      "bytes": 3846,
+      "sha256": "f88670e2b0b7a889aa6e388fc8c86b223f50f90fddeaa8aff46fa11a005ac0e7"
+    },
+    "tests/ai.test.js": {
+      "bytes": 8078,
+      "sha256": "ad163655e25ff7925ff0c4a9a95d6214ee71ac708ba6b064f76923430e198719"
+    },
+    "tests/analysis.test.js": {
+      "bytes": 2010,
+      "sha256": "80ec67620123659e1da6d46186afb2113d63921977412c9890f218b6d7704fac"
+    },
+    "tests/budget.test.js": {
+      "bytes": 3704,
+      "sha256": "8ac25b29be5ce1b8af8fcaab12bff5cd40d88d1aa374944a4c0a7e89752ef9aa"
+    },
+    "tests/characters.test.js": {
+      "bytes": 1973,
+      "sha256": "d3548b0ead5ea3e016735a641641ab42a8524cfae3fa6bbb38af979df98b78f4"
+    },
+    "tests/deploy-scripts.test.js": {
+      "bytes": 5648,
+      "sha256": "a541b8db5bab6dbe7e9ac3cb91b31682517f19f847c113230cd144841b9d967f"
+    },
+    "tests/ingress.test.js": {
+      "bytes": 5762,
+      "sha256": "9895a4c7a6fe41f3ba049065ce2de6041c54490736ca948e6f019c7a191d0e51"
+    },
+    "tests/provider.test.js": {
+      "bytes": 3583,
+      "sha256": "b97722e26003142784ba73f1cd88a4239e977446ec88644dc324428b9005da15"
+    },
+    "tests/queue.test.js": {
+      "bytes": 2330,
+      "sha256": "b21ed25c95380e759449300b841a0ae5faf2f7d64368cd5a3f2f3feb91ae8ef1"
+    },
+    "tests/security.test.js": {
+      "bytes": 11164,
+      "sha256": "be1a82bd00acbb114df84c8b83c4cefeccb9e4b60dd282de7e48dda2dc080e8e"
+    },
+    "tests/server.test.js": {
+      "bytes": 4430,
+      "sha256": "3fca3b4f97ab9a9cb0a6db468c9c443085e3d5b0d1db732f59fb1faf4824146d"
+    }
+  }
+}

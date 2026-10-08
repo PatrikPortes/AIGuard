@@ -1,0 +1,32 @@
+{
+  "node_sha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+  "command": "readelf -d node; readelf --dyn-syms --wide node",
+  "needed": [
+    "0x0000000000000001 (NEEDED)             Shared library: [libdl.so.2]",
+    "0x0000000000000001 (NEEDED)             Shared library: [libstdc++.so.6]",
+    "0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]",
+    "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+    "0x0000000000000001 (NEEDED)             Shared library: [libpthread.so.0]",
+    "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+    "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+  ],
+  "selected_undefined_symbol_counts": {
+    "fopen": 0,
+    "fopen64": 1,
+    "getaddrinfo": 1,
+    "pthread_create": 1,
+    "malloc": 1,
+    "regexec": 0,
+    "regcomp": 0,
+    "strfmon": 0,
+    "wordexp": 0,
+    "tdelete": 0,
+    "ns_sprintrr": 0,
+    "ns_sprintrrf": 0,
+    "glob": 0,
+    "iconv": 0,
+    "crc32_combine64": 0,
+    "gzprintf": 0
+  },
+  "limitation": "Absence from direct ELF imports does not exclude internal, indirect, dlsym or inlined calls. Startup maps are not complete execution coverage."
+}

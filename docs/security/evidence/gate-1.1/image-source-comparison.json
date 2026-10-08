@@ -1,0 +1,188 @@
+{
+  "app_image_id": "sha256:32e4dbc56ceb626b4e87e1c39892e7d292bee3aaf702233659619a973051bdc2",
+  "method": "sha256 bytes of every regular /app file from stopped audit-image docker export versus worktree",
+  "compared_files": 36,
+  "all_match": true,
+  "files": [
+    {
+      "path": "package-lock.json",
+      "image_sha256": "5b4238519bd2e761d3d44c62470358fd8ce54e40a344e8aa0c192998381f2aaf",
+      "worktree_sha256": "5b4238519bd2e761d3d44c62470358fd8ce54e40a344e8aa0c192998381f2aaf"
+    },
+    {
+      "path": "package.json",
+      "image_sha256": "155542d72113ee62e422f6f33e27ed5ee01a13ee695ca5522a48135deeb2b93f",
+      "worktree_sha256": "155542d72113ee62e422f6f33e27ed5ee01a13ee695ca5522a48135deeb2b93f"
+    },
+    {
+      "path": "public/app.js",
+      "image_sha256": "fe8fe7eef69fceca624b1d13e2713830494cf1f27e097ec65f3372ec1a918148",
+      "worktree_sha256": "fe8fe7eef69fceca624b1d13e2713830494cf1f27e097ec65f3372ec1a918148"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-analyzing.png",
+      "image_sha256": "2e3e2a293dd19debdb4c214d4635ce1a9bfe779fc55c63d3d67fda645cd721d0",
+      "worktree_sha256": "2e3e2a293dd19debdb4c214d4635ce1a9bfe779fc55c63d3d67fda645cd721d0"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-capacity.png",
+      "image_sha256": "a8122bd98079d9967f9949632ea6d8dab80f7777a4b693b5edf13200676783b0",
+      "worktree_sha256": "a8122bd98079d9967f9949632ea6d8dab80f7777a4b693b5edf13200676783b0"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-default.png",
+      "image_sha256": "ef61184e0144ceb72a4d678a3aa54f1a9ead5f7eb5025ce1c95d887cc7794d3e",
+      "worktree_sha256": "ef61184e0144ceb72a4d678a3aa54f1a9ead5f7eb5025ce1c95d887cc7794d3e"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-error.png",
+      "image_sha256": "b3a5b0abaed26b99b0460722b3b8c771edf6a1bd5e4df166ef3549271e144a5e",
+      "worktree_sha256": "b3a5b0abaed26b99b0460722b3b8c771edf6a1bd5e4df166ef3549271e144a5e"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-searching.png",
+      "image_sha256": "e8d99aae8923e26f818793efe05bc9a398429d36d22ee2e61a01e8f778be4f03",
+      "worktree_sha256": "e8d99aae8923e26f818793efe05bc9a398429d36d22ee2e61a01e8f778be4f03"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-success.png",
+      "image_sha256": "0f2343cba4a3a18612df16b971f828c9ad2e8fd40107e34c31745a4397e9e56c",
+      "worktree_sha256": "0f2343cba4a3a18612df16b971f828c9ad2e8fd40107e34c31745a4397e9e56c"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-tip.png",
+      "image_sha256": "0cba81ef2a164c2b3ed974a3ad1e7992a41055d5c865fcee94ff514179fd4e21",
+      "worktree_sha256": "0cba81ef2a164c2b3ed974a3ad1e7992a41055d5c865fcee94ff514179fd4e21"
+    },
+    {
+      "path": "public/assets/characters/robo/robo-warning.png",
+      "image_sha256": "a4672f2a541a370a36a50d3d198db0517fe01a6da270d5ccbda21c769ae48d99",
+      "worktree_sha256": "a4672f2a541a370a36a50d3d198db0517fe01a6da270d5ccbda21c769ae48d99"
+    },
+    {
+      "path": "public/assets/characters/verka/verka-explaining.png",
+      "image_sha256": "997fb89230479a41312dbe88a72fb6053a23d28097f5a85f50b66851ef501e9a",
+      "worktree_sha256": "997fb89230479a41312dbe88a72fb6053a23d28097f5a85f50b66851ef501e9a"
+    },
+    {
+      "path": "public/assets/characters/verka/verka-success.png",
+      "image_sha256": "4f2f4482f6aa5740b4c25c796bf2ff7230b1ece044cdcf8757e113451b02ecca",
+      "worktree_sha256": "4f2f4482f6aa5740b4c25c796bf2ff7230b1ece044cdcf8757e113451b02ecca"
+    },
+    {
+      "path": "public/assets/characters/verka/verka-thinking.png",
+      "image_sha256": "15dcb1664094fb458527542d021c220738bafcba30674af53ac95484e7a214bd",
+      "worktree_sha256": "15dcb1664094fb458527542d021c220738bafcba30674af53ac95484e7a214bd"
+    },
+    {
+      "path": "public/assets/characters/verka/verka-warning.png",
+      "image_sha256": "68520c03383fa0d04e4eee25c39687fe014f3e109d70d1db74e8aa1c143611d6",
+      "worktree_sha256": "68520c03383fa0d04e4eee25c39687fe014f3e109d70d1db74e8aa1c143611d6"
+    },
+    {
+      "path": "public/assets/characters/verka/verka-welcome.png",
+      "image_sha256": "3e85af706b0cc309d4066cf41213073b51b618f05829ab87b93b482b0ddf6ec0",
+      "worktree_sha256": "3e85af706b0cc309d4066cf41213073b51b618f05829ab87b93b482b0ddf6ec0"
+    },
+    {
+      "path": "public/assets/characters/verkarob.png",
+      "image_sha256": "b4387d12a8d19338e613e877efcfd6379edf300ac79a518cb4af7a39fd226af4",
+      "worktree_sha256": "b4387d12a8d19338e613e877efcfd6379edf300ac79a518cb4af7a39fd226af4"
+    },
+    {
+      "path": "public/index.html",
+      "image_sha256": "1beaf5fa743415bfd173467ea1b04aca098585338c18772b4908ba73818985e3",
+      "worktree_sha256": "1beaf5fa743415bfd173467ea1b04aca098585338c18772b4908ba73818985e3"
+    },
+    {
+      "path": "public/privacy.html",
+      "image_sha256": "d110538d67f2a27e4a72ef4cf8a8a90af2308202adefa667791bef3955213055",
+      "worktree_sha256": "d110538d67f2a27e4a72ef4cf8a8a90af2308202adefa667791bef3955213055"
+    },
+    {
+      "path": "public/style.css",
+      "image_sha256": "c07d488c1e39b73ef53803888ecbda9dc87c21ffedf62cc5084f6c2796371628",
+      "worktree_sha256": "c07d488c1e39b73ef53803888ecbda9dc87c21ffedf62cc5084f6c2796371628"
+    },
+    {
+      "path": "scripts/deployment-smoke.js",
+      "image_sha256": "58e4892c35a34574f9e0b0c098f765e13331b4d1725ea23c65ae57e5a14fa3ad",
+      "worktree_sha256": "58e4892c35a34574f9e0b0c098f765e13331b4d1725ea23c65ae57e5a14fa3ad"
+    },
+    {
+      "path": "scripts/healthcheck.js",
+      "image_sha256": "7ca0252db5217580b3eed61c798025240e782e0b717081b1750b54e5879ad2c8",
+      "worktree_sha256": "7ca0252db5217580b3eed61c798025240e782e0b717081b1750b54e5879ad2c8"
+    },
+    {
+      "path": "scripts/production-guard.js",
+      "image_sha256": "5b1c0d8f401c3b7b2b22267d3f15b9c9c7f77169587bed4e9773d1c059ce6cf4",
+      "worktree_sha256": "5b1c0d8f401c3b7b2b22267d3f15b9c9c7f77169587bed4e9773d1c059ce6cf4"
+    },
+    {
+      "path": "src/ai/budget.js",
+      "image_sha256": "e94b97da0dcdaef4c56bc7193d11b30c9b35860bab7424b0bd1384e62ce0bbd9",
+      "worktree_sha256": "e94b97da0dcdaef4c56bc7193d11b30c9b35860bab7424b0bd1384e62ce0bbd9"
+    },
+    {
+      "path": "src/ai/errors.js",
+      "image_sha256": "69b2a6ec3befacb875fff591a7f089ff01cc816acb4038ef74965665e1292683",
+      "worktree_sha256": "69b2a6ec3befacb875fff591a7f089ff01cc816acb4038ef74965665e1292683"
+    },
+    {
+      "path": "src/ai/pipeline.js",
+      "image_sha256": "c922419ed7d4c10b56f69af3aa386944ec1fc63d3ebae2fba4e33579b5b3dff1",
+      "worktree_sha256": "c922419ed7d4c10b56f69af3aa386944ec1fc63d3ebae2fba4e33579b5b3dff1"
+    },
+    {
+      "path": "src/ai/provider.js",
+      "image_sha256": "8ff1662dddb3271a3ef5ba3455c1cccbb8182cb1556ed622fd1dac47192ae4d3",
+      "worktree_sha256": "8ff1662dddb3271a3ef5ba3455c1cccbb8182cb1556ed622fd1dac47192ae4d3"
+    },
+    {
+      "path": "src/ai/queue.js",
+      "image_sha256": "6145908d75dfafb17e37004f600d30875831a3cddbaa98f896734fa4430def7d",
+      "worktree_sha256": "6145908d75dfafb17e37004f600d30875831a3cddbaa98f896734fa4430def7d"
+    },
+    {
+      "path": "src/ai/runtime.js",
+      "image_sha256": "888c3a7295a933d2e5e4853e14b5506424990875f843b9441fb81136d27aa429",
+      "worktree_sha256": "888c3a7295a933d2e5e4853e14b5506424990875f843b9441fb81136d27aa429"
+    },
+    {
+      "path": "src/ai/schema.js",
+      "image_sha256": "f31ce1ae157b479417a1989eabb5389d9a09284871aeb639e2a2d9cf99062cb9",
+      "worktree_sha256": "f31ce1ae157b479417a1989eabb5389d9a09284871aeb639e2a2d9cf99062cb9"
+    },
+    {
+      "path": "src/analysis.js",
+      "image_sha256": "b19be3f37cdd0a712606a1933fdb37ade398f14f693f6662d0ee109c27fb0e0b",
+      "worktree_sha256": "b19be3f37cdd0a712606a1933fdb37ade398f14f693f6662d0ee109c27fb0e0b"
+    },
+    {
+      "path": "src/client-ip.js",
+      "image_sha256": "1c960d02ef1dbe5fe6c64b77d10a2292433093ceda1044ad16f174a2f089f126",
+      "worktree_sha256": "1c960d02ef1dbe5fe6c64b77d10a2292433093ceda1044ad16f174a2f089f126"
+    },
+    {
+      "path": "src/http-security.js",
+      "image_sha256": "7a6f89779cd3acb042f57c52d20fb0a990fce26c734b39ec7520c6f514b81f85",
+      "worktree_sha256": "7a6f89779cd3acb042f57c52d20fb0a990fce26c734b39ec7520c6f514b81f85"
+    },
+    {
+      "path": "src/limits.js",
+      "image_sha256": "d2f9fc324feb9865a8967d15bc0ad15d66c21b1cbdc91c98df2f80a309720580",
+      "worktree_sha256": "d2f9fc324feb9865a8967d15bc0ad15d66c21b1cbdc91c98df2f80a309720580"
+    },
+    {
+      "path": "src/production-config.js",
+      "image_sha256": "be6c6e20a031e099a7d8acc484b3fce5496e43bc8b3e08008a49d4d9a5e81bf6",
+      "worktree_sha256": "be6c6e20a031e099a7d8acc484b3fce5496e43bc8b3e08008a49d4d9a5e81bf6"
+    },
+    {
+      "path": "src/server.js",
+      "image_sha256": "95549862a6e0a78681feb8fd1741565c512037ae29e5830b0f9cab0c0be12c96",
+      "worktree_sha256": "95549862a6e0a78681feb8fd1741565c512037ae29e5830b0f9cab0c0be12c96"
+    }
+  ]
+}

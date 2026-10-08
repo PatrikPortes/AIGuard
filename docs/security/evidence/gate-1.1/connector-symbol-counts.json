@@ -1,0 +1,16 @@
+{
+  "golang.org/x/crypto/openpgp": {
+    "count": 0,
+    "examples": []
+  },
+  "golang.org/x/crypto/ssh": {
+    "count": 198,
+    "examples": [
+      "000000000135e218 R go:itab.*golang.org/x/crypto/ssh.cbcCipher,golang.org/x/crypto/ssh.packetCipher",
+      "000000000135e1f0 R go:itab.*golang.org/x/crypto/ssh.chacha20Poly1305Cipher,golang.org/x/crypto/ssh.packetCipher",
+      "000000000135e1a0 R go:itab.*golang.org/x/crypto/ssh.curve25519sha256,golang.org/x/crypto/ssh.kexAlgorithm",
+      "000000000135e1c8 R go:itab.*golang.org/x/crypto/ssh.dhGEXSHA,golang.org/x/crypto/ssh.kexAlgorithm",
+      "000000000135e178 R go:itab.*golang.org/x/crypto/ssh.dhGroup,golang.org/x/crypto/ssh.kexAlgorithm"
+    ]
+  }
+}

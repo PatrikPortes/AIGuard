@@ -1,0 +1,1 @@
+Security config: PASS (rules guard, explicit loopback, resource limits, isolation, no socket/host mounts)

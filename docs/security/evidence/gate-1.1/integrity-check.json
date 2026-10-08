@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-08",
+  "status": "PASS",
+  "finding_rows": 34,
+  "distinct_advisory_ids": 28,
+  "counts": {
+    "app": {
+      "MEDIUM": 23,
+      "LOW": 8
+    },
+    "connector": {
+      "MEDIUM": 2,
+      "UNKNOWN": 1
+    }
+  },
+  "all_34_fields_present": true,
+  "baseline_rescan_exact_match": true,
+  "no_accepted_risks": true,
+  "source_hashes_verified": 64,
+  "audit_image_runtime_source_hashes_match": 36,
+  "documentation_local_links_verified": 170,
+  "existing_files_changed_this_step": [
+    "docs/security/SECURITY_RELEASE_GATE.md"
+  ],
+  "runtime_frontend_deploy_config_unchanged": true,
+  "scope": "local integrity checks; no vulnerability closure or external review"
+}
