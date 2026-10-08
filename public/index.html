@@ -1,22 +1,61 @@
 <!doctype html>
 <html lang="cs">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Věřím? S Věrkou si všimněte rizikových signálů a zjistěte, jak podezřelou zprávu bezpečně ověřit."><title>Věřím? — Radši ověřit než litovat.</title><link rel="stylesheet" href="/style.css"><script src="/app.js" type="module"></script></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Věřím tomu? Vložte podezřelou zprávu nebo odkaz. Ukážeme vám rizikové signály a pomůžeme vám rozhodnout, co udělat dál.">
+<title>Věřím tomu? — Radši ověřit než litovat.</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" type="module"></script>
+</head>
 <body>
-<a class="skip-link" href="#analysis-form">Přejít k ověření</a>
-<header class="site-header"><a class="brand" href="/" aria-label="Věřím? — úvodní stránka"><span class="wordmark">Věřím<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></a><nav aria-label="Hlavní navigace"><a href="#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí</a><a class="nav-action" href="#analysis-form">Vyzkoušet</a></nav></header>
+<a class="skip-link" href="#analysis-form">Přejít k ověření zprávy</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></a>
+  <nav aria-label="Hlavní navigace">
+    <a class="nav-secondary" href="#how-it-works">Jak to funguje</a>
+    <a class="nav-secondary" href="/privacy">Soukromí</a>
+    <a class="nav-happened" href="#uz-se-to-stalo">Už se to stalo?</a>
+  </nav>
+</header>
 <main>
 <section class="hero" aria-labelledby="hero-title">
-<div class="hero-copy"><p class="eyebrow"><span class="small-dot" aria-hidden="true"></span> V klidu. Společně. Krok za krokem.</p><h1 id="hero-title">Nevíš, jestli tomu<br>můžeš <span>věřit?</span></h1><p>Pošli mi podezřelou zprávu nebo odkaz. Ukážu ti rizikové signály a poradím, jak situaci bezpečně ověřit.</p><a class="hero-action" href="#analysis-form">Pojďme se na to podívat <span aria-hidden="true">→</span></a><p class="hero-note">Bez registrace · Odkazy neotevíráme</p></div>
-<aside class="guide-scene hero-guides"><div class="speech-bubble"><p class="speaker">Věrka · tvoje průvodkyně</p><p>Ahoj, jsem Věrka.<br>Společně zjistíme,<br>na co si dát pozor.</p></div><figure class="character-hero hero-character"><img src="/assets/characters/optimized/verkarob.614a99201e2d045248b08f24ba1c4443817f513ee81d34b60020ec91f2ac7bbf.webp" width="840" height="768" alt="Věrka a Robo – průvodci bezpečným ověřováním digitálního obsahu" decoding="async" fetchpriority="high"></figure></aside>
-</section>
-<section class="panel intake-panel" aria-labelledby="input-title">
-<div class="section-title"><span class="section-marker" aria-hidden="true">?</span><div><p class="eyebrow">Začneme tady</p><h2 id="input-title">Co chcete ověřit?</h2></div></div>
-<div class="input-options" aria-label="Podporované vstupy"><span class="input-option"><span aria-hidden="true">Aa</span> Text zprávy</span><span class="input-option"><span aria-hidden="true">→</span> Odkaz</span><span class="input-option upcoming">Screenshot a PDF <small>připravujeme</small></span></div>
-<p class="notice" id="engine-notice">Zjišťujeme dostupnost analýzy. Screenshoty a PDF připravujeme.</p>
-<noscript><p class="notice">Pro ověření je potřeba JavaScript. Obsah se bez něj neodesílá. Nezadávejte zde citlivé údaje.</p></noscript>
-<form id="analysis-form" method="post" action="/api/analyze"><label for="input-type">Typ obsahu</label><select id="input-type"><option value="text">Zpráva / text</option><option value="url">Internetový odkaz (URL)</option></select><label for="content">Obsah k ověření</label><textarea id="content" rows="6" maxlength="10000" required placeholder="Vložte sem zprávu, která vás znepokojila…" aria-describedby="content-help"></textarea><p class="hint" id="content-help">Odstraňte nepotřebné osobní údaje. Text v aplikaci neukládáme. Maximálně 10 000 znaků.</p><label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label><button id="submit" type="submit" disabled>Prověřit zprávu <span aria-hidden="true">→</span></button><div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div><div id="error-panel" class="error-panel" hidden><img id="error-character" class="character-avatar" src="/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p id="error-speaker" class="speaker">Robo · systémová informace</p><p id="error" role="alert" hidden></p></div></div></form>
-<div id="processing" class="system-bubble" hidden><img class="character-avatar" src="/assets/characters/optimized/robo-analyzing.1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p class="speaker">Robo · kontrola obsahu</p><p>Zpracovávám zprávu a hledám rizikové signály. Zaberu ti jen chvíli.</p><div class="progress-track" aria-hidden="true"><span></span></div></div></div>
-<div class="examples"><p>Nebo si nejdřív vyzkoušejte příklad:</p><div class="example-buttons"><button type="button" data-example="family"><span class="example-icon violet" aria-hidden="true">💬</span> Žádost o peníze</button><button type="button" data-example="bank"><span class="example-icon rose" aria-hidden="true">✉</span> Zpráva od banky</button><button type="button" data-example="normal"><span class="example-icon mint" aria-hidden="true">✓</span> Běžná zpráva</button></div></div>
+  <div class="hero-tool">
+    <h1 id="hero-title">Přišla vám podezřelá zpráva?</h1>
+    <p class="hero-lead">Vložte ji sem. Pomůžu vám rozhodnout, co udělat dál.</p>
+    <div class="tool-card">
+      <noscript><p class="notice">Pro ověření je potřeba JavaScript. Obsah se bez něj neodesílá. Nezadávejte zde citlivé údaje.</p></noscript>
+      <form id="analysis-form" method="post" action="/api/analyze">
+        <label for="input-type">Typ obsahu</label>
+        <select id="input-type"><option value="text">Zpráva / text</option><option value="url">Internetový odkaz (URL)</option></select>
+        <label for="content">Obsah k ověření</label>
+        <textarea id="content" rows="4" maxlength="10000" required placeholder="Vložte sem text zprávy nebo odkaz…" aria-describedby="content-help"></textarea>
+        <p class="hint" id="content-help">Odstraňte nepotřebné osobní údaje. Nejvýše 10 000 znaků.</p>
+        <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
+        <button id="submit" type="submit" disabled>Prověřit zprávu <span aria-hidden="true">→</span></button>
+        <div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div>
+        <div id="error-panel" class="error-panel" hidden><img id="error-character" class="character-avatar" src="/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p id="error-speaker" class="speaker">Robo · systémová informace</p><p id="error" role="alert" hidden></p></div></div>
+      </form>
+      <div id="processing" class="system-bubble" hidden><img class="character-avatar" src="/assets/characters/optimized/robo-analyzing.1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p class="speaker">Robo · kontrola obsahu</p><p>Zpracovávám zprávu a hledám rizikové signály. Chvíli to potrvá.</p><div class="progress-track" aria-hidden="true"><span></span></div></div></div>
+      <p class="safety-line">Na odkazy ve zprávě neklikejte. Stačí je zkopírovat.</p>
+      <details class="copy-help">
+        <summary>Jak zprávu zkopírovat?</summary>
+        <ol>
+          <li>Podržte prst na zprávě a zvolte <strong>Kopírovat</strong>.</li>
+          <li>U odkazu podržte prst na odkazu a zvolte <strong>Kopírovat odkaz</strong>. Odkaz neotvírejte.</li>
+          <li>Vraťte se sem, podržte prst v poli pro zprávu a zvolte <strong>Vložit</strong>.</li>
+        </ol>
+      </details>
+      <p class="notice" id="engine-notice">Zjišťujeme dostupnost analýzy. Screenshoty a PDF připravujeme.</p>
+    </div>
+  </div>
+  <aside class="hero-guides" aria-label="Věrka a Robo">
+    <div class="speech-bubble"><p class="speaker">Věrka · vaše průvodkyně</p><p>Ukážu vám, čeho si všimnout.</p></div>
+    <div class="hero-duo">
+      <img class="hero-verka" src="/assets/characters/optimized/verka-welcome.f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354.webp" width="384" height="360" alt="Věrka, vaše průvodkyně, mává na pozdrav" decoding="async">
+      <img class="hero-robo" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="Robo, pomocník, který zpracovává kontrolu, mává na pozdrav" decoding="async">
+    </div>
+  </aside>
 </section>
 <section id="result" class="panel result" hidden aria-labelledby="result-title" tabindex="-1">
 <div class="result-top"><div><p class="eyebrow">Pojďme si to projít</p><h2 id="result-title">Výsledek analýzy</h2></div><label class="toggle"><input type="checkbox" id="simple"> Vysvětlit jednoduše</label></div>
@@ -27,6 +66,73 @@
 <section class="verification-card"><div class="character-heading"><img class="character-avatar" src="/assets/characters/optimized/robo-tip.8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3>Jak to bezpečně ověřit</h3></div><ol id="verification"></ol></section>
 <details><summary>Jak jsme k tomu došli a co nevíme</summary><p>Nejprve hledáme známé signály pomocí pravidel. V AI režimu je doplňuje serverový model. Skóre se opírá o nalezené signály; neznáme skutečný kontext ani totožnost odesílatele.</p><ul id="uncertainties"></ul></details>
 </section>
-<section id="how-it-works" class="how-it-works" aria-labelledby="how-title"><p class="eyebrow">Radši ověřit než litovat.</p><h2 id="how-title">Na rozhodnutí nemusíte být sami.</h2><div class="steps"><div><span class="step-number">1</span><h3>Vložte obsah</h3><p>Stačí zpráva nebo odkaz, který vás znepokojil.</p></div><div><span class="step-number">2</span><h3>Všimněte si signálů</h3><p>Věrka vysvětlí, co si zaslouží pozornost a co nevíme.</p></div><div><span class="step-number">3</span><h3>Ověřte jinou cestou</h3><p>Použijte kontakt nebo aplikaci, které už znáte.</p></div></div><p class="closing-note">Rozhodnutí zůstává na vás. Pomůžeme vám udělat ho bezpečněji.</p></section>
-</main><footer><span><strong>Věřím?</strong> · Vývojový prototyp</span><a href="/privacy">Soukromí a limity</a></footer>
-</body></html>
+<section id="uz-se-to-stalo" class="happened-band" aria-labelledby="happened-title" tabindex="-1">
+  <h2 id="happened-title">Už se to stalo?</h2>
+  <p>Klikli jste na odkaz, zaplatili nebo někomu sdělili kód?</p>
+  <p class="holding-note">Pro tyto situace připravujeme samostatný postup. Zveřejníme ho až po nezávislém ověření, aby každý pokyn byl správný a bezpečný.</p>
+</section>
+<section class="situations" aria-labelledby="situations-title">
+  <h2 id="situations-title">Typické situace</h2>
+  <p class="section-lead">Takové zprávy lidé dostávají nejčastěji. Podobnou zprávu můžete vložit do pole nahoře.</p>
+  <ul class="situation-list">
+    <li><strong>„Mami, mám nové číslo“</strong><span>Někdo píše z neznámého čísla a vydává se za blízkého člověka.</span></li>
+    <li><strong>Píše vám banka</strong><span>Zpráva tvrdí, že je s vaším účtem problém a máte rychle něco udělat.</span></li>
+    <li><strong>Balík nelze doručit</strong><span>Zpráva o zásilce chce doplatek nebo kliknutí na odkaz.</span></li>
+    <li><strong>Nedoplatek nebo faktura</strong><span>Nečekaná výzva k zaplacení, často s krátkým termínem.</span></li>
+    <li><strong>Investice s jistým výnosem</strong><span>Nabídka slibuje vysoký zisk bez rizika.</span></li>
+    <li><strong>Nová známost chce peníze</strong><span>Člověk, kterého znáte jen z internetu, žádá o pomoc s penězi.</span></li>
+  </ul>
+  <div class="examples">
+    <p>Vyzkoušejte si to na příkladu:</p>
+    <div class="example-buttons">
+      <button type="button" data-example="family"><span class="example-icon violet" aria-hidden="true">💬</span> Žádost o peníze</button>
+      <button type="button" data-example="bank"><span class="example-icon rose" aria-hidden="true">✉</span> Zpráva od banky</button>
+      <button type="button" data-example="normal"><span class="example-icon mint" aria-hidden="true">Aa</span> Běžná zpráva</button>
+    </div>
+  </div>
+</section>
+<section id="how-it-works" class="how-it-works" aria-labelledby="how-title">
+  <h2 id="how-title">Jak to funguje</h2>
+  <ol class="steps">
+    <li><span class="step-number" aria-hidden="true">1</span><h3>Vložíte zprávu</h3><p>Text zprávy nebo odkaz, který vás znepokojil.</p></li>
+    <li><span class="step-number" aria-hidden="true">2</span><h3>Ukážu, čeho si všímám</h3><p>Vysvětlím rizikové signály a také to, co nevíme.</p></li>
+    <li><span class="step-number" aria-hidden="true">3</span><h3>Pomůžu vám to ověřit jinou cestou</h3><p>Přes kontakt nebo aplikaci, které už znáte.</p></li>
+  </ol>
+  <p class="closing-note">Rozhodnutí je vždy na vás.</p>
+</section>
+<section class="capabilities" aria-labelledby="capabilities-title">
+  <h2 id="capabilities-title">Co umíme a co neumíme</h2>
+  <div class="capability-columns">
+    <div class="capability-card">
+      <h3>Umíme</h3>
+      <ul>
+        <li>Najít v textu typické varovné signály podvodu.</li>
+        <li>Srozumitelně vysvětlit, čeho si všímáme.</li>
+        <li>Poradit, jak situaci ověřit jinou cestou.</li>
+      </ul>
+    </div>
+    <div class="capability-card">
+      <h3>Neumíme</h3>
+      <ul>
+        <li>Zaručit, že zpráva je pravá.</li>
+        <li>Ověřit totožnost odesílatele.</li>
+        <li>Spolehlivě poznat obsah vytvořený AI.</li>
+      </ul>
+    </div>
+  </div>
+  <h3 class="inputs-title">Co můžete vložit</h3>
+  <ul class="input-status">
+    <li><strong>Text zprávy</strong><span>dostupné</span></li>
+    <li><strong>Internetový odkaz (URL)</strong><span>dostupné</span></li>
+    <li><strong>Snímek obrazovky</strong><span>zatím nedostupné</span></li>
+    <li><strong>PDF</strong><span>zatím nedostupné</span></li>
+    <li><strong>Zvuk a video</strong><span>nepodporujeme</span></li>
+  </ul>
+</section>
+</main>
+<footer>
+  <span><strong>Věřím tomu?</strong> · Vývojový prototyp</span>
+  <nav aria-label="Odkazy v patičce"><a href="#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí a limity</a></nav>
+</footer>
+</body>
+</html>

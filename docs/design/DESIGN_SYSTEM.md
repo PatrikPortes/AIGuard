@@ -16,7 +16,7 @@ Obě originální PNG reference jsou uložené beze změny; velikosti a SHA-256 
 
 ## Identita a tón
 
-- Kanonický název produktu je **Věřím tomu?**; tagline **Radši ověřit než litovat.** Starší označení „Věřím?“ v současném markupu je legacy a bude sjednoceno v pozdější etapě (F2).
+- Kanonický název produktu je **Věřím tomu?**; tagline **Radši ověřit než litovat.** Homepage používá od F2 název „Věřím tomu?“. Starší „Věřím?“ zůstává ještě na privacy stránce a sjednotí se v F11.
 - Věřím tomu? **není AI detektor**, ale průvodce bezpečným rozhodnutím. Nikdy nenaznačuje jistotu, kterou analýza nemá: „nenašli jsme problém“ ≠ „je to bezpečné“.
 - Čeština s **vykáním všude** — v uvítání, formuláři, výsledcích i chybách. Žádné tykání.
 - Jednoduchý jazyk je **výchozí stav**. Neexistuje samostatný „jednoduchý“ ani „senior“ režim. Technické detaily patří pod „Chci vědět víc“.
@@ -116,8 +116,8 @@ F1 mění pouze tokeny a CSS primitiva. Markup a chování se mění až v dalš
 
 | Současný vzor v markupu | Cílový stav | Etapa |
 |---|---|---|
-| Značka „Věřím?“, tykání v hero a bublině | „Věřím tomu?“, vykání | F2 |
-| Hero s velkou společnou ilustrací před nástrojem | Nástroj v prvním viewportu, Věrka i Robo zachováni | F2 |
+| Značka „Věřím?“, tykání v hero a bublině | **Hotovo v F2** na homepage (privacy stránka: F11) | F2 |
+| Hero s velkou společnou ilustrací před nástrojem | **Hotovo v F2**: nástroj je hero, Věrka i Robo zachováni (viz níže) | F2 |
 | Ruční výběr typu obsahu | Jedno pole s automatickou detekcí, výběr jen jako oprava | F3 |
 | Kruhové číselné skóre („/ 100“) | **Neodstraňuje se v F1.** Číselné skóre se uživatelům nezobrazuje (ani pod „Chci vědět víc“), pokud to později výslovně neschválí product owner | F5 |
 | Přepínač „Vysvětlit jednoduše“ (checkbox) | Jednoduchý jazyk jako výchozí stav, tlačítko „Vysvětlit jednoduše“ jen uvnitř technické sekce | F5 |
@@ -132,6 +132,36 @@ Další pravidla:
 - Chybový panel je klidná systémová informace.
 - Privacy stránka používá stejné tokeny. Nezavádí třetí strany, externí fonty ani nové ukládání obsahu.
 - Žádná tvrzení o ukládání, logování, retenci ani třetích stranách se nezobrazují, dokud nejsou ověřena proti skutečné nasazené konfiguraci.
+
+## Homepage (F2)
+
+Pořadí sekcí podle FDD §7:
+1. hlavička se vstupem „Už se to stalo?“;
+2. hero = nástroj (H1, podnadpis, formulář, primární akce) s Věrkou a Robem;
+3. pás „Už se to stalo?“;
+4. typické situace;
+5. jak to funguje;
+6. co umíme a co neumíme;
+7. patička.
+
+**Kompozice postav: varianta B — dva samostatné schválené assety** `verka-welcome` a `robo-default` místo společného `verkarob`. Důvody:
+- nezávislé responzivní umístění;
+- stavy „welcome“ a „default“ odpovídají FDD §6.3 (společný hero zobrazuje Věrku s nápadem a zamyšleného Roba, obě postavy oříznuté v pase);
+- 257 784 B místo 702 152 B.
+
+Oba obrázky se zobrazují celé (`object-fit: contain`, původní poměr stran), bez ořezu, filtru i nové kresby. `verkarob` zůstává schváleným assetem, ale homepage ho od F2 nepoužívá.
+
+Responzivita:
+- Na desktopu a tabletu stojí postavy vedle nástroje.
+- Na mobilu následují hned za nástrojem. První obrazovka 360×640 obsahuje účel stránky, pole pro zprávu i primární akci.
+- Pod 700 px se sekundární odkazy hlavičky přesouvají do patičky.
+- Pod 600 px se slogan v hlavičce skrývá; zůstává ve stránce a na desktopu.
+- Pod 360 px se hlavička zalamuje do dvou řádků.
+
+Obsahová omezení:
+- Pás „Už se to stalo?“ obsahuje jen pravdivý stav „připravujeme“. Nouzové pokyny až po nezávislém ověření (F9).
+- Sekce schopností uvádí jen skutečně dostupné vstupy (text, URL). Snímek obrazovky a PDF jsou „zatím nedostupné“; zvuk a video nepodporujeme.
+- Žádná nová tvrzení o soukromí.
 
 ## Kanonické postavy a role
 

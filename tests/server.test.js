@@ -13,7 +13,7 @@ test('Homepage, privacy, health a skutečný HTTP textový scénář', async t =
   const base = await fixture(t);
   const page = await fetch(base);
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /Co chcete ověřit/);
+  assert.match(await page.text(), /Přišla vám podezřelá zpráva\?/);
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.equal((await fetch(`${base}/privacy`)).status, 200);
   assert.equal((await (await fetch(`${base}/api/health`)).json()).status, 'ok');
