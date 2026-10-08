@@ -9,8 +9,9 @@
   "scripts": {
     "dev": "node --use-env-proxy --watch src/server.js",
     "start": "node --use-env-proxy src/server.js",
-    "test": "node --test",
+    "test": "node --test && node scripts/claude-review-check.js",
     "check": "node scripts/check.js",
-    "test:live": "node --use-env-proxy scripts/live-ai-smoke.js"
+    "test:live": "node --use-env-proxy scripts/live-ai-smoke.js",
+    "test:claude": "node scripts/claude-review-check.js"
   }
 }

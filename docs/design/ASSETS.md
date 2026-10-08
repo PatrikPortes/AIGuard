@@ -25,11 +25,11 @@ Hnědé vlasy ve vysokém drdolu, velké hnědé oči, fialovo-modrá mikina, š
 |---|---|---|
 | `public/assets/characters/verka/verka-default` | Chybí | Výchozí průvodkyně |
 | `public/assets/characters/verka/verka-welcome.png` | Dodáno a schváleno | Schválený welcome stav, nyní bez samostatného použití; hero používá společný `verkarob.png` |
-| `public/assets/characters/verka/verka-thinking.png` | Dodáno a schváleno | Karta výsledku: zvýšená opatrnost / vysoká nejistota |
+| `public/assets/characters/verka/verka-thinking.png` | Dodáno a schváleno | Karta výsledku: zvýšená opatrnost / nejistota / neověřený nebo bezsignálový obsah |
 | `public/assets/characters/verka/verka-question` | Chybí | Doplňující otázka |
 | `public/assets/characters/verka/verka-explaining.png` | Dodáno a schváleno | Věrčin souhrn výsledku |
 | `public/assets/characters/verka/verka-warning.png` | Dodáno a schváleno | Karta vysokého rizika a vstupní upozornění |
-| `public/assets/characters/verka/verka-success.png` | Dodáno a schváleno | Karta nižšího rizika; neznamená potvrzení bezpečnosti |
+| `public/assets/characters/verka/verka-success.png` | Dodáno a schváleno | Schváleno, nyní bez verdict použití; nízké score nesmí samo aktivovat success |
 | `public/assets/characters/verka/verka-thumbsup` | Chybí | Povzbuzení |
 
 ### Robo — sekundární systémový pomocník
@@ -38,11 +38,11 @@ Malý bílý robot s tmavým obličejem/displejem, modrými/cyan prvky a štíte
 
 | Soubor / chybějící basename | Stav | Současné použití |
 |---|---|---|
-| `public/assets/characters/robo/robo-default.png` | Dodáno a schváleno | Schválený neutrální stav, nyní bez samostatného použití; v hero je Robo součástí `verkarob.png` |
+| `public/assets/characters/robo/robo-default.png` | Dodáno a schváleno | Neutrální hlavička bez nalezených signálů; v hero je Robo součástí `verkarob.png` |
 | `public/assets/characters/robo/robo-analyzing.png` | Dodáno a schváleno | Existující loading při probíhajícím požadavku |
 | `public/assets/characters/robo/robo-searching.png` | Dodáno a schváleno | Dodáno, zatím nepoužito — neexistuje odpovídající hledání |
 | `public/assets/characters/robo/robo-warning.png` | Dodáno a schváleno | Hlavička nalezených signálů |
-| `public/assets/characters/robo/robo-success.png` | Dodáno a schváleno | Dokončená kontrola; také hlavička bez nalezených signálů |
+| `public/assets/characters/robo/robo-success.png` | Dodáno a schváleno | Pouze dokončená systémová kontrola; není závěr o bezpečnosti |
 | `public/assets/characters/robo/robo-tip.png` | Dodáno a schváleno | Existující blok bezpečného nezávislého ověření |
 | `public/assets/characters/robo/robo-capacity.png` | Dodáno a schváleno | Existující error blok při vyčerpané kapacitě, přetížení nebo rate limitu |
 | `public/assets/characters/robo/robo-error.png` | Dodáno a schváleno | Existující error blok při technické / síťové chybě |
@@ -62,7 +62,7 @@ Významový český alt je uveden právě jednou: „Věrka a Robo – průvodci
 | Asset | Stav | Požadovaný výstup / účel |
 |---|---|---|
 | Wordmark Věřím? + shield | Chybí | Samostatné autorizované SVG a PNG s průhledností; plná i kompaktní varianta; favicon. Do té doby skutečný textový wordmark. |
-| Hlavní hero / portrétní exporty Věrky a Roba | Dodaná sada zapojena | Hero používá společný `verkarob.png`; kompaktní bloky používají celé dodané obrázky se zachovaným poměrem stran. Optimalizované menší exporty zatím chybí. |
+| Hlavní hero / portrétní exporty Věrky a Roba | Dodaná sada zapojena | Hero používá společný `verkarob.png`; kompaktní bloky používají celé dodané obrázky se zachovaným poměrem stran. Delivery WebP z unchanged masters jsou nově doplněny v Remediation1 níže. |
 | Volitelné detailní výrazy a zadní pohled | Chybí, neblokuje | Samostatné autorizované exporty podle character reference; mimo povinný seznam 16 stavů. |
 | Volitelné prostředí / hero pozadí | Chybí, neblokuje | Schválená samostatná ilustrace krémového přátelského prostředí; žádný výřez reference. |
 | Font | Zatím systémový | Případný odsouhlasený WOFF2 s českou diakritikou a doloženou licencí; bez externího CDN. |
@@ -75,7 +75,9 @@ U každého assetu dodat verzi, původ/autora, oprávnění k veřejnému použi
 **Nevystřihovat postavy z character sheetu, negenerovat alternativní podobu a nenahrazovat postavy CSS/emoji/externími ikonami.** Používat výhradně dodané schválené obrázky; současný označený placeholder ponechat pouze pro chybějící konkrétní asset. Reference a produkční assety jsou rozdílné soubory. Napojení mění jen existující komponenty; nevytváří nové business flow.
 
 
-## Technická kontrola dodané sady — Phase 3
+## Historická technická kontrola dodané sady — Phase 3
+
+Tato sekce uchovává původní validaci dodaných masters. Současné HTTP cache/delivery/neutral-state chování definuje Remediation1 níže; Phase3 test count40 není současný count.
 
 Zdroj opravených souborů a hero: `Archiv 2.zip`. Všech 12 dodaných PNG prošlo dekódováním a kontrolou ZIP CRC; uložené soubory jsou bytově totožné se ZIP členy. macOS resource forks nejsou produkční assety a nebyly importovány. Aktuální sada obsahuje 14 PNG, celkem 23 659 415 bajtů. Zachován originální pixelový obsah, rozměry i barevný režim; žádné převzorkování, změna kresby nebo komprese.
 
@@ -121,3 +123,35 @@ Přístupnost: prošla kontrola českého alt textu hero bez duplikace, dekorati
 `DESIGN_SYSTEM.md`, canonical references, frontendová business logika, backend API, rules engine, AI pipeline, bezpečnostní limity a budget controller zůstaly beze změny. Žádný deployment ani push.
 
 **PHASE 3 CHARACTER ASSETS: PASS**
+
+
+## Security Remediation 1 — optimalizovaná delivery
+
+Výslovné zadání CR07 dovoluje technickou optimalizaci bez změny schválené identity. **14 canonical PNG masters a obě references mají stejné bytes/SHA jako schválená Phase3.** Žádná nová kresba, změna barev/proporcí/obsahu, background nebo crop. UI používá celé resize canvas v lossless transparentním WebP; master zůstává canonical.
+
+Generator `scripts/optimize-characters.py` (development Pillow12.3.0 s WebP) resize LANCZOS max384px postavy a840px hero (2×desktop420). WebP lossless/method6/exactRGBA; decoded RGBA i alpha jsou **přesně stejné jako resized source**, cream-composite PSNR100dB. To není tvrzení o pixelové shodě s full-resolution master: mění se delivery rozlišení. Rozměry, hash filename i exact source SHA eviduje `public/character-assets.js`; původní PNG nejsou změněny ani posílány runtime.
+
+23 659 415B originals → **2 342 188B deliveries (−90.1%)**. Hero2 193 410B → **702 152B (−68.0%)**, whole840×768 canvas, stejné contain/height:auto a layout/alt. Avatary mají rozlišení výrazně větší než CSS56–88px.
+
+| Stav | Delivery rozměry | Bajtů | Alfa | SHA-256 / filename suffix |
+|---|---|---|---|---|
+| `verka-welcome` | 384×360 | 148582 | 0–255, lossless | `f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354` |
+| `verka-thinking` | 320×384 | 134884 | 0–255, lossless | `4a840cba26f6e2aa862907afb4582c679bc1600a2e5609ce3cdcfcb924d28cd6` |
+| `verka-explaining` | 320×384 | 127140 | 0–255, lossless | `4c1ae77446d72006a712dfeff21de26aab8a57e26fffce122f19f2861f010d03` |
+| `verka-warning` | 320×384 | 131078 | 0–255, lossless | `59f0839a05c99cea903247c555c25c5cfed83fed83e5db633287bc9fe5544794` |
+| `verka-success` | 320×384 | 137302 | 0–255, lossless | `e6240ebbe6911d3b6266e0eb03091527a1556a7442a3d3fdd9681254aea445b9` |
+| `robo-default` | 320×384 | 109202 | 0–255, lossless | `f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000` |
+| `robo-analyzing` | 320×384 | 114018 | 0–255, lossless | `1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840` |
+| `robo-searching` | 320×384 | 115566 | 0–255, lossless | `53e6f779c6ce4ccf3b36b8811cb3aac2a5108d525cedbc52502cb096f43bb77f` |
+| `robo-warning` | 320×384 | 124640 | 0–255, lossless | `37c31312e899c29738bf5101ffb014d14bbe25286036facba28140ed99133524` |
+| `robo-success` | 320×384 | 119798 | 0–255, lossless | `bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c` |
+| `robo-tip` | 320×384 | 129804 | 0–255, lossless | `8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4` |
+| `robo-capacity` | 320×384 | 124188 | 0–255, lossless | `07975cf43e1b01e58edce8ed608bad8ae6a44848ee27559bd77657dc3512c8f7` |
+| `robo-error` | 320×384 | 123834 | 0–255, lossless | `1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065` |
+| `verkarob` | 840×768 | 702152 | 0–255, lossless | `614a99201e2d045248b08f24ba1c4443817f513ee81d34b60020ec91f2ac7bbf` |
+
+Cesty: `public/assets/characters/optimized/<state>.<full-sha256>.webp`. UI má exact reference na aktuální hash; server povoluje pouze14 těchto přesných paths. Legacy PNG URLs vrací301 na odpovídající derivative, žádný generic wildcard. Hash-WebP mají `Cache-Control` i `Cloudflare-CDN-Cache-Control: public,max-age=31536000,immutable` a ETag; HTML/API/JS/CSS no-store. Integrity check proběhne i před304. Origin limit120requests/min burst a2MiB/min byte burst/client-/64; independent edge cache/WAF/cold-cache load je pending gate. Runtime image neobsahuje archive PNG, builder/Git je zachovává a kontroluje.
+
+URL/no-signal/score<30 bez dostatečného závěru používá neutrální Věrka-thinking/Robo-default a text „Bezpečnost nelze určit“, nikdy Verka-success/Robo-success jako důkaz bezpečnosti. Robo-success zůstává pouze textově doprovázená dokončená systémová kontrola. Kresba, reference, role, hero layout i DESIGN_SYSTEM.md se nemění.
+
+Aktuální testy a omezení: [Remediation validation](../security/REMEDIATION_1_VALIDATION.md). Glyph/confusable a neutral verdict jsou security změny, nikoli nový business flow.

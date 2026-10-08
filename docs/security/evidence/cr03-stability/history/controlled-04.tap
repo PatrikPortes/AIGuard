@@ -1,0 +1,32 @@
+TAP version 13
+# CR03_CPU_OBSERVATION Maximum CPU 46.843 ms; threshold 20 ms
+# Subtest: CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis
+not ok 1 - CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis
+  ---
+  duration_ms: 265.492479
+  type: 'test'
+  location: '/tmp/verim-final-precommit-1zi_amn3/staged-export/tests/remediation.test.js:83:1'
+  failureType: 'testCodeFailure'
+  error: 'Maximum CPU 46.843 ms; threshold 20 ms'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    assert.ok (file:///tmp/verim-final-precommit-1zi_amn3/results/cr03-stability/observe-assertion.mjs:8:18)
+    TestContext.<anonymous> (file:///tmp/verim-final-precommit-1zi_amn3/staged-export/tests/remediation.test.js:88:10)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1382:25)
+    Test.start (node:internal/test_runner/test:1242:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 776.104536

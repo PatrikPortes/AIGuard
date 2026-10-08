@@ -29,3 +29,8 @@ Etapa 4 (screenshot) se neotevře, dokud skutečný textový provider test a tex
 ## Designová integrace před další funkcionalitou
 
 Schválený canonical visual reference: **`docs/design/VERIM_VISUAL_REFERENCE.png`**. Design systém: [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md); stav reference a samostatných ilustrací: [ASSETS.md](design/ASSETS.md). Vizuální integrace zahrnuje skutečné responzivní UI, textovou značku Věřím?, tagline, uvítání Věrky, systémový loading Roba, oblé pastelové karty a strukturovaný výsledek s textově označenými stavy. Originál styleboardu je dosud nedostupný jako soubor; jeho bezeztrátové uložení je otevřený blocker. Produkční postavy musí být dodány ze stejné schválené identity. Žádné generované alternativy ani výřezy reference. Backend zůstává beze změny. Vizuální integrace neotevírá screenshot/PDF etapy; nejdříve skutečný OpenAI textový smoke test.
+
+
+## Security Remediation 1 (před stagingem)
+
+Původní review commit fde14ba… byl zveřejněn a Claude review importováno byte-exact z1e26f6c…. Opravy na lokální security/gate-1-remediation: fairness/body admission/regex/normalizace/neutrální verdict/__Host cookie/immutable bounded character delivery/no-JS privacy/egress isolation/immutable release identity. Žádná AI nebo media etapa se neotevírá. [Current report](security/REMEDIATION_1_REPORT.md), [release gate](security/SECURITY_RELEASE_GATE.md). **BLOCKED** do externího retestu, CVE disposition a real staging/VPS/CF/privacy/release approval; opravy nebyly commitnuté ani pushnuté.

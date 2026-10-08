@@ -6,6 +6,8 @@ build/
 out/
 .cache/
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
 
 # Real environment files; reviewed empty/example templates may be versioned
 .env

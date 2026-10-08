@@ -1,0 +1,176 @@
+{
+  "node": "v24.19.0",
+  "command": [
+    "node",
+    "--import",
+    "/tmp/verim-cr03-fix-xh3_t31a/stability-final/observe-assertion.mjs",
+    "--test",
+    "--test-reporter=tap",
+    "--test-name-pattern=CR-03",
+    "tests/remediation.test.js"
+  ],
+  "conditions": "30 sequential fresh Node processes, normal CPU affinity, no competing build/audit workloads started; existing shared environment background processes are not under our control",
+  "measurement": "Unmodified existing CR03 test;20 warmups and80 measured analyses. External observer records the existing assertion message and delegates the unchanged original assert.ok. No threshold/calculation/corpus changes.",
+  "test_sha256": "e6d4ec23823b9b1d9c399dccfb5fb3684a5124bf41814b84dc3c53ef8966760f",
+  "source_sha256": "1d2060130b369a4d23a502474f527810c06355022872ba146fd418b0ecea7717",
+  "runs": [
+    {
+      "run": 1,
+      "max_process_CPU_ms_over_80_analyses": 19.463,
+      "exit_code": 0
+    },
+    {
+      "run": 2,
+      "max_process_CPU_ms_over_80_analyses": 14.507,
+      "exit_code": 0
+    },
+    {
+      "run": 3,
+      "max_process_CPU_ms_over_80_analyses": 20.483,
+      "exit_code": 1
+    },
+    {
+      "run": 4,
+      "max_process_CPU_ms_over_80_analyses": 13.127,
+      "exit_code": 0
+    },
+    {
+      "run": 5,
+      "max_process_CPU_ms_over_80_analyses": 11.767,
+      "exit_code": 0
+    },
+    {
+      "run": 6,
+      "max_process_CPU_ms_over_80_analyses": 26.239,
+      "exit_code": 1
+    },
+    {
+      "run": 7,
+      "max_process_CPU_ms_over_80_analyses": 26.514,
+      "exit_code": 1
+    },
+    {
+      "run": 8,
+      "max_process_CPU_ms_over_80_analyses": 40.36,
+      "exit_code": 1
+    },
+    {
+      "run": 9,
+      "max_process_CPU_ms_over_80_analyses": 17.91,
+      "exit_code": 0
+    },
+    {
+      "run": 10,
+      "max_process_CPU_ms_over_80_analyses": 48.728,
+      "exit_code": 1
+    },
+    {
+      "run": 11,
+      "max_process_CPU_ms_over_80_analyses": 8.808,
+      "exit_code": 0
+    },
+    {
+      "run": 12,
+      "max_process_CPU_ms_over_80_analyses": 15.771,
+      "exit_code": 0
+    },
+    {
+      "run": 13,
+      "max_process_CPU_ms_over_80_analyses": 9.46,
+      "exit_code": 0
+    },
+    {
+      "run": 14,
+      "max_process_CPU_ms_over_80_analyses": 40.456,
+      "exit_code": 1
+    },
+    {
+      "run": 15,
+      "max_process_CPU_ms_over_80_analyses": 23.627,
+      "exit_code": 1
+    },
+    {
+      "run": 16,
+      "max_process_CPU_ms_over_80_analyses": 8.756,
+      "exit_code": 0
+    },
+    {
+      "run": 17,
+      "max_process_CPU_ms_over_80_analyses": 14.591,
+      "exit_code": 0
+    },
+    {
+      "run": 18,
+      "max_process_CPU_ms_over_80_analyses": 7.691,
+      "exit_code": 0
+    },
+    {
+      "run": 19,
+      "max_process_CPU_ms_over_80_analyses": 15.088,
+      "exit_code": 0
+    },
+    {
+      "run": 20,
+      "max_process_CPU_ms_over_80_analyses": 17.715,
+      "exit_code": 0
+    },
+    {
+      "run": 21,
+      "max_process_CPU_ms_over_80_analyses": 15.656,
+      "exit_code": 0
+    },
+    {
+      "run": 22,
+      "max_process_CPU_ms_over_80_analyses": 17.429,
+      "exit_code": 0
+    },
+    {
+      "run": 23,
+      "max_process_CPU_ms_over_80_analyses": 12.928,
+      "exit_code": 0
+    },
+    {
+      "run": 24,
+      "max_process_CPU_ms_over_80_analyses": 28.939,
+      "exit_code": 1
+    },
+    {
+      "run": 25,
+      "max_process_CPU_ms_over_80_analyses": 22.427,
+      "exit_code": 1
+    },
+    {
+      "run": 26,
+      "max_process_CPU_ms_over_80_analyses": 17.28,
+      "exit_code": 0
+    },
+    {
+      "run": 27,
+      "max_process_CPU_ms_over_80_analyses": 16.996,
+      "exit_code": 0
+    },
+    {
+      "run": 28,
+      "max_process_CPU_ms_over_80_analyses": 34.239,
+      "exit_code": 1
+    },
+    {
+      "run": 29,
+      "max_process_CPU_ms_over_80_analyses": 15.17,
+      "exit_code": 0
+    },
+    {
+      "run": 30,
+      "max_process_CPU_ms_over_80_analyses": 16.517,
+      "exit_code": 0
+    }
+  ],
+  "min_ms": 7.691,
+  "median_ms": 17.137999999999998,
+  "p95_nearest_rank_ms": 40.456,
+  "max_ms": 48.728,
+  "over_20_ms": 10,
+  "at_or_over_20_ms": 10,
+  "failed_runs": 10,
+  "result": "FAIL"
+}

@@ -1,0 +1,8 @@
+{
+  "base_commit": "fde14ba57d62ba9e6aab0181170386a1d38da7a1",
+  "fake_provider_only": true,
+  "model_summary_steering_reproduced": true,
+  "global_cost_reservation_fail_closed": true,
+  "per_client_cost_ledger": false,
+  "classification": "PARTIALLY CONFIRMED: future fairness/output weakness; global money cap works"
+}

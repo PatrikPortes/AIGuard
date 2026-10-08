@@ -1,0 +1,239 @@
+{
+  "baseline_staged_tree": "b63c0d6786e55118c9c8b59103328731c03694ca",
+  "baseline_source_sha256": "51f78882ee24cad42cd8c150cc089812a6d7f657933c94a1b0f83906c3a221c5",
+  "baseline_phase_samples": 2400,
+  "baseline_normalization_worst": [
+    {
+      "i": 1396,
+      "input": "money-prefixes",
+      "normalizationCPU": 55.055,
+      "normalizationThreadCPU": 55.055,
+      "rulesCPU": 2.163,
+      "rulesThreadCPU": 2.163,
+      "start_ms": 2464.225143,
+      "norm_end_ms": 2519.282712,
+      "end_ms": 2521.451597
+    },
+    {
+      "i": 1638,
+      "input": "investment-prefixes",
+      "normalizationCPU": 21.244,
+      "normalizationThreadCPU": 21.243,
+      "rulesCPU": 0.337,
+      "rulesThreadCPU": 0.337,
+      "start_ms": 2851.297346,
+      "norm_end_ms": 2872.543761,
+      "end_ms": 2872.882769
+    },
+    {
+      "i": 1671,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 17.751,
+      "normalizationThreadCPU": 17.751,
+      "rulesCPU": 2.849,
+      "rulesThreadCPU": 2.849,
+      "start_ms": 2903.937497,
+      "norm_end_ms": 2921.692774,
+      "end_ms": 2924.547058
+    },
+    {
+      "i": 111,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 16.397,
+      "normalizationThreadCPU": 16.397,
+      "rulesCPU": 0.187,
+      "rulesThreadCPU": 0.186,
+      "start_ms": 341.405819,
+      "norm_end_ms": 357.80978,
+      "end_ms": 357.999623
+    },
+    {
+      "i": 135,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 13.151,
+      "normalizationThreadCPU": 7.804,
+      "rulesCPU": 0.161,
+      "rulesThreadCPU": 0.162,
+      "start_ms": 395.118867,
+      "norm_end_ms": 402.894118,
+      "end_ms": 403.059758
+    },
+    {
+      "i": 1503,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 13.057,
+      "normalizationThreadCPU": 5.771,
+      "rulesCPU": 0.522,
+      "rulesThreadCPU": 0.521,
+      "start_ms": 2658.334789,
+      "norm_end_ms": 2664.110248,
+      "end_ms": 2664.635262
+    },
+    {
+      "i": 271,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 10.255,
+      "normalizationThreadCPU": 10.254,
+      "rulesCPU": 0.971,
+      "rulesThreadCPU": 0.972,
+      "start_ms": 631.576237,
+      "norm_end_ms": 641.835494,
+      "end_ms": 642.814074
+    },
+    {
+      "i": 479,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 10.196,
+      "normalizationThreadCPU": 10.195,
+      "rulesCPU": 2.166,
+      "rulesThreadCPU": 2.166,
+      "start_ms": 1028.80345,
+      "norm_end_ms": 1039.003579,
+      "end_ms": 1041.178533
+    },
+    {
+      "i": 1511,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 9.149,
+      "normalizationThreadCPU": 2.705,
+      "rulesCPU": 0.198,
+      "rulesThreadCPU": 0.197,
+      "start_ms": 2670.637777,
+      "norm_end_ms": 2673.346838,
+      "end_ms": 2673.546333
+    },
+    {
+      "i": 407,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 8.323,
+      "normalizationThreadCPU": 8.324,
+      "rulesCPU": 0.196,
+      "rulesThreadCPU": 0.196,
+      "start_ms": 887.636418,
+      "norm_end_ms": 896.461576,
+      "end_ms": 896.661912
+    }
+  ],
+  "baseline_rules_max_ms": 9.182,
+  "gc_observation": {
+    "max_pause_ms": 5.2,
+    "events": 102,
+    "interpretation": "GC contributes, but a maximum 5.2ms GC pause alone does not explain the 55.055ms normalization sample."
+  },
+  "selected_token_attempt_operation_samples": 3200,
+  "selected_token_attempt_operations": {
+    "NFKC": {
+      "max_CPU_ms": 8.652,
+      "mean_CPU_ms": 0.505925
+    },
+    "hidden-original": {
+      "max_CPU_ms": 8.302,
+      "mean_CPU_ms": 0.1655328125
+    },
+    "latin-tokens": {
+      "max_CPU_ms": 29.192,
+      "mean_CPU_ms": 3.2512015625
+    },
+    "lower": {
+      "max_CPU_ms": 6.608,
+      "mean_CPU_ms": 0.3640171875
+    },
+    "strip": {
+      "max_CPU_ms": 22.475,
+      "mean_CPU_ms": 2.25981875
+    }
+  },
+  "limitations": "Historical 92.124/46.843ms assertions store only corpus maxima, not the input index; no claim that either individual historical spike was attributed to a particular GC event. Diagnostic process CPU includes background runtime threads; phase profile also records thread CPU. Baseline full CPU profile uses sampling overhead; phase and operation runs do not. Experiments do not change existing tests.",
+  "external_raw_artifacts": [
+    {
+      "name": "baseline-profile.json",
+      "bytes": 604329,
+      "sha256": "e27f58fd95c403433c8fa336aa2d5b3f550fc0fa414753e7beb8ac4410ebe71a"
+    },
+    {
+      "name": "baseline-trace.txt",
+      "bytes": 572269,
+      "sha256": "1e9d929c3753356723c0f7cccd799bec3770a4d90c64d31b4d617e93e8494f91"
+    },
+    {
+      "name": "phases.json",
+      "bytes": 628050,
+      "sha256": "847af3f03bb797e95153b2529b5f1a6beaecae9fde13133a58da3c17b80740b8"
+    },
+    {
+      "name": "phases-trace.txt",
+      "bytes": 617874,
+      "sha256": "ff4970e623a214f939f1d1b41ddc45beb4a624288e98465307d4814baae5a699"
+    },
+    {
+      "name": "cold-final-phases.json",
+      "bytes": 247373,
+      "sha256": "62b8eea89487005ccab86884f1ac63a5ccf78bc4c5167b275f637c73ba8b8d3d"
+    },
+    {
+      "name": "current-operation-phases.json",
+      "bytes": 105942,
+      "sha256": "45d0edc0ab700b4b044b488b80e8da07f1ae6c74fbdd689859599cccba97838b"
+    }
+  ],
+  "final_phase_samples": 2400,
+  "final_normalization_max_ms": 6.083,
+  "final_rules_max_ms": 5.727,
+  "final_phase_worst": [
+    {
+      "i": 1543,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 6.083,
+      "normalizationThreadCPU": 1.973,
+      "rulesCPU": 1.689,
+      "rulesThreadCPU": 0.89,
+      "start_ms": 987.15338,
+      "norm_end_ms": 989.129943,
+      "end_ms": 990.024503
+    },
+    {
+      "i": 1511,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 4.169,
+      "normalizationThreadCPU": 1.321,
+      "rulesCPU": 3.446,
+      "rulesThreadCPU": 0.831,
+      "start_ms": 966.395714,
+      "norm_end_ms": 968.003435,
+      "end_ms": 968.838912
+    },
+    {
+      "i": 1535,
+      "input": "NFKC-Arabic-expansion",
+      "normalizationCPU": 5.856,
+      "normalizationThreadCPU": 2.743,
+      "rulesCPU": 0.674,
+      "rulesThreadCPU": 0.673,
+      "start_ms": 980.47522,
+      "norm_end_ms": 983.222765,
+      "end_ms": 983.900701
+    },
+    {
+      "i": 1531,
+      "input": "digits",
+      "normalizationCPU": 0.01,
+      "normalizationThreadCPU": 0.01,
+      "rulesCPU": 5.727,
+      "rulesThreadCPU": 0.955,
+      "start_ms": 976.920832,
+      "norm_end_ms": 976.93077,
+      "end_ms": 977.889415
+    },
+    {
+      "i": 1371,
+      "input": "digits",
+      "normalizationCPU": 0.011,
+      "normalizationThreadCPU": 0.01,
+      "rulesCPU": 5.493,
+      "rulesThreadCPU": 1.604,
+      "start_ms": 896.619774,
+      "norm_end_ms": 896.630205,
+      "end_ms": 898.238713
+    }
+  ]
+}

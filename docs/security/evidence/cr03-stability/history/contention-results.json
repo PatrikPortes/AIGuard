@@ -1,0 +1,25 @@
+{
+  "experiment": "SEPARATE from controlled stability result; four synthetic CPU-only workers, same test/observer/affinity, no builds/audits/providers/network. All owned load processes stopped.",
+  "runs": [
+    {
+      "run": 1,
+      "CPU_load_workers": 4,
+      "max_cpu_ms_over_80_analyses": 18.931,
+      "exit_code": 0
+    },
+    {
+      "run": 2,
+      "CPU_load_workers": 4,
+      "max_cpu_ms_over_80_analyses": 27.796,
+      "exit_code": 1
+    },
+    {
+      "run": 3,
+      "CPU_load_workers": 4,
+      "max_cpu_ms_over_80_analyses": 18.055,
+      "exit_code": 0
+    }
+  ],
+  "source_or_threshold_changes": false,
+  "conclusion": "Controlled run already exceeded20ms, so the original92.124ms cannot be attributed solely to competing audit jobs. Three load runs are exploratory and do not establish causation or a production SLO."
+}

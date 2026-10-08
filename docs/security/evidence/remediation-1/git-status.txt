@@ -1,0 +1,60 @@
+On branch security/gate-1-remediation
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .dockerignore
+	modified:   .gitignore
+	modified:   Dockerfile
+	modified:   deploy/compose.yaml
+	modified:   deploy/env/app.env.example
+	modified:   deploy/env/deployment.env.example
+	modified:   deploy/scripts/build-connector.sh
+	modified:   deploy/scripts/common.sh
+	modified:   deploy/scripts/deploy.sh
+	modified:   deploy/scripts/rollback.sh
+	modified:   docs/ARCHITECTURE.md
+	modified:   docs/STAGES.md
+	modified:   docs/design/ASSETS.md
+	modified:   docs/security/ARCHITECTURE_REVIEW.md
+	modified:   docs/security/CLOUDFLARE_SECURITY.md
+	modified:   docs/security/DATA_AND_FEATURE_GATES.md
+	modified:   docs/security/INDEPENDENT_REVIEW_PACKAGE.md
+	modified:   docs/security/OPERATIONS.md
+	modified:   docs/security/SECURITY_RELEASE_GATE.md
+	modified:   docs/security/VALIDATION_REPORT.md
+	modified:   docs/security/VULNERABILITY_EVIDENCE.md
+	modified:   package.json
+	modified:   public/app.js
+	modified:   public/index.html
+	modified:   public/style.css
+	modified:   scripts/check.js
+	modified:   scripts/deployment-smoke.js
+	modified:   scripts/security-browser.js
+	modified:   scripts/security-config.js
+	modified:   src/ai/pipeline.js
+	modified:   src/ai/runtime.js
+	modified:   src/analysis.js
+	modified:   src/client-ip.js
+	modified:   src/limits.js
+	modified:   src/production-config.js
+	modified:   src/server.js
+	modified:   tests/characters.test.js
+	modified:   tests/deploy-scripts.test.js
+	modified:   tests/security.test.js
+	modified:   tests/server.test.js
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	docs/security/CLAUDE_INDEPENDENT_REVIEW.md
+	docs/security/REMEDIATION_1_REPORT.md
+	docs/security/REMEDIATION_1_VALIDATION.md
+	docs/security/VULNERABILITY_REMEDIATION_1.md
+	docs/security/evidence/remediation-1/
+	public/assets/characters/optimized/
+	public/character-assets.js
+	scripts/claude-review-check.js
+	scripts/optimize-characters.py
+	tests/adversarial/
+	tests/remediation.test.js
+
+no changes added to commit (use "git add" and/or "git commit -a")

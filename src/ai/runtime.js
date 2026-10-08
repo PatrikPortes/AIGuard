@@ -5,6 +5,7 @@ import { OpenAICompatibleProvider } from './provider.js';
 import { SqliteBudgetStore } from './budget.js';
 import { BoundedQueue } from './queue.js';
 import { ServiceError } from './errors.js';
+import { assertRulesProduction } from '../production-config.js';
 
 function number(env, key, fallback, min, max, integer = true) {
   const value = Number(env[key] ?? fallback);
@@ -16,6 +17,8 @@ function flag(env, key) {
   return env[key] === 'true';
 }
 export function createRuntime(env = process.env) {
+  // Also protect direct server/npm startup, not only the Docker --import guard.
+  if (env.NODE_ENV === 'production') assertRulesProduction(env);
   const mode = env.AI_MODE ?? 'rules';
   if (mode === 'rules') return new AnalysisPipeline();
   let budget;

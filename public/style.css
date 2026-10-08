@@ -22,3 +22,6 @@
 .hero-character{width:100%;max-width:420px;margin:0 auto;padding:0;background:transparent;border-radius:0}
 .hero-character img{width:100%;height:auto;max-height:none;object-fit:contain}
 @media(max-width:600px){.hero-guides{display:flex;flex-direction:column;gap:16px}.hero-guides .speech-bubble{width:100%;margin:0;max-width:330px}.hero-character{max-width:280px}}
+
+.risk-banner[data-level="unassessed"], .risk-banner[data-level="low"] { --state-bg: var(--cream); --state-ink: var(--ink); background: var(--state-bg); color: var(--state-ink); border-color: #d9d7ee; }
+.risk-banner[data-level="unassessed"] .risk-circle, .risk-banner[data-level="low"] .risk-circle { border-color: #b9b4cf; color: #534c70; }

@@ -1,0 +1,70 @@
+{
+  "normalization_operations": [
+    {
+      "case": 0,
+      "baseline": {
+        "NFKC": 1,
+        "NFD": 1
+      },
+      "after": {}
+    },
+    {
+      "case": 1,
+      "baseline": {
+        "NFKC": 1,
+        "NFD": 1
+      },
+      "after": {}
+    },
+    {
+      "case": 2,
+      "baseline": {
+        "NFKC": 1,
+        "NFD": 1
+      },
+      "after": {}
+    },
+    {
+      "case": 3,
+      "baseline": {
+        "NFKC": 1
+      },
+      "after": {}
+    },
+    {
+      "case": 4,
+      "baseline": {
+        "NFKC": 1,
+        "NFD": 1666
+      },
+      "after": {}
+    },
+    {
+      "case": 5,
+      "baseline": {
+        "NFKC": 1,
+        "NFD": 2000
+      },
+      "after": {}
+    },
+    {
+      "case": 6,
+      "baseline": {
+        "NFKC": 1,
+        "NFD": 1
+      },
+      "after": {}
+    },
+    {
+      "case": 7,
+      "baseline": {
+        "NFKC": 1
+      },
+      "after": {
+        "NFKC": 1
+      }
+    }
+  ],
+  "differential_inputs": 5051,
+  "matching_content_and_flags_identical": true
+}

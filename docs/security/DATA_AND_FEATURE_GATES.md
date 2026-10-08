@@ -6,7 +6,7 @@ Přípustný JSON body ≤64 KiB, content ≤10 000 znaků a ≤16 000 UTF-8 byt
 
 Obsah a výsledek existují v RAM a v DOM otevřené stránky, bez historie, DB, analytics či obsahových logů. Po dokončení/timeoutu/odpojení se uvolňují reference; nelze slibovat okamžité přepsání V8 paměti. Crash dumpy, core dumpy, heap snapshots a request-body tracing v produkci zakázat. Swap může obsahovat RAM: pokud potřebný, šifrovaný; nezařazovat jej do záloh.
 
-HMAC IP není anonymní údaj. Klíč je pouze náhodný v RAM procesu. IP/session limiter metadata expirují za 60 s a jsou líně odstraněna následujícím požadavkem nebo restartem; počet klíčů má cap 10 000. Session cookie guard_session: náhodné ID, expirace a HMAC; 1 hodina, Secure/HttpOnly/SameSite Strict v produkci. Není tracking ani uživatelský účet. Žádný session secret nevyžaduje persistentní přenos mezi releasy. Restart je reset procesových kvót, nikoli reset budoucího budgetu.
+HMAC IP není anonymní údaj. Klíč je náhodný v RAM procesu. Quota identity: IPv4 nebo agregovaná IPv6 /64 + nezávislá podepsaná session. Token buckets mají refill60s a nejvýše10 000 LRU keys každý; refill perioda není časová retence. Idle metadata zůstávají do LRU eviction/restartu, počet je bounded; žádné raw IP/body nebo persistentní session tracking. Restart resetuje procesové quota metadata, nikoli budoucí persistentní cost ledger. Produkční cookie `__Host-guard_session`: random ID/expiry/HMAC, Secure/HttpOnly/SameSite Strict/Path=/, bez Domain,1hodina; development HTTP má `guard_session`. Nejde o účet. No-JS i module failure neodesílá obsah; pole nejsou součástí native form payload.
 
 ## Navržená provozní retence (potvrdit člověkem)
 
@@ -24,7 +24,7 @@ Cloudflare ukončuje TLS a technicky zpracovává text, IP a metadata. Tunnel HT
 
 ## AI activation gate — nyní ZAVŘENO
 
-Production guard: AI_MODE=rules, všechny daily/total budgety 0, retry 0, critic false, local false, žádný GUARD_LLM_API_KEY. Image i deployment health odmítají AI režim. Runtime nevytváří budget DB v rules. Klient nemůže vybrat model, endpoint, ceny, limity ani přepnout režim.
+Production guard: AI_MODE=rules, všechny daily/total budgety 0, retry 0, critic false, local false, žádný GUARD_LLM_API_KEY. Image, deployment health i přímý production createRuntime odmítají AI režim. Runtime nevytváří budget DB v rules. Klient nemůže vybrat model, endpoint, ceny, limity ani přepnout režim.
 
 Existuje: serverové provider rozhraní, bounded queue 2 workers / 20 waiting default, job deadline 20 s, max provider body 64 KiB, input byte/token upper-bound, output token cap, strukturované schema a evidence/safety, atomické SQLite BEGIN IMMEDIATE rezervace před každým pokusem. Každý retry/critic rezervuje znovu; timeout/unknown result bez refund nebo automatického retry. Denní UTC a lifetime cap jsou společné pro procesy se STEJNOU persistentní lokální DB; 4 souběžné worker testy to ověřují. Není to multi-host globální účetnictví ani kalibrovaný model.
 
@@ -33,10 +33,10 @@ Před samostatně schválenou aktivací je nutné:
 1. Ověřit tokenizer/framing/schema horní mez, ceny obou modelů a chargeable tokens včetně reasoning. Byte odhad a ručně zadané ceny nejsou absolutní garance účtu poskytovatele.
 2. Ověřit případný skutečně vynutitelný provider account/project cap. Pokud jde jen o soft alert, výslovně to uvést; přidat oddělené účetní monitorování a rychlou revokaci klíče. Nikdy nepředstírat existenci provider hard capu.
 3. Persistentní budget store mimo image, backup bez účetního rewind, fail-closed při nedostupnosti/korupci/busy; blokující SQLite busy wait převést mimo HTTP event loop před zátěží. Kill switch = revokace klíče + schválený rules-only release. Žádný skrytý fallback AI → úspěšný rules výsledek.
-4. Per-IP/session + globální API limit a worker cap, prověřit NAT/IPv6; pro více hostů centrální quota, broker, atomický budget, TTL, encrypted jobs, žádné payload dead-letter logy.
+4. **Persistentní per-user/client COST budget a fair-use ochrana navíc ke globálnímu budgetu**, atomická společná reservation identity+global před každým retry/critic, failure bez provider call. IP/session rate limit není peněžní budget. Implementace per-client cost ledgeru dosud chybí; před AI musí projít race/restart/expiry/NAT/IPv6/rotation testy. Pro více hostů centrální quota, broker, atomický budget, TTL, encrypted jobs, žádné payload dead-letter logy.
 5. Idempotency: náhodný request key vázaný na podepsanou session, bounded TTL metadata; nedělat dedup cache s plaintextem. Po nejasném provider výsledku neprovádět automatický redelivery. Nové ruční odeslání dnes není deduplikováno — povinná nová implementace/test gate.
 6. Provider endpoint jen schválený admin allowlist a egress, HTTPS/no redirects, serverový secret ve vaultu, žádné klientské credentials. Test reálného modelu pouze s explicitně schválenými syntetickými daty a minimálním budgetem.
-7. Nezávislý adversarial dataset: role injection, fake system text, kontakty všech jazyků/TLD, nesprávné důkazy, overconfidence, poisoning. Regex safety není sémantická garance; pevné verification templates a bez tools zůstávají závazné.
+7. Nezávislý adversarial dataset: role injection, fake system text, kontakty všech jazyků/TLD, nesprávné důkazy, overconfidence, poisoning. Regex safety není sémantická garance. Public summary nyní pochází pouze z pevných server templates (model summary se nezobrazuje); steering přes signal title/explanation/uncertainties je stále budoucí adversarial review gate. Schema, evidence a untrusted-content isolation zůstávají povinné, pevné verification templates a bez tools zůstávají závazné.
 
 ## Upload activation gate — nyní ZAVŘENO
 

@@ -1,12 +1,11 @@
 name: verimtomu
 services:
   app:
-    image: ${VERIM_APP_IMAGE:?Set the approved release image}
+    image: ${VERIM_APP_IMAGE:?Set the approved immutable image ID}
+    platform: linux/amd64
     env_file: ./env/app.env
     environment:
       GUARD_TRUSTED_PROXY_IP: ${VERIM_INGRESS_IP:?Choose an audited ingress IP}
-    ports:
-      - "127.0.0.1:43127:3000"
     user: "65532:65532"
     restart: unless-stopped
     read_only: true
@@ -34,7 +33,8 @@ services:
 
   cloudflared:
     profiles: [cloudflare]
-    image: ${VERIM_CLOUDFLARED_IMAGE:?Set a verified cloudflared image digest}
+    image: ${VERIM_CLOUDFLARED_IMAGE:?Set a verified immutable cloudflared image ID}
+    platform: linux/amd64
     user: "65532:65532"
     command: [tunnel, --no-autoupdate, --metrics, "127.0.0.1:20241", --loglevel, fatal, run, --token-file, /run/secrets/cloudflared_token]
     secrets: [cloudflared_token]
@@ -67,6 +67,7 @@ services:
 
 networks:
   ingress:
+    internal: true
     driver: bridge
     ipam:
       config:

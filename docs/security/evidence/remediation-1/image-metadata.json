@@ -1,0 +1,259 @@
+{
+  "image_count": 30,
+  "all_PNGs_byte_exact_HEAD": true,
+  "rows": [
+    {
+      "path": "docs/design/VERIM_CHARACTER_REFERENCE.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "d08da8919f8e55ff7f6ca8ac594b0c36f44a7f886d8dcfa5e3b24a96ef7b2db1",
+      "matches_original_commit": true
+    },
+    {
+      "path": "docs/design/VERIM_VISUAL_REFERENCE.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "de9df4c1fb675ecad70ada53e2bdc3984f2971e42693bdc4782ef2817548fef4",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-analyzing.1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-capacity.07975cf43e1b01e58edce8ed608bad8ae6a44848ee27559bd77657dc3512c8f7.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "07975cf43e1b01e58edce8ed608bad8ae6a44848ee27559bd77657dc3512c8f7",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-searching.53e6f779c6ce4ccf3b36b8811cb3aac2a5108d525cedbc52502cb096f43bb77f.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "53e6f779c6ce4ccf3b36b8811cb3aac2a5108d525cedbc52502cb096f43bb77f",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-tip.8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-warning.37c31312e899c29738bf5101ffb014d14bbe25286036facba28140ed99133524.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "37c31312e899c29738bf5101ffb014d14bbe25286036facba28140ed99133524",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-explaining.4c1ae77446d72006a712dfeff21de26aab8a57e26fffce122f19f2861f010d03.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "4c1ae77446d72006a712dfeff21de26aab8a57e26fffce122f19f2861f010d03",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-success.e6240ebbe6911d3b6266e0eb03091527a1556a7442a3d3fdd9681254aea445b9.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "e6240ebbe6911d3b6266e0eb03091527a1556a7442a3d3fdd9681254aea445b9",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-thinking.4a840cba26f6e2aa862907afb4582c679bc1600a2e5609ce3cdcfcb924d28cd6.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "4a840cba26f6e2aa862907afb4582c679bc1600a2e5609ce3cdcfcb924d28cd6",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-warning.59f0839a05c99cea903247c555c25c5cfed83fed83e5db633287bc9fe5544794.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "59f0839a05c99cea903247c555c25c5cfed83fed83e5db633287bc9fe5544794",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-welcome.f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/optimized/verkarob.614a99201e2d045248b08f24ba1c4443817f513ee81d34b60020ec91f2ac7bbf.webp",
+      "format": "WEBP",
+      "metadata_keys": [
+        "background",
+        "loop"
+      ],
+      "sha256": "614a99201e2d045248b08f24ba1c4443817f513ee81d34b60020ec91f2ac7bbf",
+      "matches_original_commit": null
+    },
+    {
+      "path": "public/assets/characters/robo/robo-analyzing.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "2e3e2a293dd19debdb4c214d4635ce1a9bfe779fc55c63d3d67fda645cd721d0",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-capacity.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "a8122bd98079d9967f9949632ea6d8dab80f7777a4b693b5edf13200676783b0",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-default.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "ef61184e0144ceb72a4d678a3aa54f1a9ead5f7eb5025ce1c95d887cc7794d3e",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-error.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "b3a5b0abaed26b99b0460722b3b8c771edf6a1bd5e4df166ef3549271e144a5e",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-searching.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "e8d99aae8923e26f818793efe05bc9a398429d36d22ee2e61a01e8f778be4f03",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-success.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "0f2343cba4a3a18612df16b971f828c9ad2e8fd40107e34c31745a4397e9e56c",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-tip.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "0cba81ef2a164c2b3ed974a3ad1e7992a41055d5c865fcee94ff514179fd4e21",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/robo/robo-warning.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "a4672f2a541a370a36a50d3d198db0517fe01a6da270d5ccbda21c769ae48d99",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/verka/verka-explaining.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "997fb89230479a41312dbe88a72fb6053a23d28097f5a85f50b66851ef501e9a",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/verka/verka-success.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "4f2f4482f6aa5740b4c25c796bf2ff7230b1ece044cdcf8757e113451b02ecca",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/verka/verka-thinking.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "15dcb1664094fb458527542d021c220738bafcba30674af53ac95484e7a214bd",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/verka/verka-warning.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "68520c03383fa0d04e4eee25c39687fe014f3e109d70d1db74e8aa1c143611d6",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/verka/verka-welcome.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "3e85af706b0cc309d4066cf41213073b51b618f05829ab87b93b482b0ddf6ec0",
+      "matches_original_commit": true
+    },
+    {
+      "path": "public/assets/characters/verkarob.png",
+      "format": "PNG",
+      "metadata_keys": [],
+      "sha256": "b4387d12a8d19338e613e877efcfd6379edf300ac79a518cb4af7a39fd226af4",
+      "matches_original_commit": true
+    }
+  ],
+  "binary_scan_limit": "Gitleaks normally inspects text, not compressed raster pixels; extracted metadata was separately scanned. Canonical PNG hashes match the approved base."
+}

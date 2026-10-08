@@ -1,0 +1,17 @@
+TAP version 13
+# CR03_CPU_OBSERVATION Maximum CPU 5.301 ms; threshold 20 ms
+# Subtest: CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis
+ok 1 - CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis
+  ---
+  duration_ms: 91.375029
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 362.874966

@@ -14,7 +14,7 @@ test -f "$DEPLOY_ROOT/compose.yaml"
 [[ "$(docker context inspect --format '{{.Endpoints.docker.Host}}')" == unix://* ]]
 ENGINE_VERSION=$(docker version --format '{{.Server.Version}}')
 ENGINE_MAJOR=${ENGINE_VERSION%%.*}
-[[ "$ENGINE_MAJOR" =~ ^[0-9]+$ && "$ENGINE_MAJOR" -ge 28 ]] || { echo 'Docker 28+ required for loopback publishing protection' >&2; exit 1; }
+[[ "$ENGINE_MAJOR" =~ ^[0-9]+$ && "$ENGINE_MAJOR" -ge 28 ]] || { echo 'Docker 28+ required for reviewed isolation baseline' >&2; exit 1; }
 # Never source dotenv as shell code; caller environment must not override this project's settings.
 unset VERIM_APP_IMAGE VERIM_NODE_IMAGE VERIM_RUNTIME_IMAGE VERIM_CLOUDFLARED_IMAGE VERIM_CLOUDFLARED_SOURCE_IMAGE VERIM_CONNECTOR_RUNTIME_IMAGE VERIM_NETWORK_SUBNET VERIM_APP_IP VERIM_INGRESS_IP
 read_setting() {
@@ -30,17 +30,23 @@ CONNECTOR_SOURCE=$(read_setting VERIM_CLOUDFLARED_SOURCE_IMAGE)
 CONNECTOR_RUNTIME=$(read_setting VERIM_CONNECTOR_RUNTIME_IMAGE)
 [[ "$NODE_IMAGE" =~ ^node:[a-zA-Z0-9._-]+@sha256:[a-f0-9]{64}$ ]]
 [[ "$RUNTIME_IMAGE" =~ ^gcr.io/distroless/nodejs24-debian13:nonroot@sha256:[a-f0-9]{64}$ ]]
-[[ "$CONNECTOR_IMAGE" =~ ^verimtomu-cloudflared:[a-f0-9]{40}$ ]]
+[[ "$CONNECTOR_IMAGE" =~ ^sha256:[a-f0-9]{64}$ ]]
 [[ "$CONNECTOR_SOURCE" =~ ^cloudflare/cloudflared:[a-zA-Z0-9._-]+@sha256:[a-f0-9]{64}$ ]]
 [[ "$CONNECTOR_RUNTIME" =~ ^gcr.io/distroless/static-debian13:nonroot@sha256:[a-f0-9]{64}$ ]]
 export VERIM_APP_IMAGE
 VERIM_APP_IMAGE=$(read_setting VERIM_APP_IMAGE)
-[[ "$VERIM_APP_IMAGE" =~ ^verimtomu:[a-f0-9]{40}$ ]]
+[[ "$VERIM_APP_IMAGE" =~ ^sha256:[a-f0-9]{64}$ ]]
 compose() {
   docker compose --project-name verimtomu --project-directory "$DEPLOY_ROOT" --env-file "$SETTINGS" -f "$DEPLOY_ROOT/compose.yaml" "$@"
 }
 compose config --quiet
+verify_image() {
+  local image=$1
+  [[ "$image" =~ ^sha256:[a-f0-9]{64}$ ]] || return 1
+  test "$(docker image inspect --format '{{.Id}}' "$image")" = "$image"
+}
 activate_image() {
+  verify_image "$1" || return 1
   export VERIM_APP_IMAGE=$1
   compose up -d --no-deps --pull never --wait --wait-timeout 90 app || return 1
   compose exec -T app node scripts/deployment-smoke.js local

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "GO-2026-6354",
+    "url": "https://raw.githubusercontent.com/golang/vulndb/master/data/osv/GO-2026-6354.json",
+    "status": 200,
+    "retrieved_at": "2026-10-08T08:19:51.143085+00:00"
+  },
+  {
+    "id": "GO-2026-6355",
+    "url": "https://raw.githubusercontent.com/golang/vulndb/master/data/osv/GO-2026-6355.json",
+    "status": 200,
+    "retrieved_at": "2026-10-08T08:19:51.524698+00:00"
+  },
+  {
+    "id": "GO-2026-5932",
+    "url": "https://raw.githubusercontent.com/golang/vulndb/master/data/osv/GO-2026-5932.json",
+    "status": 200,
+    "retrieved_at": "2026-10-08T08:19:51.875663+00:00"
+  },
+  {
+    "id": "GO-2026-5841",
+    "url": "https://raw.githubusercontent.com/golang/vulndb/master/data/osv/GO-2026-5841.json",
+    "status": 200,
+    "retrieved_at": "2026-10-08T08:19:52.266451+00:00"
+  },
+  {
+    "id": "node-security-index",
+    "url": "https://raw.githubusercontent.com/nodejs/security-wg/main/vuln/core/index.json",
+    "status": 200,
+    "retrieved_at": "2026-10-08T08:19:52.674284+00:00"
+  },
+  {
+    "id": "node-release-index",
+    "url": "https://nodejs.org/download/release/index.json",
+    "status": 200,
+    "retrieved_at": "2026-10-08T08:19:53.292616+00:00"
+  }
+]

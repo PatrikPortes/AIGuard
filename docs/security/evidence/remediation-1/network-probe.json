@@ -1,0 +1,16 @@
+{
+  "test": "isolated local Docker bridge comparison; no real metadata/internal endpoints contacted",
+  "results": [
+    {
+      "internal": false,
+      "defaultRoute": true,
+      "hostGatewayStatus": 200
+    },
+    {
+      "internal": true,
+      "defaultRoute": false,
+      "hostGatewayStatus": 200
+    }
+  ],
+  "conclusion": "Internal bridge removes default route, but host gateway remains reachable. VPS firewall/bridge enforcement is mandatory before staging."
+}

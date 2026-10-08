@@ -1,0 +1,8 @@
+{
+  "base_commit": "fde14ba57d62ba9e6aab0181170386a1d38da7a1",
+  "mock_only": true,
+  "baseline_exit": 0,
+  "build_called": false,
+  "arbitrary_cached_tag_activated": true,
+  "current_regression": "tests/deploy-scripts.test.js always-build, missing IID, mismatch IID, connector and mutable pointer cases PASS"
+}

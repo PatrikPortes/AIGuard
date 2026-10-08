@@ -1,0 +1,1 @@
+Security config: PASS (rules guard, internal app network, no published ports, resource limits, isolation, no socket/host mounts)

@@ -34,13 +34,14 @@ test('Neplatný JSON, MIME, velikost, nepodporovaný upload a cesta', async t =>
   assert.equal((await fetch(`${base}/package.json`)).status, 404);
 });
 test('Limiter odmítne překročení a po expiraci znovu pustí požadavek', async t => {
-  const base = await fixture(t, { rateLimit: 1, windowMs: 50 });
+  let now = 1000;
+  const base = await fixture(t, { rateLimit: 1, windowMs: 50, limiterClock: () => now });
   const post = () => fetch(`${base}/api/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'text', content: 'Ahoj.' }) });
   assert.equal((await post()).status, 200);
   const limited = await post();
   assert.equal(limited.status, 429);
   assert.ok(limited.headers.get('retry-after'));
-  await new Promise(resolve => setTimeout(resolve, 70));
+  now += 51;
   assert.equal((await post()).status, 200);
 });
 

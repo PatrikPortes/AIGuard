@@ -1,3 +1,4 @@
+import { characterAssets } from './character-assets.js';
 const form = document.querySelector('#analysis-form');
 const result = document.querySelector('#result');
 const error = document.querySelector('#error');
@@ -10,8 +11,8 @@ function showError(message, code, validation = false) {
   const validationError = validation || ['INVALID_INPUT', 'AI_INPUT_LIMIT', 'AI_CONSENT_REQUIRED'].includes(code);
   const capacity = ['AI_CAPACITY_EXHAUSTED', 'AI_OVERLOADED', 'RATE_LIMITED'].includes(code);
   const character = document.querySelector('#error-character');
-  character.src = validationError ? '/assets/characters/verka/verka-warning.png'
-    : capacity ? '/assets/characters/robo/robo-capacity.png' : '/assets/characters/robo/robo-error.png';
+  character.src = validationError ? characterAssets['verka-warning']
+    : capacity ? characterAssets['robo-capacity'] : characterAssets['robo-error'];
   document.querySelector('#error-speaker').textContent = validationError ? 'Věrka · malé upozornění' : 'Robo · systémová informace';
   error.textContent = message;
   error.hidden = false;
@@ -33,7 +34,7 @@ async function initialize() {
   } catch (failure) { showError(failure.message); }
 }
 initialize();
-const levels = { low: 'Nízké riziko', caution: 'Zvýšená opatrnost', high: 'Vysoké riziko', very_high: 'Velmi vysoké riziko' };
+const levels = { unassessed: 'Bezpečnost nelze určit', low: 'Bezpečnost nelze určit', caution: 'Zvýšená opatrnost', high: 'Vysoké riziko', very_high: 'Velmi vysoké riziko' };
 const examples = {
   family: 'Mami, mám nové číslo a rozbitý telefon. Pošli mi ihned 12 000 Kč na nový účet. Nevolej mi, nemůžu mluvit.',
   bank: 'Vaše banka: ihned zadejte heslo a potvrzovací kód na https://banka-priklad.invalid, jinak bude účet zablokován.',
@@ -52,13 +53,15 @@ function render() {
   if (!analysis) return;
   const risk = document.querySelector('#risk');
   document.querySelector('#risk-level').textContent = levels[analysis.risk_level];
-  document.querySelector('#risk-number').textContent = analysis.risk_score;
+  const unassessed = ['unassessed', 'low'].includes(analysis.risk_level);
+  document.querySelector('#risk-number').textContent = unassessed ? '—' : analysis.risk_score;
+  document.querySelector('#risk-scale').hidden = unassessed;
+  document.querySelector('#risk-description').textContent = analysis.input_type === 'url' ? 'Cíl odkazu nebyl navštíven ani ověřen.' : unassessed ? 'Absence známých signálů nepotvrzuje důvěryhodnost.' : 'Odhad rizikových signálů';
   risk.dataset.level = analysis.risk_level;
-  const riskState = ['high', 'very_high'].includes(analysis.risk_level) ? 'warning'
-    : analysis.risk_level === 'caution' || analysis.uncertainty === 'high' ? 'thinking' : 'success';
-  document.querySelector('#risk-character').src = `/assets/characters/verka/verka-${riskState}.png`;
-  document.querySelector('#signals-character').src = `/assets/characters/robo/robo-${analysis.signals.length ? 'warning' : 'success'}.png`;
-  document.querySelector('#summary').textContent = simple.checked
+  const riskState = ['high', 'very_high'].includes(analysis.risk_level) ? 'warning' : 'thinking';
+  document.querySelector('#risk-character').src = characterAssets[`verka-${riskState}`];
+  document.querySelector('#signals-character').src = characterAssets[`robo-${analysis.signals.length ? 'warning' : 'default'}`];
+  document.querySelector('#summary').textContent = simple.checked && analysis.input_type !== 'url'
     ? analysis.risk_score >= 60 ? 'Zastavte se. Zpráva má varovné znaky. Než něco uděláte, ověřte si ji.' : 'Nevíme, zda zprávě můžete věřit. Ověřte si ji u člověka nebo firmy, které znáte.'
     : analysis.summary;
   list('#signals', analysis.signals.length ? analysis.signals.map(signal => simple.checked ? signal.title : `${signal.title}. ${signal.explanation}`) : ['Známé signály jsme nenašli. Podvod tím není vyloučen.']);
@@ -79,7 +82,7 @@ form.addEventListener('submit', async event => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 35000);
   try {
-    const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: form.elements.type.value, content: form.elements.content.value, ai_consent: mode === 'ai' && document.querySelector('#consent').checked }), signal: controller.signal });
+    const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: document.querySelector('#input-type').value, content: document.querySelector('#content').value, ai_consent: mode === 'ai' && document.querySelector('#consent').checked }), signal: controller.signal });
     const data = await response.json();
     if (!response.ok) {
       const failure = new Error(data.error || 'Analýzu se nepodařilo dokončit.');

@@ -1,5 +1,6 @@
 # Security Gate 1.1 — kontrola bezpečnostní architektury
 
+**Historická Gate1.1 kontrola. Současné pořadí body/admission, cookies, /64 quotas, cache, network a immutable release identity popisují [Remediation report](REMEDIATION_1_REPORT.md) a [current review package](INDEPENDENT_REVIEW_PACKAGE.md). Tato autorská kontrola není independent sign-off.**
 2026-10-08. **Lokální evidence autora implementace. Nejde o nezávislé review. Release BLOCKED.** PASS v testu znamená pouze ověřený scénář, ne bezpečnost celé vrstvy. Produkční Cloudflare/VPS/staging důkazy nejsou dostupné. Zdrojové soubory, deployment konfigurace, frontend i AI pipeline zůstaly v tomto kroku beze změny.
 
 ## Mapa kontrol, implementace a testů

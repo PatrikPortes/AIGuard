@@ -1,0 +1,125 @@
+
+> ai-strazce@0.1.0 test
+> node --test && node scripts/claude-review-check.js
+
+✔ Celý HTTP textový tok s opravdovým adaptérem a simulovaným LLM serverem (193.052102ms)
+✔ HTTP selhání providera neunikne s obsahem a klíčem, ani nepřejde na pravidla (23.846673ms)
+✔ HTTP souhlas a neplatný vstup jsou odmítnuty před AI (20.341761ms)
+✔ Rules → jedno AI volání → strukturovaný výsledek, bezpečné kroky a žádné citace (19.908146ms)
+✔ Jednoduchý scénář routuje levný model a bez důvodu nemá critic (4.684295ms)
+✔ Nejistota vyvolá nejvýše jeden zapnutý critic s novou rezervací (5.062531ms)
+✔ Rozpočet critic nepropustí: žádné druhé volání ani falešný úspěch (2.972759ms)
+✔ Fail closed: nulový limit nepustí ani první provider call (1.831323ms)
+✔ Input injection je oddělená od system instrukcí a doporučení (4.039701ms)
+✔ Schéma, důkazy a bezpečnost odmítnou vadné výstupy (0.425295ms)
+✔ Neplatný AI výstup nevyvolá retry ani rules fallback (2.964584ms)
+✔ Explicitní 503 může mít jeden retry; oba pokusy se započítají (268.807128ms)
+✔ Retry za hranicí budgetu neodešle další požadavek (256.996986ms)
+✔ Neznámý síťový výsledek se automaticky neopakuje (2.005925ms)
+✔ Timeout, zrušení a tokenový limit zabrání dalším voláním (22.850212ms)
+✔ AI vyžaduje souhlas, byte limit a dostupného providera; žádný skrytý fallback (2.139673ms)
+✔ Chybějící klíč/ceny/limity, neznámý režim a multihost jsou fail-closed (3.505762ms)
+✔ Rodinná žádost o peníze má výrazné signály a bezpečné ověření (31.621357ms)
+✔ Běžná zpráva není označena jako bezpečná jistota (3.53421ms)
+✔ Vstupní instrukce ani kontakty nemění ověřovací doporučení (57.149508ms)
+✔ URL se pouze rozebírá a nemá závěr o pravosti (2.868261ms)
+✔ Vstupní validace odmítá nepodporované vstupy a dlouhé texty (7.869362ms)
+✔ Rezervace přežije restart, půlnoc obnoví jen denní budget (35.349322ms)
+✔ Cena rezervace se nemůže vejít přes hranici denního budgetu (2.540091ms)
+✔ Nedostupná nebo poškozená účetní evidence nedovolí rezervaci (5.320669ms)
+✔ Čtyři souběžné workers nemohou překročit stejný atomický budget (339.103884ms)
+✔ Schválené PNG zůstávají beze změny; explicitní WebP delivery má přesné bytes/MIME a legacy redirect (904.374199ms)
+✔ Release helper při chybě Compose up nespustí smoke proti starému kontejneru (759.716681ms)
+✔ Rollback aktivuje jen app ve vlastním projektu a uloží image až po smoke PASS (743.95513ms)
+✔ Rollback s neúspěšným smoke neuloží změněné image nastavení (1043.745377ms)
+✔ Release helper odmítne starý Docker před jakoukoli Compose změnou (573.33718ms)
+✔ Deployment lock brání souběžnému rollbacku před Docker mutací (137.528918ms)
+✔ Neúplná/plovoucí upstream image je odmítnuta před Compose operací (922.036598ms)
+✔ CR-10: existing SHA-like tag never bypasses clean Git archive/build; activation uses captured immutable ID (4273.122515ms)
+✔ CR-10: mismatching immutable inspect ID aborts before container activation (1324.724096ms)
+✔ CR-10: missing build IID fails closed even when build returned zero (916.462046ms)
+✔ CR-10: connector builds every clean archive and reports an immutable ID without activating services (1427.93122ms)
+✔ CR-10: SHA-like mutable deployment pointers are rejected before Compose (459.775139ms)
+✔ Pouze přesný trusted ingress a právě jeden platný CF header; socket ignoruje všechny headery (20.716133ms)
+✔ Ekvivalentní IPv6 a IPv4-mapped adresy mají stejný limiter key (0.242694ms)
+✔ HTTP: klienti za jedním ingress mají vlastní IP kvóty; direct spoof je odmítnut před analýzou (105.601064ms)
+✔ HTTP: IPv6 spelling a nové anonymní cookies neobcházejí IP kvótu (12.514971ms)
+✔ Production guard odmítne AI, secrets, budget, vypnuté Secure i neurčitý ingress (11.765383ms)
+✔ Skutečný HTTP adaptér posílá oddělené role a strict JSON schema (266.775354ms)
+✔ Redirect, truncation, refusal, malformed a příliš velká odpověď se odmítnou (118.985108ms)
+✔ Pouze explicitní 429/503 jsou označené pro řízený retry; provider body neunikne (102.845816ms)
+✔ Endpointy s credentials, nešifrovaný cloud a neznámé protokoly nelze použít (2.440269ms)
+✔ Spike 10 000 jobů je omezen na jednoho workera a dvě čekající položky (790.77651ms)
+✔ Zrušený čekající job nespustí task a uvolní payload (1.348677ms)
+✔ Abort běžícího jobu neuvolní slot, dokud provider skutečně neskončí (61.4936ms)
+✔ CR-01: IPv6 /64 identities are canonical; adjacent prefixes and IPv4 stay distinct (90.009004ms)
+✔ CR-01: LRU state remains bounded and full state does not deny a new unrelated client (32.973803ms)
+✔ CR-01: session issuance has its own quota and consumes no global analysis tokens (633.560122ms)
+✔ CR-01: invalid origin/body and clients already over quota cannot spend global emergency tokens (269.946784ms)
+✔ CR-02: client admission releases are idempotent and empty state disappears (6.473997ms)
+✔ CR-02: incomplete bodies cannot acquire analysis slots; per-client body cap and deadline hold (299.830781ms)
+✔ CR-02: invalid bounded input is rejected before invoking any worker (43.234344ms)
+✖ CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis (833.617934ms)
+✔ CR-04: original content stays exact and mixed-script/invisible evasion preserves scam signals (10.761954ms)
+✔ CR-04/11: provider receives the original bytes rather than the normalized rule skeleton (18.626608ms)
+✔ CR-05: zero signals and all URL-only inputs are unassessed, including IPv6 literals (7.150934ms)
+✔ CR-06: __Host- cookie attributes; invalid shadows ignored, distinct valid signed tokens reject ambiguity (4.671672ms)
+✔ CR-07: exact hash allowlist, byte/request limits, immutable ETag/304 and sensitive no-store (565.860225ms)
+✔ CR-07: delivery is >85% smaller in total, full canvas/aspect retained, alpha lossless, originals untouched (250.974556ms)
+✔ CR-11: model steering cannot become the public summary (schema alone is not a semantic safety guarantee) (33.077217ms)
+✔ CR-11: direct production runtime startup cannot activate AI or accept nonzero budgets/secrets (13.511374ms)
+✔ Privacy: request bodies, headers, URLs and exceptions never appear on server stdout/stderr (1281.657756ms)
+✔ Opakované fráze zachovávají ordered rules význam včetně hranic řádků (102.463973ms)
+✔ Strict routing odmítá traversal, encoded separators a absolute-form target (172.812376ms)
+✔ Interní soubory ani nepovolené obrázky nelze servírovat (282.115861ms)
+✔ HTTP method abuse: 405 a přesný Allow; neznámé endpointy 404 (410.940975ms)
+✔ Oversize Content-Length a chunked tělo, malformed UTF8/JSON, MIME a encoding (304.526984ms)
+✔ Slow body má vlastní deadline a uvolní admission slot (137.761341ms)
+✔ Cross-origin JSON POST, same-site subdoména a falešný forwarded host jsou odmítnuty (97.676885ms)
+✔ Produkční origin a platná Secure session jsou povinné, útok nerozhýbe pipeline (122.264515ms)
+✔ Globální analysis quota funguje i při rotaci klientských IP (33.262513ms)
+✔ Timeout neotevře další slot, pokud worker ignoruje cancellation (194.14948ms)
+✔ Request smuggling CL/TE, duplicate CL/Host a příliš velké headers selžou (25.413205ms)
+✔ XSS a URL vstup nejsou odraženy do rules výsledku a URL se nefetchuje (47.99414ms)
+✔ Bezpečné chyby, CSP podle frontend závislostí a citlivé no-store (25.237392ms)
+✔ Graceful shutdown nechá dokončit rozpracovaný požadavek (20.672339ms)
+✔ Homepage, privacy, health a skutečný HTTP textový scénář (450.319986ms)
+✔ Neplatný JSON, MIME, velikost, nepodporovaný upload a cesta (367.883148ms)
+✔ Limiter odmítne překročení a po expiraci znovu pustí požadavek (87.258029ms)
+✔ Podepsaná anonymní session má samostatný limit a cookie není klientem čitelná (61.01793ms)
+✔ X-Forwarded-For ani nové cookies neobcházejí IP limit (29.170453ms)
+✔ Vyžadovaná bot ochrana bez verifikátoru selže bezpečně (13.638622ms)
+ℹ tests 87
+ℹ suites 0
+ℹ pass 86
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13809.034401
+
+✖ failing tests:
+
+test at tests/remediation.test.js:83:1
+✖ CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis (833.617934ms)
+  AssertionError [ERR_ASSERTION]: Maximum CPU 92.124 ms; threshold 20 ms
+      at TestContext.<anonymous> (file:///tmp/verim-final-precommit-1zi_amn3/staged-export/tests/remediation.test.js:88:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

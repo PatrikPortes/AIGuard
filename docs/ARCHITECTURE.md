@@ -16,7 +16,7 @@ Budoucí média: podpis i MIME, maximálně 5 MB, omezení pixelů a PDF stran, 
 
 ## Datový model
 
-`Analysis` existuje pouze v paměti odpovědi: id (náhodný UUID), input_type, risk_score, risk_level, summary, signals[{id,title,explanation}], recommended_actions[], verification_steps[], uncertainties[], engine. Neukládat vstup, kontakty, citace ani soubory. Score 0–29 low, 30–59 caution, 60–79 high, 80–100 very_high.
+`Analysis` existuje pouze v paměti odpovědi: id (náhodný UUID), input_type, risk_score, risk_level, summary, signals[{id,title,explanation}], recommended_actions[], verification_steps[], uncertainties[], engine. Neukládat vstup, kontakty, citace ani soubory. URL-only, nulové signály a score0–29 mají neutrální `unassessed`, nikoli potvrzení bezpečnosti. Text se signály:30–59 caution,60–79 high,80–100 very_high.
 
 Etapa měření použije SQLite na persistentním disku, později PostgreSQL při více instancích. `DailyAggregate(day, input_type, risk_level, category, engine_version, count)`; `FeedbackAggregate(day, helpful, reported_outcome, count)`; `EvaluationRun(id, dataset_version, engine_version, created_at, confusion_matrix, uncertain_count)`. Identifikátor analýzy pro jednorázový feedback držet v krátkodobé cache, ne se zdrojovým obsahem. Bez IP v DB, bez fingerprintingu. Počet testerů získat dobrovolným náhodným identifikátorem relace a vykazovat jako odhad relací, nikoli unikátních lidí. Retenci agregací a souhlas definovat před veřejným testem. Ground truth uživatelského feedbacku není ověřený fakt.
 
@@ -26,7 +26,7 @@ Etapa měření použije SQLite na persistentním disku, později PostgreSQL př
 
 ## Bezpečnost a soukromí
 
-Neuchovávat texty v logu ani DB. Požadavky omezené velikostí, rychlostí a timeoutem; cache limiteru musí mít limit a expiraci. Za reverse proxy nepřebírat libovolné X-Forwarded-For, konfiguraci důvěry řešit před deploymentem. CSP, zákaz embeddingu a MIME sniffingu, bez třetích stran v UI. Veřejný deployment vyžaduje HTTPS, globální limiter na proxy, sledování chyb bez payloadů a nákladové limity modelu. Vstup je nedůvěryhodný; prompt injection nemůže měnit instrukce ani volat nástroje. Neúspěch modelu musí být viditelný, ne skrytý za úspěšnou baseline odpovědí. API klíče pouze na serveru; neukládat do Git. Před zapojením modelu ověřit podmínky zpracování, retenci a přeshraniční přenosy.
+Neuchovávat texty v logu ani DB. Požadavky omezené velikostí, rychlostí a timeoutem; limiter state musí být bounded, s doloženou retencí/refill a eviction. Za reverse proxy nepřebírat libovolné X-Forwarded-For, konfiguraci důvěry řešit před deploymentem. CSP, zákaz embeddingu a MIME sniffingu, bez třetích stran v UI. Veřejný deployment vyžaduje HTTPS, globální limiter na proxy, sledování chyb bez payloadů a nákladové limity modelu. Vstup je nedůvěryhodný; prompt injection nemůže měnit instrukce ani volat nástroje. Neúspěch modelu musí být viditelný, ne skrytý za úspěšnou baseline odpovědí. API klíče pouze na serveru; neukládat do Git. Před zapojením modelu ověřit podmínky zpracování, retenci a přeshraniční přenosy.
 
 Admin pouze za autentizovanou serverovou bránou, nikdy jen skrytý odkaz. Před veřejnou verzí testy rate limitu, XSS, prompt injection, poškozených a velkých médií, timeoutu extrakce a úniku dat.
 
@@ -61,6 +61,21 @@ Canonical visual reference: **`docs/design/VERIM_VISUAL_REFERENCE.png`**, origin
 
 Domácí server se ruší jako target. Nové Ubuntu24.04 VPS, Docker Compose, vlastní Cloudflare Tunnel/DNS/WAF, žádný home/Tailscale link. [Deployment plán](DEPLOYMENT_PLAN.md), [STRIDE](security/THREAT_MODEL.md), [release gate](security/SECURITY_RELEASE_GATE.md), [provoz](security/OPERATIONS.md). Public beta je blokována otevřenými P0/P1.
 
-App i connector mají pinned minimal distroless runtime, UID65532/read-only/cap_drop ALL/NNP/CPU-RAM-PID/log/health limity. Jen loopback43127 app, žádný veřejný origin. CF client IP pouze z přesného connector socket peeru, potvrzeného edge trust boundary; veřejné forwarding headers nikdy neurčují klienta nebo origin. Produkční POST fixed Origin/Host, Fetch metadata, valid signed session; JSON/UTF8/body timeout, strict path/method/parser, global/IP/session a admission gates, SIGTERM drain. Ordered rules fráze mají stejný význam bez kvadratického restartování regexu.
+App i connector mají pinned minimal distroless runtime, UID65532/read-only/cap_drop ALL/NNP/CPU-RAM-PID/log/health limity. App pouze internal bridge bez published ports, žádný veřejný origin; host/same-bridge egress vyžaduje VPS firewall gate. CF client IP pouze z přesného connector socket peeru, potvrzeného edge trust boundary; veřejné forwarding headers nikdy neurčují klienta nebo origin. Produkční POST fixed Origin/Host, Fetch metadata, valid signed session; JSON/UTF8/body timeout, strict path/method/parser, global/IP/session a admission gates, SIGTERM drain. Ordered rules fráze mají stejný význam bez kvadratického restartování regexu.
 
-AI_MODErules/no key/zero budgets vynucuje production guard. AI provider/pipeline/queue/schema/budget logika je beze změny. Screenshoty/PDF/URL fetch nejsou aktivní. Samostatné [feature/privacy gates](security/DATA_AND_FEATURE_GATES.md) vyžadují sandbox/egress/idempotency/ledger/ceny/provider review. Rezervace není absolutní garance účtu; provider soft alerts se nevydávají za skutečný hard cap.
+AI_MODErules/no key/zero budgets vynucuje production guard. Queue/schema/global budget reservation zůstávají zachované; Remediation1 mění bezpečný public summary a production startup guard bez aktivace AI. Screenshoty/PDF/URL fetch nejsou aktivní. Samostatné [feature/privacy gates](security/DATA_AND_FEATURE_GATES.md) vyžadují sandbox/egress/idempotency/ledger/ceny/provider review. Rezervace není absolutní garance účtu; provider soft alerts se nevydávají za skutečný hard cap.
+
+
+## Security Remediation 1 — současný závazný stav
+
+Gate zůstává **BLOCKED**, AI_MODE=rules, žádné secrets/provider calls/budget DB. Rozsah oprav a aktuální evidence: [review package](security/INDEPENDENT_REVIEW_PACKAGE.md), [report](security/REMEDIATION_1_REPORT.md), [release gate](security/SECURITY_RELEASE_GATE.md). Historické etapové reporty nejsou současná security approval.
+
+HTTP pořadí: strict parser/route/header → exact Origin a proxy → per-IPv4/IPv6-/64 + signed-session quotas → body2/client+1/session,64KiB,deadline2s/strictUTF8 → content validation10kchars/16kbytes → analysis2/client+1/session+8global → shared emergency token bucket → rules → server-defined structured result. Session endpoint má samostatný issuance bucket a nikdy nespotřebuje shared analysis bucket. Limiter state je bounded LRU; distribuovaný traffic, NAT, churn a restart reset mají residual rizika.
+
+Original content je zachován exact, vedle něj vzniká NFKC/ignorables/mixed-script confusable matching representation. Všechny wildcard regex gaps jsou pevně bounded; ordered fráze se vyhodnocují po řádcích. URL se stále nefetchuje. Výsledek bez doloženého rizikového signálu nemá reassuring success vizuál; URL vždy výslovně uvádí neověřený cíl. Budoucí model summary se do veřejného výsledku nepřebírá: závěr i doporučení mají serverové templates. Schema není sémantická bezpečnostní garance všech AI textů.
+
+Produkční cookie je __Host-guard_session se Secure/HttpOnly/Strict/Path=/,bez Domain. No-JS i failed module ponechá submit disabled; text/select nemají name a native form POST nikdy neobsahuje soukromý text.
+
+14 approved PNG originals a obě canonical references jsou fyzicky uložené v Git beze změny. Delivery používá plná plátna menších transparentních WebP, lossless proti resize reference, exact obsahové hash URL a explicitní allowlist; originály mají301 na konkrétní derivative. Pouze derivative jsou immutable/cacheable, HTML/API/JS/CSS no-store. Static quotas chrání cold-cache origin, skutečný CF cache/WAF/bandwidth test čeká. Postavy se negenerují ani neořezávají.
+
+Compose app má pouze internal bridge, žádný published host port; connector jediný egress+secret. Internal bridge však nechává host gateway/same-bridge access: **VPS host+bridge firewall a ověření IPv4/IPv6/metadata/host/other-net je povinný staging gate**. Release vždy clean Git archive build, captured immutable image ID+source/tree/base manifest, žádný reuse arbitrálního mutable SHA-tag. Real rollout/rollback/restore stále čeká.

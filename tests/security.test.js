@@ -112,24 +112,25 @@ test('Produkční origin a platná Secure session jsou povinné, útok nerozhýb
   assert.equal(calls, 1);
 });
 
-test('Globální API quota funguje i při rotaci klientských IP', async t => {
+test('Globální analysis quota funguje i při rotaci klientských IP', async t => {
   const { server } = await fixture(t, { clientIpMode: 'cloudflare', trustedProxyIp: '127.0.0.1', globalApiRateLimit: 2 });
-  const get = ip => raw(server, `GET /api/session HTTP/1.1\r\nHost: localhost\r\nCF-Connecting-IP: ${ip}\r\nConnection: close\r\n\r\n`);
+  const get = ip => raw(server, `POST /api/analyze HTTP/1.1\r\nHost: localhost\r\nCF-Connecting-IP: ${ip}\r\nContent-Type: application/json\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`);
   assert.match(await get('203.0.113.1'), /^HTTP\/1.1 200/);
   assert.match(await get('203.0.113.2'), /^HTTP\/1.1 200/);
   assert.match(await get('203.0.113.3'), /^HTTP\/1.1 429/);
 });
 
 test('Timeout neotevře další slot, pokud worker ignoruje cancellation', async t => {
-  let complete, calls = 0;
-  const pipeline = { status: () => ({ mode: 'rules' }), close() {}, analyze: () => { calls++; return new Promise(resolve => { complete = resolve; }); } };
+  let complete, started, calls = 0;
+  const pipeline = { status: () => ({ mode: 'rules' }), close() {}, analyze: () => { calls++; return new Promise(resolve => { complete = resolve; started?.(); }); } };
   const { base } = await fixture(t, { pipeline, analysisTimeoutMs: 50, maxConcurrentAnalyses: 1 });
   assert.equal((await post(base)).status, 503);
   assert.equal((await post(base)).status, 503);
   assert.equal(calls, 1);
   complete({ engine: 'rules-v1' });
   await new Promise(resolve => setImmediate(resolve));
-  const final = post(base); await new Promise(resolve => setTimeout(resolve, 10));
+  const ready = new Promise(resolve => { started = resolve; });
+  const final = post(base); await ready;
   complete({ engine: 'rules-v1' }); assert.equal((await final).status, 200);
 });
 

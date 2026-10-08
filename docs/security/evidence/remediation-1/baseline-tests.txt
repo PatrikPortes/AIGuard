@@ -1,0 +1,102 @@
+
+> ai-strazce@0.1.0 test
+> node --test
+
+✔ Celý HTTP textový tok s opravdovým adaptérem a simulovaným LLM serverem (173.645408ms)
+✔ HTTP selhání providera neunikne s obsahem a klíčem, ani nepřejde na pravidla (102.680992ms)
+✔ HTTP souhlas a neplatný vstup jsou odmítnuty před AI (30.066805ms)
+✔ Rules → jedno AI volání → strukturovaný výsledek, bezpečné kroky a žádné citace (15.685696ms)
+✔ Jednoduchý scénář routuje levný model a bez důvodu nemá critic (3.605511ms)
+✔ Nejistota vyvolá nejvýše jeden zapnutý critic s novou rezervací (3.770525ms)
+✔ Rozpočet critic nepropustí: žádné druhé volání ani falešný úspěch (1.941455ms)
+✔ Fail closed: nulový limit nepustí ani první provider call (1.459621ms)
+✔ Input injection je oddělená od system instrukcí a doporučení (3.910595ms)
+✔ Schéma, důkazy a bezpečnost odmítnou vadné výstupy (0.721681ms)
+✔ Neplatný AI výstup nevyvolá retry ani rules fallback (1.721949ms)
+✔ Explicitní 503 může mít jeden retry; oba pokusy se započítají (254.621606ms)
+✔ Retry za hranicí budgetu neodešle další požadavek (270.553791ms)
+✔ Neznámý síťový výsledek se automaticky neopakuje (12.816454ms)
+✔ Timeout, zrušení a tokenový limit zabrání dalším voláním (23.531193ms)
+✔ AI vyžaduje souhlas, byte limit a dostupného providera; žádný skrytý fallback (4.465819ms)
+✔ Chybějící klíč/ceny/limity, neznámý režim a multihost jsou fail-closed (1.500436ms)
+✔ Rodinná žádost o peníze má výrazné signály a bezpečné ověření (7.008795ms)
+✔ Běžná zpráva není označena jako bezpečná jistota (1.885272ms)
+✔ Vstupní instrukce ani kontakty nemění ověřovací doporučení (2.915314ms)
+✔ URL se pouze rozebírá a nemá závěr o pravosti (0.783388ms)
+✔ Vstupní validace odmítá nepodporované vstupy a dlouhé texty (2.284865ms)
+✔ Rezervace přežije restart, půlnoc obnoví jen denní budget (12.095486ms)
+✔ Cena rezervace se nemůže vejít přes hranici denního budgetu (1.931359ms)
+✔ Nedostupná nebo poškozená účetní evidence nedovolí rezervaci (1.524344ms)
+✔ Čtyři souběžné workers nemohou překročit stejný atomický budget (319.969675ms)
+✔ Schválené PNG se servírují s přesnými bytes a správným MIME, jiné cesty zůstávají uzavřené (754.572686ms)
+✔ Release helper při chybě Compose up nespustí smoke proti starému kontejneru (398.120777ms)
+✔ Rollback aktivuje jen app ve vlastním projektu a uloží image až po smoke PASS (615.388918ms)
+✔ Rollback s neúspěšným smoke neuloží změněné image nastavení (1735.348904ms)
+✔ Release helper odmítne starý Docker před jakoukoli Compose změnou (256.515408ms)
+✔ Deployment lock brání souběžnému rollbacku před Docker mutací (44.139461ms)
+✔ Neúplná/plovoucí upstream image je odmítnuta před Compose operací (164.281883ms)
+✔ Pouze přesný trusted ingress a právě jeden platný CF header; socket ignoruje všechny headery (16.263516ms)
+✔ Ekvivalentní IPv6 a IPv4-mapped adresy mají stejný limiter key (0.516189ms)
+✔ HTTP: klienti za jedním ingress mají vlastní IP kvóty; direct spoof je odmítnut před analýzou (87.174925ms)
+✔ HTTP: IPv6 spelling a nové anonymní cookies neobcházejí IP kvótu (7.917478ms)
+✔ Production guard odmítne AI, secrets, budget, vypnuté Secure i neurčitý ingress (10.252272ms)
+✔ Skutečný HTTP adaptér posílá oddělené role a strict JSON schema (49.265823ms)
+✔ Redirect, truncation, refusal, malformed a příliš velká odpověď se odmítnou (55.845868ms)
+✔ Pouze explicitní 429/503 jsou označené pro řízený retry; provider body neunikne (25.265427ms)
+✔ Endpointy s credentials, nešifrovaný cloud a neznámé protokoly nelze použít (1.018566ms)
+✔ Spike 10 000 jobů je omezen na jednoho workera a dvě čekající položky (219.887358ms)
+✔ Zrušený čekající job nespustí task a uvolní payload (2.839929ms)
+✔ Abort běžícího jobu neuvolní slot, dokud provider skutečně neskončí (12.651201ms)
+✔ Opakované fráze zachovávají ordered rules význam včetně hranic řádků (15.19749ms)
+✔ Strict routing odmítá traversal, encoded separators a absolute-form target (67.337225ms)
+✔ Interní soubory ani nepovolené obrázky nelze servírovat (122.908668ms)
+✔ HTTP method abuse: 405 a přesný Allow; neznámé endpointy 404 (38.088759ms)
+✔ Oversize Content-Length a chunked tělo, malformed UTF8/JSON, MIME a encoding (115.219412ms)
+✔ Slow body má vlastní deadline a uvolní admission slot (85.792389ms)
+✔ Cross-origin JSON POST, same-site subdoména a falešný forwarded host jsou odmítnuty (37.063329ms)
+✔ Produkční origin a platná Secure session jsou povinné, útok nerozhýbe pipeline (496.949732ms)
+✔ Globální API quota funguje i při rotaci klientských IP (138.391998ms)
+✔ Timeout neotevře další slot, pokud worker ignoruje cancellation (364.676413ms)
+✔ Request smuggling CL/TE, duplicate CL/Host a příliš velké headers selžou (15.40798ms)
+✔ XSS a URL vstup nejsou odraženy do rules výsledku a URL se nefetchuje (138.212045ms)
+✔ Bezpečné chyby, CSP podle frontend závislostí a citlivé no-store (17.229546ms)
+✔ Graceful shutdown nechá dokončit rozpracovaný požadavek (5.912152ms)
+✔ Homepage, privacy, health a skutečný HTTP textový scénář (213.808418ms)
+✔ Neplatný JSON, MIME, velikost, nepodporovaný upload a cesta (132.053154ms)
+✖ Limiter odmítne překročení a po expiraci znovu pustí požadavek (396.011296ms)
+✔ Podepsaná anonymní session má samostatný limit a cookie není klientem čitelná (95.383083ms)
+✔ X-Forwarded-For ani nové cookies neobcházejí IP limit (144.874598ms)
+✔ Vyžadovaná bot ochrana bez verifikátoru selže bezpečně (14.09365ms)
+ℹ tests 65
+ℹ suites 0
+ℹ pass 64
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4223.092638
+
+✖ failing tests:
+
+test at tests/server.test.js:36:1
+✖ Limiter odmítne překročení a po expiraci znovu pustí požadavek (396.011296ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 429
+  
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/server.test.js:41:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 429,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

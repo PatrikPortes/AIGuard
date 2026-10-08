@@ -13,8 +13,10 @@ export function assertRulesProduction(env) {
       || env.GUARD_LLM_API_KEY || env.OPENAI_API_KEY || env.ANTHROPIC_API_KEY || env.AI_API_KEY || env.NODE_OPTIONS
       || isIP(env.GUARD_TRUSTED_PROXY_IP || '') !== 4
       || !/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(env.GUARD_TRUSTED_PROXY_IP)
-      || ['GUARD_IP_RATE_LIMIT', 'GUARD_SESSION_RATE_LIMIT'].some(key => !/^[1-9]\d{0,2}$/.test(env[key] || ''))
+      || ['GUARD_IP_RATE_LIMIT', 'GUARD_SESSION_RATE_LIMIT', 'GUARD_SESSION_ISSUE_RATE_LIMIT', 'GUARD_STATIC_RATE_LIMIT'].some(key => !/^[1-9]\d{0,2}$/.test(env[key] || ''))
       || !/^[1-9]\d{0,3}$/.test(env.GUARD_GLOBAL_API_RATE_LIMIT || '')
+      || !/^[1-9]\d{0,6}$/.test(env.GUARD_STATIC_BYTES_PER_MINUTE || '')
+      || ['GUARD_MAX_BODY_REQUESTS_PER_CLIENT', 'GUARD_MAX_ANALYSES_PER_CLIENT'].some(key => !/^[12]$/.test(env[key] || ''))
       || ['GUARD_MAX_ACTIVE_REQUESTS', 'GUARD_MAX_CONCURRENT_ANALYSES'].some(key => !/^[1-9]\d?$/.test(env[key] || ''))) {
     throw new Error('Rules-only production configuration rejected');
   }

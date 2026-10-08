@@ -1,0 +1,292 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.98kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for gcr.io/distroless/nodejs24-debian13:nonroot@sha256:9eeb7f5887d0e239e78264b06f7f11d2e14be534050481803a9e4728fcdd278e
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 493B done
+#4 DONE 0.0s
+
+#5 [validated  1/14] FROM docker.io/library/node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
+#5 DONE 0.0s
+
+#6 [production 1/6] FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:9eeb7f5887d0e239e78264b06f7f11d2e14be534050481803a9e4728fcdd278e
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 60.26kB 0.0s done
+#7 DONE 0.0s
+
+#8 [validated  2/14] WORKDIR /app
+#8 CACHED
+
+#9 [validated  3/14] COPY package.json package-lock.json ./
+#9 CACHED
+
+#10 [validated  4/14] RUN --network=none npm ci --ignore-scripts --no-audit --no-fund
+#10 CACHED
+
+#11 [validated  5/14] COPY src ./src
+#11 DONE 2.1s
+
+#12 [validated  6/14] COPY public ./public
+#12 DONE 1.0s
+
+#13 [validated  7/14] COPY scripts ./scripts
+#13 DONE 2.9s
+
+#14 [validated  8/14] COPY tests ./tests
+#14 DONE 4.8s
+
+#15 [validated  9/14] COPY test-support ./test-support
+#15 DONE 4.3s
+
+#16 [validated 10/14] COPY deploy/env/app.env.example deploy/env/deployment.env.example ./deploy/env/
+#16 DONE 4.2s
+
+#17 [validated 11/14] COPY deploy/scripts ./deploy/scripts
+#17 DONE 5.3s
+
+#18 [validated 12/14] RUN --network=none AI_MODE=rules node --test --test-concurrency=1 && node scripts/claude-review-check.js && npm run check
+#18 13.69 ✔ Celý HTTP textový tok s opravdovým adaptérem a simulovaným LLM serverem (191.364455ms)
+#18 13.70 ✔ HTTP selhání providera neunikne s obsahem a klíčem, ani nepřejde na pravidla (17.425499ms)
+#18 13.71 ✔ HTTP souhlas a neplatný vstup jsou odmítnuty před AI (11.032995ms)
+#18 13.95 ✔ Rules → jedno AI volání → strukturovaný výsledek, bezpečné kroky a žádné citace (14.711146ms)
+#18 13.95 ✔ Jednoduchý scénář routuje levný model a bez důvodu nemá critic (4.923962ms)
+#18 13.95 ✔ Nejistota vyvolá nejvýše jeden zapnutý critic s novou rezervací (2.842074ms)
+#18 13.95 ✔ Rozpočet critic nepropustí: žádné druhé volání ani falešný úspěch (2.967411ms)
+#18 13.95 ✔ Fail closed: nulový limit nepustí ani první provider call (1.911927ms)
+#18 13.95 ✔ Input injection je oddělená od system instrukcí a doporučení (2.883407ms)
+#18 13.95 ✔ Schéma, důkazy a bezpečnost odmítnou vadné výstupy (1.049567ms)
+#18 13.95 ✔ Neplatný AI výstup nevyvolá retry ani rules fallback (1.573135ms)
+#18 14.20 ✔ Explicitní 503 může mít jeden retry; oba pokusy se započítají (254.496692ms)
+#18 14.46 ✔ Retry za hranicí budgetu neodešle další požadavek (259.33052ms)
+#18 14.46 ✔ Neznámý síťový výsledek se automaticky neopakuje (3.78938ms)
+#18 14.49 ✔ Timeout, zrušení a tokenový limit zabrání dalším voláním (23.462196ms)
+#18 14.49 ✔ AI vyžaduje souhlas, byte limit a dostupného providera; žádný skrytý fallback (2.509022ms)
+#18 14.49 ✔ Chybějící klíč/ceny/limity, neznámý režim a multihost jsou fail-closed (0.998332ms)
+#18 14.59 ✔ Rodinná žádost o peníze má výrazné signály a bezpečné ověření (6.305133ms)
+#18 14.59 ✔ Běžná zpráva není označena jako bezpečná jistota (2.514214ms)
+#18 14.60 ✔ Vstupní instrukce ani kontakty nemění ověřovací doporučení (5.921137ms)
+#18 14.60 ✔ URL se pouze rozebírá a nemá závěr o pravosti (0.330356ms)
+#18 14.60 ✔ Vstupní validace odmítá nepodporované vstupy a dlouhé texty (0.790444ms)
+#18 14.76 ✔ Rezervace přežije restart, půlnoc obnoví jen denní budget (33.8673ms)
+#18 14.76 ✔ Cena rezervace se nemůže vejít přes hranici denního budgetu (1.423026ms)
+#18 14.76 ✔ Nedostupná nebo poškozená účetní evidence nedovolí rezervaci (1.211557ms)
+#18 15.02 ✔ Čtyři souběžné workers nemohou překročit stejný atomický budget (284.216998ms)
+#18 15.78 ✔ Schválené PNG zůstávají beze změny; explicitní WebP delivery má přesné bytes/MIME a legacy redirect (478.203162ms)
+#18 16.31 ✔ Release helper při chybě Compose up nespustí smoke proti starému kontejneru (402.591007ms)
+#18 16.74 ✔ Rollback aktivuje jen app ve vlastním projektu a uloží image až po smoke PASS (430.631648ms)
+#18 17.26 ✔ Rollback s neúspěšným smoke neuloží změněné image nastavení (523.46693ms)
+#18 17.40 ✔ Release helper odmítne starý Docker před jakoukoli Compose změnou (143.261929ms)
+#18 17.43 ✔ Deployment lock brání souběžnému rollbacku před Docker mutací (29.157103ms)
+#18 17.62 ✔ Neúplná/plovoucí upstream image je odmítnuta před Compose operací (184.023399ms)
+#18 18.41 ✔ CR-10: existing SHA-like tag never bypasses clean Git archive/build; activation uses captured immutable ID (792.599555ms)
+#18 18.82 ✔ CR-10: mismatching immutable inspect ID aborts before container activation (410.844955ms)
+#18 19.34 ✔ CR-10: missing build IID fails closed even when build returned zero (519.140232ms)
+#18 19.98 ✔ CR-10: connector builds every clean archive and reports an immutable ID without activating services (634.938015ms)
+#18 20.12 ✔ CR-10: SHA-like mutable deployment pointers are rejected before Compose (142.288441ms)
+#18 20.32 ✔ Pouze přesný trusted ingress a právě jeden platný CF header; socket ignoruje všechny headery (12.345841ms)
+#18 20.32 ✔ Ekvivalentní IPv6 a IPv4-mapped adresy mají stejný limiter key (0.328063ms)
+#18 20.39 ✔ HTTP: klienti za jedním ingress mají vlastní IP kvóty; direct spoof je odmítnut před analýzou (87.789114ms)
+#18 20.40 ✔ HTTP: IPv6 spelling a nové anonymní cookies neobcházejí IP kvótu (14.508758ms)
+#18 20.41 ✔ Production guard odmítne AI, secrets, budget, vypnuté Secure i neurčitý ingress (5.060635ms)
+#18 20.63 ✔ Skutečný HTTP adaptér posílá oddělené role a strict JSON schema (65.574134ms)
+#18 20.68 ✔ Redirect, truncation, refusal, malformed a příliš velká odpověď se odmítnou (53.927757ms)
+#18 20.71 ✔ Pouze explicitní 429/503 jsou označené pro řízený retry; provider body neunikne (26.10297ms)
+#18 20.71 ✔ Endpointy s credentials, nešifrovaný cloud a neznámé protokoly nelze použít (0.642959ms)
+#18 21.02 ✔ Spike 10 000 jobů je omezen na jednoho workera a dvě čekající položky (172.385444ms)
+#18 21.02 ✔ Zrušený čekající job nespustí task a uvolní payload (2.786024ms)
+#18 21.03 ✔ Abort běžícího jobu neuvolní slot, dokud provider skutečně neskončí (10.988599ms)
+#18 21.28 ✔ CR-01: IPv6 /64 identities are canonical; adjacent prefixes and IPv4 stay distinct (19.782063ms)
+#18 21.28 ✔ CR-01: LRU state remains bounded and full state does not deny a new unrelated client (9.352856ms)
+#18 21.46 ✔ CR-01: session issuance has its own quota and consumes no global analysis tokens (197.812525ms)
+#18 21.53 ✔ CR-01: invalid origin/body and clients already over quota cannot spend global emergency tokens (67.996658ms)
+#18 21.53 ✔ CR-02: client admission releases are idempotent and empty state disappears (0.63415ms)
+#18 21.79 ✔ CR-02: incomplete bodies cannot acquire analysis slots; per-client body cap and deadline hold (263.157306ms)
+#18 21.92 ✔ CR-02: invalid bounded input is rejected before invoking any worker (11.075003ms)
+#18 21.92 ✔ CR-03: maximum-input evasion corpus stays within a 20ms CPU budget per analysis (92.221867ms)
+#18 21.92 ✔ CR-04: original content stays exact and mixed-script/invisible evasion preserves scam signals (2.208543ms)
+#18 21.92 ✔ CR-04/11: provider receives the original bytes rather than the normalized rule skeleton (9.041046ms)
+#18 21.92 ✔ CR-05: zero signals and all URL-only inputs are unassessed, including IPv6 literals (2.223949ms)
+#18 21.92 ✔ CR-06: __Host- cookie attributes; invalid shadows ignored, distinct valid signed tokens reject ambiguity (1.023819ms)
+#18 22.04 ✔ CR-07: exact hash allowlist, byte/request limits, immutable ETag/304 and sensitive no-store (134.198091ms)
+#18 22.16 ✔ CR-07: delivery is >85% smaller in total, full canvas/aspect retained, alpha lossless, originals untouched (107.920672ms)
+#18 22.16 ✔ CR-11: model steering cannot become the public summary (schema alone is not a semantic safety guarantee) (5.697454ms)
+#18 22.17 ✔ CR-11: direct production runtime startup cannot activate AI or accept nonzero budgets/secrets (4.814311ms)
+#18 22.45 ✔ Privacy: request bodies, headers, URLs and exceptions never appear on server stdout/stderr (287.581471ms)
+#18 22.66 ✔ Opakované fráze zachovávají ordered rules význam včetně hranic řádků (22.001778ms)
+#18 22.70 ✔ Strict routing odmítá traversal, encoded separators a absolute-form target (47.995561ms)
+#18 22.75 ✔ Interní soubory ani nepovolené obrázky nelze servírovat (58.197072ms)
+#18 22.77 ✔ HTTP method abuse: 405 a přesný Allow; neznámé endpointy 404 (23.120134ms)
+#18 22.80 ✔ Oversize Content-Length a chunked tělo, malformed UTF8/JSON, MIME a encoding (31.011813ms)
+#18 22.86 ✔ Slow body má vlastní deadline a uvolní admission slot (61.94439ms)
+#18 22.89 ✔ Cross-origin JSON POST, same-site subdoména a falešný forwarded host jsou odmítnuty (20.561872ms)
+#18 22.92 ✔ Produkční origin a platná Secure session jsou povinné, útok nerozhýbe pipeline (35.256872ms)
+#18 22.93 ✔ Globální analysis quota funguje i při rotaci klientských IP (10.602755ms)
+#18 23.00 ✔ Timeout neotevře další slot, pokud worker ignoruje cancellation (67.876092ms)
+#18 23.00 ✔ Request smuggling CL/TE, duplicate CL/Host a příliš velké headers selžou (5.540935ms)
+#18 23.01 ✔ XSS a URL vstup nejsou odraženy do rules výsledku a URL se nefetchuje (10.710738ms)
+#18 23.02 ✔ Bezpečné chyby, CSP podle frontend závislostí a citlivé no-store (6.756058ms)
+#18 23.02 ✔ Graceful shutdown nechá dokončit rozpracovaný požadavek (5.623713ms)
+#18 23.26 ✔ Homepage, privacy, health a skutečný HTTP textový scénář (82.742256ms)
+#18 23.29 ✔ Neplatný JSON, MIME, velikost, nepodporovaný upload a cesta (33.42828ms)
+#18 23.31 ✔ Limiter odmítne překročení a po expiraci znovu pustí požadavek (15.729837ms)
+#18 23.32 ✔ Podepsaná anonymní session má samostatný limit a cookie není klientem čitelná (15.822388ms)
+#18 23.33 ✔ X-Forwarded-For ani nové cookies neobcházejí IP limit (9.325611ms)
+#18 23.34 ✔ Vyžadovaná bot ochrana bez verifikátoru selže bezpečně (5.9926ms)
+#18 23.35 ℹ tests 87
+#18 23.35 ℹ suites 0
+#18 23.35 ℹ pass 87
+#18 23.35 ℹ fail 0
+#18 23.35 ℹ cancelled 0
+#18 23.35 ℹ skipped 0
+#18 23.35 ℹ todo 0
+#18 23.35 ℹ duration_ms 10154.926056
+#18 40.39 TAP version 13
+#18 40.39 # Subtest: INVARIANT parser: ambiguous framing / malformed headers are rejected with 400
+#18 40.39 ok 1 - INVARIANT parser: ambiguous framing / malformed headers are rejected with 400
+#18 40.39   ---
+#18 40.39   duration_ms: 53.306969
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: INVARIANT parser: duplicate Origin / Content-Type / Cookie / Content-Encoding headers are rejected
+#18 40.39 ok 2 - INVARIANT parser: duplicate Origin / Content-Type / Cookie / Content-Encoding headers are rejected
+#18 40.39   ---
+#18 40.39   duration_ms: 21.698568
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: INVARIANT smuggling: body of a rejected request is never parsed as a second request
+#18 40.39 ok 3 - INVARIANT smuggling: body of a rejected request is never parsed as a second request
+#18 40.39   ---
+#18 40.39   duration_ms: 7.742502
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: INVARIANT production session: forged, expired, wrong-secret and truncated cookies never reach the pipeline
+#18 40.39 ok 4 - INVARIANT production session: forged, expired, wrong-secret and truncated cookies never reach the pipeline
+#18 40.39   ---
+#18 40.39   duration_ms: 19.251759
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: INVARIANT production origin: null / scheme / port / case variants of Origin and Host are rejected
+#18 40.39 ok 5 - INVARIANT production origin: null / scheme / port / case variants of Origin and Host are rejected
+#18 40.39   ---
+#18 40.39   duration_ms: 18.566229
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: INVARIANT body: malformed UTF-8 variants and deep JSON nesting are rejected without crashing
+#18 40.39 ok 6 - INVARIANT body: malformed UTF-8 variants and deep JSON nesting are rejected without crashing
+#18 40.39   ---
+#18 40.39   duration_ms: 24.304541
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: INVARIANT routing: no static file outside the 18-entry map, including case/encoding/dot variants
+#18 40.39 ok 7 - INVARIANT routing: no static file outside the 18-entry map, including case/encoding/dot variants
+#18 40.39   ---
+#18 40.39   duration_ms: 14.210428
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-01: one IPv6 /64 can exhaust the shared global API quota and deny every other user
+#18 40.39 ok 8 - FINDING CR-01: one IPv6 /64 can exhaust the shared global API quota and deny every other user # TODO CR-01 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 1319.835488
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-01b: 10 000 distinct client IPs fill the IP limiter map; new legitimate clients get 503 for a full window
+#18 40.39 ok 9 - FINDING CR-01b: 10 000 distinct client IPs fill the IP limiter map; new legitimate clients get 503 for a full window # TODO CR-01b reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 14968.19144
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-02: 8 slow-body POSTs from ONE client pin all analysis slots (production config)
+#18 40.39 ok 10 - FINDING CR-02: 8 slow-body POSTs from ONE client pin all analysis slots (production config) # TODO CR-02 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 121.330231
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-03: a single 10 000-char input blocks the event loop for >100 ms (super-linear rule regex)
+#18 40.39 ok 11 - FINDING CR-03: a single 10 000-char input blocks the event loop for >100 ms (super-linear rule regex) # TODO CR-03 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 2.661605
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-04: invisible / homoglyph characters remove every rules signal from an obvious scam
+#18 40.39 ok 12 - FINDING CR-04: invisible / homoglyph characters remove every rules signal from an obvious scam # TODO CR-04 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 2.075647
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-05: arbitrary phishing-style HTTPS URL is reported as "low" risk (shown with success character)
+#18 40.39 ok 13 - FINDING CR-05: arbitrary phishing-style HTTPS URL is reported as "low" risk (shown with success character) # TODO CR-05 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 1.186471
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-06: a tossed guard_session cookie (sibling subdomain) denies the victim; no __Host- prefix
+#18 40.39 ok 14 - FINDING CR-06: a tossed guard_session cookie (sibling subdomain) denies the victim; no __Host- prefix # TODO CR-06 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 5.681201
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-07: multi-MB static PNGs are unthrottled and Cache-Control: no-store (no edge caching)
+#18 40.39 ok 15 - FINDING CR-07: multi-MB static PNGs are unthrottled and Cache-Control: no-store (no edge caching) # TODO CR-07 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 88.109639
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 # Subtest: FINDING CR-08: without JavaScript the analysis form submits the private message via GET query string
+#18 40.39 ok 16 - FINDING CR-08: without JavaScript the analysis form submits the private message via GET query string # TODO CR-08 reproduced
+#18 40.39   ---
+#18 40.39   duration_ms: 3.218381
+#18 40.39   type: 'test'
+#18 40.39   ...
+#18 40.39 1..16
+#18 40.39 # tests 16
+#18 40.39 # suites 0
+#18 40.39 # pass 7
+#18 40.39 # fail 0
+#18 40.39 # cancelled 0
+#18 40.39 # skipped 0
+#18 40.39 # todo 9
+#18 40.39 # duration_ms 16910.217598
+#18 40.39 Claude strict gate: PASS (16/16 executed assertions; 9 original TODO labels retained, no assertion failure permitted)
+#18 40.55 
+#18 40.55 > ai-strazce@0.1.0 check
+#18 40.55 > node scripts/check.js
+#18 40.55 
+#18 DONE 42.5s
+
+#19 [validated 13/14] RUN chmod -R a+rX /app
+#19 DONE 2.0s
+
+#20 [validated 14/14] RUN cp -R public /delivery-public && node --input-type=module -e "import { characterAssetFiles } from './public/character-assets.js'; import { unlinkSync } from 'node:fs'; for (const asset of characterAssetFiles) unlinkSync('/delivery-public/' + asset.source);"
+#20 DONE 3.9s
+
+#21 [production 2/6] WORKDIR /app
+#21 CACHED
+
+#22 [production 3/6] COPY --from=validated /app/package.json /app/package-lock.json ./
+#22 CACHED
+
+#23 [production 4/6] COPY --from=validated /app/src ./src
+#23 DONE 2.6s
+
+#24 [production 5/6] COPY --from=validated /delivery-public ./public
+#24 DONE 2.5s
+
+#25 [production 6/6] COPY --from=validated /app/scripts/production-guard.js /app/scripts/healthcheck.js /app/scripts/deployment-smoke.js ./scripts/
+#25 DONE 2.1s
+
+#26 exporting to image
+#26 exporting layers
+#26 exporting layers 0.4s done
+#26 writing image sha256:5c8bd3840add45251e86dc533188fa2fee9996f9aef2b01819d73bdfdf3aede2 done
+#26 naming to docker.io/library/verimtomu-remediation:local-audit done
+#26 DONE 0.4s

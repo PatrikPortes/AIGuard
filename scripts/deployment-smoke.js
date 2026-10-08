@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { characterAssetFiles } from '../public/character-assets.js';
 import { createHash } from 'node:crypto';
 
 const mode = process.argv[2];
@@ -15,29 +16,37 @@ try {
   for (const path of ['/.env', '/.git/HEAD', '/docs/ARCHITECTURE.md', '/tests/ingress.test.js', '/scripts/production-guard.js', '/src/server.js', '/assets/characters/', '/assets/characters/unknown.png']) {
     assert.equal((await request(path)).status, 404);
   }
-  const files = [
-    ...['welcome', 'thinking', 'explaining', 'warning', 'success'].map(state => `verka/verka-${state}.png`),
-    ...['default', 'analyzing', 'searching', 'warning', 'success', 'tip', 'capacity', 'error'].map(state => `robo/robo-${state}.png`), 'verkarob.png',
-  ];
   const hash = b => createHash('sha256').update(b).digest('hex');
-  for (const file of files) {
-    const response = await request(`/assets/characters/${file}`);
-    assert.equal(response.status, 200); assert.equal(response.headers.get('content-type'), 'image/png');
-    assert.equal(hash(Buffer.from(await response.arrayBuffer())), hash(await readFile(new URL(`../public/assets/characters/${file}`, import.meta.url))));
+  // Conditional validation transfers no body and cannot exhaust the public
+  // client's image-byte bucket merely by running a health/release smoke check.
+  for (const asset of characterAssetFiles) {
+    if (mode === 'local') {
+      const bytes = await readFile(new URL('../public'+asset.url,import.meta.url));
+      assert.equal(bytes.length,asset.bytes); assert.equal(hash(bytes),asset.sha256);
+    }
+    const alias = await request('/'+asset.source);
+    assert.equal(alias.status, 301); assert.equal(alias.headers.get('location'),asset.url);
+    const response = await request(asset.url, {headers:{'If-None-Match':`"${asset.sha256}"`}});
+    assert.equal(response.status,304); assert.match(response.headers.get('cache-control'),/immutable/);
   }
+  // Verify actual byte integrity of one delivery too (the server checks every
+  // first file load against the manifest). Others were checked during build.
+  const asset = characterAssetFiles[0], delivery = await request(asset.url);
+  assert.equal(delivery.status,200); assert.equal(delivery.headers.get('content-type'),'image/webp');
+  assert.equal(hash(Buffer.from(await delivery.arrayBuffer())),asset.sha256);
   const input = { type: 'text', content: 'Ahoj, zítra se sejdeme u knihovny.' };
   if (mode === 'local') {
-    // Published loopback port is NOT an authenticated ingress, even with forged CF headers.
+    // An in-container loopback request is NOT an authenticated ingress, even with forged CF headers.
     assert.equal((await request('/api/session', { headers: { 'CF-Connecting-IP': '203.0.113.10' } })).status, 403);
     assert.equal((await request('/api/analyze', { method: 'POST', headers: { 'content-type': 'application/json', 'CF-Connecting-IP': '203.0.113.10' }, body: JSON.stringify(input) })).status, 403);
   } else {
     const session = await request('/api/session'); assert.equal(session.status, 200);
-    const cookie = session.headers.get('set-cookie'); assert.match(cookie, /HttpOnly/); assert.match(cookie, /; Secure/);
+    const cookie = session.headers.get('set-cookie'); assert.match(cookie, /^__Host-guard_session=/); assert.match(cookie, /HttpOnly/); assert.match(cookie, /; Secure/);
     assert.equal((await request('/api/analyze', { method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://attacker.invalid', Cookie: cookie.split(';')[0] }, body: JSON.stringify(input) })).status, 403);
     const response = await request('/api/analyze', { method: 'POST', headers: { 'content-type': 'application/json', Origin: base, Cookie: cookie.split(';')[0] }, body: JSON.stringify(input) });
     assert.equal(response.status, 200); assert.equal((await response.json()).engine, 'rules-v1');
   }
-  console.log(`Deployment smoke ${mode}: PASS (rules, private paths, 14 exact PNGs, ingress)`);
+  console.log(`Deployment smoke ${mode}: PASS (rules, private paths, 14 immutable WebP routes + legacy aliases, ingress)`);
 } catch {
   // Fixed text only; never expose response bodies or credentials from failed checks.
   console.error(`Deployment smoke ${['local', 'https'].includes(mode) ? mode : 'invalid mode'}: FAIL`);

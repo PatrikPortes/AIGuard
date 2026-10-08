@@ -11,9 +11,11 @@ COPY tests ./tests
 COPY test-support ./test-support
 COPY deploy/env/app.env.example deploy/env/deployment.env.example ./deploy/env/
 COPY deploy/scripts ./deploy/scripts
-RUN --network=none AI_MODE=rules npm test -- --test-concurrency=1 && npm run check
+RUN --network=none AI_MODE=rules node --test --test-concurrency=1 && node scripts/claude-review-check.js && npm run check
 # Source permissions from isolated workspaces may be 0600/0700.
 RUN chmod -R a+rX /app
+# Original approved PNGs are kept in Git and tested, but not shipped in runtime.
+RUN cp -R public /delivery-public && node --input-type=module -e "import { characterAssetFiles } from './public/character-assets.js'; import { unlinkSync } from 'node:fs'; for (const asset of characterAssetFiles) unlinkSync('/delivery-public/' + asset.source);"
 
 FROM ${RUNTIME_IMAGE} AS production
 ARG VCS_REF=unreleased
@@ -22,7 +24,7 @@ LABEL org.opencontainers.image.title="Verim tomu" \
 WORKDIR /app
 COPY --from=validated /app/package.json /app/package-lock.json ./
 COPY --from=validated /app/src ./src
-COPY --from=validated /app/public ./public
+COPY --from=validated /delivery-public ./public
 COPY --from=validated /app/scripts/production-guard.js /app/scripts/healthcheck.js /app/scripts/deployment-smoke.js ./scripts/
 ENV PATH="/nodejs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ENTRYPOINT []

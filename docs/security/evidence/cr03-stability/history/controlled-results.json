@@ -1,0 +1,96 @@
+{
+  "command": [
+    "node",
+    "--import",
+    "/tmp/verim-final-precommit-1zi_amn3/results/cr03-stability/observe-assertion.mjs",
+    "--test",
+    "--test-reporter=tap",
+    "--test-name-pattern=CR-03",
+    "tests/remediation.test.js"
+  ],
+  "conditions": "10 separate Node test processes run sequentially; no competing builds/audits started; normal workspace CPU affinity unchanged. Existing shared environment background processes cannot be guaranteed absent.",
+  "measurement": "Maximum process CPU per analysis in the exact existing80-call corpus after its20 warmups. External observer logs the existing assertion message after measurement and delegates to the original assertion; no source/threshold/input/calculation edits.",
+  "test_sha256": "e6d4ec23823b9b1d9c399dccfb5fb3684a5124bf41814b84dc3c53ef8966760f",
+  "runs": [
+    {
+      "run": 1,
+      "max_cpu_ms_over_80_analyses": 10.104,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 2,
+      "max_cpu_ms_over_80_analyses": 5.762,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 3,
+      "max_cpu_ms_over_80_analyses": 12.899,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 4,
+      "max_cpu_ms_over_80_analyses": 46.843,
+      "exit_code": 1,
+      "assertion_pass": false,
+      "test_count": 1
+    },
+    {
+      "run": 5,
+      "max_cpu_ms_over_80_analyses": 8.102,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 6,
+      "max_cpu_ms_over_80_analyses": 6.472,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 7,
+      "max_cpu_ms_over_80_analyses": 6.907,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 8,
+      "max_cpu_ms_over_80_analyses": 6.972,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 9,
+      "max_cpu_ms_over_80_analyses": 4.486,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    },
+    {
+      "run": 10,
+      "max_cpu_ms_over_80_analyses": 6.117,
+      "exit_code": 0,
+      "assertion_pass": true,
+      "test_count": 1
+    }
+  ],
+  "minimum_ms": 4.486,
+  "median_ms": 6.939500000000001,
+  "p95_nearest_rank_ms": 46.843,
+  "p95_note": "n=10; nearest-rank empirical p95 equals maximum and is not a production percentile/SLO.",
+  "maximum_ms": 46.843,
+  "runs_over_20_ms": 1,
+  "runs_at_or_over_20_ms": 1,
+  "failed_runs": 1,
+  "source_unchanged": true,
+  "controlled_result": "FAIL"
+}

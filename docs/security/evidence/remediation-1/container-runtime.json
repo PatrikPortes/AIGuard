@@ -1,0 +1,23 @@
+{
+  "image_id": "sha256:5c8bd3840add45251e86dc533188fa2fee9996f9aef2b01819d73bdfdf3aede2",
+  "node_version": "v24.21.0",
+  "user": "65532:65532",
+  "read_only": true,
+  "cap_drop": [
+    "ALL"
+  ],
+  "security_opt": [
+    "no-new-privileges:true"
+  ],
+  "network_mode": "none",
+  "published_ports": {},
+  "memory": 536870912,
+  "nano_cpus": 500000000,
+  "pids_limit": 64,
+  "local_smoke": "PASS",
+  "external_AI_calls": "none: rules guard, no secrets/budgets, network none",
+  "direct_production_AI_startup": {
+    "exit_code": 1,
+    "rejected_before_listen": true
+  }
+}

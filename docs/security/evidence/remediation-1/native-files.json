@@ -1,0 +1,9 @@
+{
+  "suid_sgid_files": [],
+  "nscd_files": [],
+  "ldd_files": [],
+  "gconv_files": [
+    "usr/lib/x86_64-linux-gnu/gconv/EUC-JISX0213.so",
+    "usr/lib/x86_64-linux-gnu/gconv/SHIFT_JISX0213.so"
+  ]
+}

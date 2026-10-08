@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { analyze, intakeAgent, safetyCritic } from '../analysis.js';
+import { analyze, intakeAgent, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
 import { analysisSchema, validateOutput } from './schema.js';
 import { ProviderError, ServiceError } from './errors.js';
 
@@ -51,8 +51,10 @@ export class TextAIWorker {
     ];
     return safetyCritic({
       id: rules.id, input_type: input.type, engine: 'rules+ai-v1',
-      risk_score: score, risk_level: score < 30 ? 'low' : score < 60 ? 'caution' : score < 80 ? 'high' : 'very_high',
-      summary: assessment.summary, signals,
+      risk_score: score, risk_level: resultLevel(score, input.type, signals.length),
+      // Model-generated summaries can be steered without violating a schema.
+      // The public conclusion always comes from reviewed server templates.
+      summary: resultSummary(score, input.type, signals.length), signals,
       recommended_actions: rules.recommended_actions, verification_steps: rules.verification_steps,
       uncertainty: assessment.uncertainty, critic_used: criticUsed,
       uncertainties: [
@@ -66,16 +68,24 @@ export class TextAIWorker {
   }
 }
 
+export function validateInput(input, maxContentBytes = 16000) {
+  let intake;
+  try { intake = intakeAgent(input); } catch { throw new ServiceError('INVALID_INPUT', 400); }
+  if (Buffer.byteLength(intake.content, 'utf8') > maxContentBytes) throw new ServiceError('AI_INPUT_LIMIT', 400);
+  return intake;
+}
+
 export class AnalysisPipeline {
   constructor({ mode = 'rules', worker, queue, timeoutMs = 20000, maxContentBytes = 16000, unavailableCode, providerLabel = 'OpenAI' } = {}) {
     this.mode = mode; this.worker = worker; this.queue = queue;
     this.providerLabel = providerLabel; this.closed = false;
     this.timeoutMs = timeoutMs; this.maxContentBytes = maxContentBytes; this.unavailableCode = unavailableCode;
   }
+  validate(input) {
+    return validateInput(input, this.maxContentBytes);
+  }
   async analyze(input, { signal } = {}) {
-    let intake;
-    try { intake = intakeAgent(input); } catch { throw new ServiceError('INVALID_INPUT', 400); }
-    if (Buffer.byteLength(intake.content, 'utf8') > this.maxContentBytes) throw new ServiceError('AI_INPUT_LIMIT', 400);
+    const intake = this.validate(input);
     if (this.closed) throw new ServiceError('AI_UNAVAILABLE');
     const rules = analyze(intake);
     if (this.mode === 'rules') return rules;

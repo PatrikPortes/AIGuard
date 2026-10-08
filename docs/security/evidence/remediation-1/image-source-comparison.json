@@ -1,0 +1,260 @@
+{
+  "audit_image_id": "sha256:5c8bd3840add45251e86dc533188fa2fee9996f9aef2b01819d73bdfdf3aede2",
+  "revision": "unreleased",
+  "runtime_file_count": 37,
+  "all_runtime_app_bytes_match_candidate": true,
+  "original_PNGs_not_in_runtime": true,
+  "webp_count": 14,
+  "files": [
+    {
+      "path": "package-lock.json",
+      "bytes": 238,
+      "sha256": "5b4238519bd2e761d3d44c62470358fd8ce54e40a344e8aa0c192998381f2aaf",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "package.json",
+      "bytes": 486,
+      "sha256": "abd7720fa27a800105ccc5b05eb751f0b4c1ae39b2f72269dcab6ca993f0b528",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/app.js",
+      "bytes": 7129,
+      "sha256": "af4ebf142d66d5aaa5563246c1e02c7b8d3c9a57d3a93e8046036ba15f3dddad",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-analyzing.1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840.webp",
+      "bytes": 114018,
+      "sha256": "1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-capacity.07975cf43e1b01e58edce8ed608bad8ae6a44848ee27559bd77657dc3512c8f7.webp",
+      "bytes": 124188,
+      "sha256": "07975cf43e1b01e58edce8ed608bad8ae6a44848ee27559bd77657dc3512c8f7",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp",
+      "bytes": 109202,
+      "sha256": "f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp",
+      "bytes": 123834,
+      "sha256": "1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-searching.53e6f779c6ce4ccf3b36b8811cb3aac2a5108d525cedbc52502cb096f43bb77f.webp",
+      "bytes": 115566,
+      "sha256": "53e6f779c6ce4ccf3b36b8811cb3aac2a5108d525cedbc52502cb096f43bb77f",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp",
+      "bytes": 119798,
+      "sha256": "bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-tip.8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4.webp",
+      "bytes": 129804,
+      "sha256": "8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/robo-warning.37c31312e899c29738bf5101ffb014d14bbe25286036facba28140ed99133524.webp",
+      "bytes": 124640,
+      "sha256": "37c31312e899c29738bf5101ffb014d14bbe25286036facba28140ed99133524",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-explaining.4c1ae77446d72006a712dfeff21de26aab8a57e26fffce122f19f2861f010d03.webp",
+      "bytes": 127140,
+      "sha256": "4c1ae77446d72006a712dfeff21de26aab8a57e26fffce122f19f2861f010d03",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-success.e6240ebbe6911d3b6266e0eb03091527a1556a7442a3d3fdd9681254aea445b9.webp",
+      "bytes": 137302,
+      "sha256": "e6240ebbe6911d3b6266e0eb03091527a1556a7442a3d3fdd9681254aea445b9",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-thinking.4a840cba26f6e2aa862907afb4582c679bc1600a2e5609ce3cdcfcb924d28cd6.webp",
+      "bytes": 134884,
+      "sha256": "4a840cba26f6e2aa862907afb4582c679bc1600a2e5609ce3cdcfcb924d28cd6",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-warning.59f0839a05c99cea903247c555c25c5cfed83fed83e5db633287bc9fe5544794.webp",
+      "bytes": 131078,
+      "sha256": "59f0839a05c99cea903247c555c25c5cfed83fed83e5db633287bc9fe5544794",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/verka-welcome.f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354.webp",
+      "bytes": 148582,
+      "sha256": "f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/assets/characters/optimized/verkarob.614a99201e2d045248b08f24ba1c4443817f513ee81d34b60020ec91f2ac7bbf.webp",
+      "bytes": 702152,
+      "sha256": "614a99201e2d045248b08f24ba1c4443817f513ee81d34b60020ec91f2ac7bbf",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/character-assets.js",
+      "bytes": 11652,
+      "sha256": "33eec533956303097353576e6be2406fa218e50e5f5f08dcbeca3a0bba2d2891",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/index.html",
+      "bytes": 8917,
+      "sha256": "16bc53396b5d077d3a741de1e42e1bb8ee534df371970465843428335cd08a9b",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/privacy.html",
+      "bytes": 2696,
+      "sha256": "d110538d67f2a27e4a72ef4cf8a8a90af2308202adefa667791bef3955213055",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "public/style.css",
+      "bytes": 13330,
+      "sha256": "96c6f4c66979b3735b927548c297903789bbd93e63428a75110c1621cc4e8e5b",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "scripts/deployment-smoke.js",
+      "bytes": 4007,
+      "sha256": "0d7a301157010b3107614e77d24c274a79de9abdd3ebc8e121ab9d7a8dd9e037",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "scripts/healthcheck.js",
+      "bytes": 423,
+      "sha256": "7ca0252db5217580b3eed61c798025240e782e0b717081b1750b54e5879ad2c8",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "scripts/production-guard.js",
+      "bytes": 105,
+      "sha256": "5b1c0d8f401c3b7b2b22267d3f15b9c9c7f77169587bed4e9773d1c059ce6cf4",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/budget.js",
+      "bytes": 2563,
+      "sha256": "e94b97da0dcdaef4c56bc7193d11b30c9b35860bab7424b0bd1384e62ce0bbd9",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/errors.js",
+      "bytes": 860,
+      "sha256": "69b2a6ec3befacb875fff591a7f089ff01cc816acb4038ef74965665e1292683",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/pipeline.js",
+      "bytes": 7670,
+      "sha256": "10299f73c41114e7c7aaad83da6e440bbf626b6ef2cb76d93c488cd626f275bd",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/provider.js",
+      "bytes": 2533,
+      "sha256": "8ff1662dddb3271a3ef5ba3455c1cccbb8182cb1556ed622fd1dac47192ae4d3",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/queue.js",
+      "bytes": 2017,
+      "sha256": "6145908d75dfafb17e37004f600d30875831a3cddbaa98f896734fa4430def7d",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/runtime.js",
+      "bytes": 3544,
+      "sha256": "16d972258c54e93a2e6e4e41b451b5af57eb28d8dd80877b75f80ff81847ecd5",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/ai/schema.js",
+      "bytes": 3135,
+      "sha256": "f31ce1ae157b479417a1989eabb5389d9a09284871aeb639e2a2d9cf99062cb9",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/analysis.js",
+      "bytes": 8687,
+      "sha256": "51f78882ee24cad42cd8c150cc089812a6d7f657933c94a1b0f83906c3a221c5",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/client-ip.js",
+      "bytes": 2351,
+      "sha256": "5947b0372a77bff4c5970d0f92fddada3e72dfb662c36f62fdd7420457a14168",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/http-security.js",
+      "bytes": 3585,
+      "sha256": "7a6f89779cd3acb042f57c52d20fb0a990fce26c734b39ec7520c6f514b81f85",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/limits.js",
+      "bytes": 3725,
+      "sha256": "d3b4e595b98ba4a505607a601a26855865803d1fae0b25fca82be61d0bc0e94a",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/production-config.js",
+      "bytes": 1489,
+      "sha256": "98c4b45d693fd2378e8553f762395d45a7444db5dcba32e74cd388243e5bc052",
+      "runtime_mode": "0o644"
+    },
+    {
+      "path": "src/server.js",
+      "bytes": 18166,
+      "sha256": "a3744d3d078f72a60bffc2f3295e7d628611d06e453da616a476698b5b5078a9",
+      "runtime_mode": "0o644"
+    }
+  ],
+  "native_comparison": [
+    {
+      "path": "nodejs/bin/node",
+      "sha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+      "unchanged_from_gate_1_1": true
+    },
+    {
+      "path": "usr/lib/x86_64-linux-gnu/libc.so.6",
+      "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92",
+      "unchanged_from_gate_1_1": true
+    },
+    {
+      "path": "usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+      "sha256": "6456b504ac347bd50c419667440b691f6966ad8aff5309d2f06c977fe2f9debe",
+      "unchanged_from_gate_1_1": true
+    },
+    {
+      "path": "usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+      "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00",
+      "unchanged_from_gate_1_1": true
+    },
+    {
+      "path": "usr/lib/x86_64-linux-gnu/libz.so.1.3.1",
+      "sha256": "85590dd58edf5445e18bc7193e5ebc01ac5841f1ae187e97705a662e90c6421e",
+      "unchanged_from_gate_1_1": true
+    }
+  ],
+  "scope": "Current uncommitted working candidate; not an approved commit/source release or production deployment."
+}

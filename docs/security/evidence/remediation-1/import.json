@@ -1,0 +1,12 @@
+[
+  {
+    "path": "docs/security/CLAUDE_INDEPENDENT_REVIEW.md",
+    "bytes": 39247,
+    "sha256": "eedc7f15a8cc820b3276e0d35bb94eb32099f75568d2fa24e840d8892d62eef9"
+  },
+  {
+    "path": "tests/adversarial/claude-review.adversarial.mjs",
+    "bytes": 16543,
+    "sha256": "94eabe970bc359b2fc03e5ea70cca199524c432e680af4eb3a31d5ffcb2bc748"
+  }
+]

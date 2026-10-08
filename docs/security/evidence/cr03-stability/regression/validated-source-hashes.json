@@ -1,0 +1,7 @@
+{
+  "docs/security/CLAUDE_INDEPENDENT_REVIEW.md": "eedc7f15a8cc820b3276e0d35bb94eb32099f75568d2fa24e840d8892d62eef9",
+  "tests/adversarial/claude-review.adversarial.mjs": "94eabe970bc359b2fc03e5ea70cca199524c432e680af4eb3a31d5ffcb2bc748",
+  "tests/remediation.test.js": "e6d4ec23823b9b1d9c399dccfb5fb3684a5124bf41814b84dc3c53ef8966760f",
+  "src/analysis.js": "14f698e70a953315ff3a6d67cf2052e5965f2e1f63ad973e5ed183d7ead8653c",
+  "tests/cr03-normalization.test.js": "f1835f75d1253353cec4ce8c67271f660f4f82a872c02ca2fa9da1f1fae8734f"
+}

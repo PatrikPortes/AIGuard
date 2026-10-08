@@ -1,0 +1,26 @@
+{
+  "binary_sha256": "6fb373461c6de859684477920d9c599c309751f162e08592857f310a68906c8e",
+  "tool": "GNU nm --defined-only (unstripped exact image binary)",
+  "counts": {
+    "ssh_any": 198,
+    "ssh_channel": 0,
+    "ssh_mux": 0,
+    "ssh_connections": 0,
+    "ssh_accept_packet": 0,
+    "openpgp": 0,
+    "compress_s2": 0,
+    "compress_flate": 106
+  },
+  "ssh_text_symbols": 112,
+  "ssh_count_unit": "matching defined-symbol lines, not number of substring occurrences",
+  "selected_build_modules": {
+    "github.com/klauspost/compress": "v1.18.0",
+    "golang.org/x/crypto": "v0.55.0"
+  },
+  "affected_symbols_source": [
+    "GO-2026-6354.json",
+    "GO-2026-6355.json",
+    "GO-2026-5841.json"
+  ],
+  "raw_nm_output_sha256": "5a426b6a07376287a10d7139bcf49eec6fea7b6ec0ca1f8f73f7b1da257b2078"
+}

@@ -13,6 +13,19 @@ export function normalizeIp(value) {
   return canonical;
 }
 
+// A routable IPv6 /64 is one rate identity, not 2^64 independently free clients.
+// Keep the actual address for ingress verification; only quota keys aggregate.
+export function clientIdentity(value) {
+  const ip = normalizeIp(value);
+  if (!ip) throw new ServiceError('INGRESS_REQUIRED', 403);
+  if (isIP(ip) === 4) return `ipv4:${ip}`;
+  const [left, right = ''] = ip.split('::');
+  const first = left ? left.split(':') : [];
+  const last = right ? right.split(':') : [];
+  const words = ip.includes('::') ? [...first, ...Array(8 - first.length - last.length).fill('0'), ...last] : first;
+  return `ipv6:${words.slice(0, 4).map(word => word.padStart(4, '0')).join(':')}/64`;
+}
+
 export function clientIpResolver({ mode = 'socket', trustedProxyIp } = {}) {
   if (!['socket', 'cloudflare'].includes(mode)) throw new Error('Invalid client IP configuration');
   const trusted = normalizeIp(trustedProxyIp);

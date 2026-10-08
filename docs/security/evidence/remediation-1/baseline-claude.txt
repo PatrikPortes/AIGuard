@@ -1,0 +1,181 @@
+✔ INVARIANT parser: ambiguous framing / malformed headers are rejected with 400 (61.58206ms)
+✔ INVARIANT parser: duplicate Origin / Content-Type / Cookie / Content-Encoding headers are rejected (21.373654ms)
+✔ INVARIANT smuggling: body of a rejected request is never parsed as a second request (8.503318ms)
+✔ INVARIANT production session: forged, expired, wrong-secret and truncated cookies never reach the pipeline (27.799038ms)
+✔ INVARIANT production origin: null / scheme / port / case variants of Origin and Host are rejected (21.978018ms)
+✔ INVARIANT body: malformed UTF-8 variants and deep JSON nesting are rejected without crashing (39.453541ms)
+✔ INVARIANT routing: no static file outside the 18-entry map, including case/encoding/dot variants (19.118953ms)
+⚠ FINDING CR-01: one IPv6 /64 can exhaust the shared global API quota and deny every other user (735.60921ms) # CR-01 reproduced
+⚠ FINDING CR-01b: 10 000 distinct client IPs fill the IP limiter map; new legitimate clients get 503 for a full window (18580.888369ms) # CR-01b reproduced
+⚠ FINDING CR-02: 8 slow-body POSTs from ONE client pin all analysis slots (production config) (3426.241493ms) # CR-02 reproduced
+⚠ FINDING CR-03: a single 10 000-char input blocks the event loop for >100 ms (super-linear rule regex) (2245.679905ms) # CR-03 reproduced
+⚠ FINDING CR-04: invisible / homoglyph characters remove every rules signal from an obvious scam (1650.85861ms) # CR-04 reproduced
+⚠ FINDING CR-05: arbitrary phishing-style HTTPS URL is reported as "low" risk (shown with success character) (1018.477926ms) # CR-05 reproduced
+⚠ FINDING CR-06: a tossed guard_session cookie (sibling subdomain) denies the victim; no __Host- prefix (48.970179ms) # CR-06 reproduced
+⚠ FINDING CR-07: multi-MB static PNGs are unthrottled and Cache-Control: no-store (no edge caching) (58683.255278ms) # CR-07 reproduced
+⚠ FINDING CR-08: without JavaScript the analysis form submits the private message via GET query string (3.02074ms) # CR-08 reproduced
+ℹ tests 16
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 9
+ℹ duration_ms 86934.484833
+
+✖ failing tests:
+
+test at tests/adversarial/claude-review.adversarial.mjs:178:1
+⚠ FINDING CR-01: one IPv6 /64 can exhaust the shared global API quota and deny every other user (735.60921ms) # CR-01 reproduced
+  AssertionError [ERR_ASSERTION]: legitimate unrelated client got 429
+  
+  429 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:183:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:186:1
+⚠ FINDING CR-01b: 10 000 distinct client IPs fill the IP limiter map; new legitimate clients get 503 for a full window (18580.888369ms) # CR-01b reproduced
+  AssertionError [ERR_ASSERTION]: limiter key exhaustion returns AI_OVERLOADED to new clients
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:192:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 503,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:195:1
+⚠ FINDING CR-02: 8 slow-body POSTs from ONE client pin all analysis slots (production config) (3426.241493ms) # CR-02 reproduced
+  AssertionError [ERR_ASSERTION]: victim got 503 {"code":"AI_OVERLOADED","error":"Právě ověřujeme mnoho zpráv. Zkuste to za chvíli."}
+  
+  503 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:210:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:213:1
+⚠ FINDING CR-03: a single 10 000-char input blocks the event loop for >100 ms (super-linear rule regex) (2245.679905ms) # CR-03 reproduced
+  AssertionError [ERR_ASSERTION]: rules analysis took 1194 ms synchronously on the event loop
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:218:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:221:1
+⚠ FINDING CR-04: invisible / homoglyph characters remove every rules signal from an obvious scam (1650.85861ms) # CR-04 reproduced
+  AssertionError [ERR_ASSERTION]: zero-width space: score 0
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:227:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'low',
+    expected: 'low',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:231:1
+⚠ FINDING CR-05: arbitrary phishing-style HTTPS URL is reported as "low" risk (shown with success character) (1018.477926ms) # CR-05 reproduced
+  AssertionError [ERR_ASSERTION]: https://csas-overeni-ucet.com/login: 10
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:234:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'low',
+    expected: 'low',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:238:1
+⚠ FINDING CR-06: a tossed guard_session cookie (sibling subdomain) denies the victim; no __Host- prefix (48.970179ms) # CR-06 reproduced
+  AssertionError [ERR_ASSERTION]: victim with valid session + tossed cookie got 403 {"code":"SESSION_REQUIRED","error":"Nejdříve znovu načtěte stránku služby."}
+  
+  403 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:245:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:249:1
+⚠ FINDING CR-07: multi-MB static PNGs are unthrottled and Cache-Control: no-store (no edge caching) (58683.255278ms) # CR-07 reproduced
+  AssertionError [ERR_ASSERTION]: 100 requests from one IP all 200, ~210 MB egress, cache-control=no-store
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:256:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/adversarial/claude-review.adversarial.mjs:260:1
+⚠ FINDING CR-08: without JavaScript the analysis form submits the private message via GET query string (3.02074ms) # CR-08 reproduced
+  AssertionError [ERR_ASSERTION]: <form id="analysis-form"> … <button id="submit" type="submit">
+      at TestContext.<anonymous> (file:///workspace/AIGuard/tests/adversarial/claude-review.adversarial.mjs:264:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

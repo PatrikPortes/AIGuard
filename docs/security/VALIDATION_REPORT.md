@@ -1,5 +1,7 @@
 # Security Gate 1 — výsledky lokálního auditu
 
+> Historická evidence původní Gate 1, nikoli současných opravených souborů. Aktuální výsledky jsou v [REMEDIATION_1_VALIDATION.md](REMEDIATION_1_VALIDATION.md); původní raw výstupy zůstávají zachovány.
+
 Datum 2026-10-08. Testy proběhly v izolovaném cloud workspace, nikoli na VPS nebo doma. Nejde o pentest. Žádný produkční secret, DNS/Tunnel nebo placené AI nebyly použity. **Release gate pro veřejný deployment zůstává BLOCKED.**
 
 ## Opravené nálezy

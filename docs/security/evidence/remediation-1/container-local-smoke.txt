@@ -1,0 +1,1 @@
+Deployment smoke local: PASS (rules, private paths, 14 immutable WebP routes + legacy aliases, ingress)

@@ -9,6 +9,8 @@
 !scripts/*.js
 !tests/
 !tests/*.js
+!tests/adversarial/
+!tests/adversarial/claude-review.adversarial.mjs
 !test-support/
 !test-support/*.js
 !deploy/
