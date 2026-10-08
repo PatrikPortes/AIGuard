@@ -41,10 +41,25 @@ const examples = {
   normal: 'Ahoj, zítra se potkáme v deset u knihovny. Těším se na procházku.',
 };
 document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => {
-  document.querySelector('#input-type').value = 'text';
   document.querySelector('#content').value = examples[button.dataset.example];
   document.querySelector('#content').focus();
 }));
+// Routing only: chooses the existing API input type, "text" or "url". It is not
+// analysis and says nothing about safety; the backend validates every input.
+// Temporary until the frontend can read the backend capability report (C1).
+// When in doubt the answer is "text": only one standalone http(s) address,
+// without login details, counts as "url".
+function classifyInput(value) {
+  const candidate = value.trim();
+  if (!/^https?:\/\/\S+$/i.test(candidate)) return 'text';
+  try {
+    const url = new URL(candidate);
+    return ['http:', 'https:'].includes(url.protocol) && url.hostname && !url.username && !url.password ? 'url' : 'text';
+  } catch { return 'text'; }
+}
+function analysisRequest(content) {
+  return { type: classifyInput(content), content, ai_consent: mode === 'ai' && document.querySelector('#consent').checked };
+}
 function list(id, items) {
   const target = document.querySelector(id);
   target.replaceChildren(...items.map(text => { const li = document.createElement('li'); li.textContent = text; return li; }));
@@ -77,12 +92,13 @@ form.addEventListener('submit', async event => {
   }
   error.hidden = true; document.querySelector('#error-panel').hidden = true;
   document.querySelector('#status-character').hidden = true; result.hidden = true; analysis = undefined;
-  status.textContent = 'Robo kontroluje rizikové signály…';
+  const request = analysisRequest(document.querySelector('#content').value);
+  status.textContent = request.type === 'url' ? 'Robo rozebírá zápis odkazu…' : 'Robo kontroluje rizikové signály…';
   document.querySelector('#processing').hidden = false; submit.disabled = true;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 35000);
   try {
-    const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: document.querySelector('#input-type').value, content: document.querySelector('#content').value, ai_consent: mode === 'ai' && document.querySelector('#consent').checked }), signal: controller.signal });
+    const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal: controller.signal });
     const data = await response.json();
     if (!response.ok) {
       const failure = new Error(data.error || 'Analýzu se nepodařilo dokončit.');

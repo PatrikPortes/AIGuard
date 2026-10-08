@@ -26,11 +26,9 @@
     <div class="tool-card">
       <noscript><p class="notice">Pro ověření je potřeba JavaScript. Obsah se bez něj neodesílá. Nezadávejte zde citlivé údaje.</p></noscript>
       <form id="analysis-form" method="post" action="/api/analyze">
-        <label for="input-type">Typ obsahu</label>
-        <select id="input-type"><option value="text">Zpráva / text</option><option value="url">Internetový odkaz (URL)</option></select>
         <label for="content">Obsah k ověření</label>
-        <textarea id="content" rows="4" maxlength="10000" required placeholder="Vložte sem text zprávy nebo odkaz…" aria-describedby="content-help"></textarea>
-        <p class="hint" id="content-help">Odstraňte nepotřebné osobní údaje. Nejvýše 10 000 znaků.</p>
+        <textarea id="content" rows="4" maxlength="10000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte zkopírovanou zprávu nebo odkaz…" aria-describedby="content-help"></textarea>
+        <p class="hint" id="content-help">Text zprávy, e-mailu nebo SMS, případně samotný odkaz. Odstraňte nepotřebné osobní údaje. Nejvýše 10 000 znaků.</p>
         <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
         <button id="submit" type="submit" disabled>Prověřit zprávu <span aria-hidden="true">→</span></button>
         <div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div>

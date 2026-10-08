@@ -118,7 +118,7 @@ F1 mění pouze tokeny a CSS primitiva. Markup a chování se mění až v dalš
 |---|---|---|
 | Značka „Věřím?“, tykání v hero a bublině | **Hotovo v F2** na homepage (privacy stránka: F11) | F2 |
 | Hero s velkou společnou ilustrací před nástrojem | **Hotovo v F2**: nástroj je hero, Věrka i Robo zachováni (viz níže) | F2 |
-| Ruční výběr typu obsahu | Jedno pole s automatickou detekcí, výběr jen jako oprava | F3 |
+| Ruční výběr typu obsahu | Jedno pole s automatickou detekcí, výběr jen jako oprava | Hotovo v F3 (bez opravného výběru; viz „Vstup (F3)“) |
 | Kruhové číselné skóre („/ 100“) | **Neodstraňuje se v F1.** Číselné skóre se uživatelům nezobrazuje (ani pod „Chci vědět víc“), pokud to později výslovně neschválí product owner | F5 |
 | Přepínač „Vysvětlit jednoduše“ (checkbox) | Jednoduchý jazyk jako výchozí stav, tlačítko „Vysvětlit jednoduše“ jen uvnitř technické sekce | F5 |
 | Mapování `risk_level` na vzhled | Autoritativní sémantický výsledek z backendového kontraktu C4. Frontend sám neodvozuje konečný výsledek pro nejednoznačné případy | F5 + C4 |
@@ -162,6 +162,21 @@ Obsahová omezení:
 - Pás „Už se to stalo?“ obsahuje jen pravdivý stav „připravujeme“. Nouzové pokyny až po nezávislém ověření (F9).
 - Sekce schopností uvádí jen skutečně dostupné vstupy (text, URL). Snímek obrazovky a PDF jsou „zatím nedostupné“; zvuk a video nepodporujeme.
 - Žádná nová tvrzení o soukromí.
+
+## Vstup (F3)
+
+Uživatel nevybírá typ obsahu. Formulář má jedno pole „Obsah k ověření“ a jednu primární akci. Nápověda pod polem říká, co lze vložit: text zprávy, e-mailu nebo SMS, případně samotný odkaz.
+
+**Směrování text/URL** (`classifyInput` v `public/app.js`) je jen volba existujícího typu API, ne analýza. Neurčuje riziko ani bezpečnost; vstup vždy ověřuje backend. Pravidlo:
+- Hodnotu oříznout o okrajové mezery.
+- `url` jen tehdy, když celá hodnota je jedna adresa bez mezer, začíná `http://` nebo `https://` (bez ohledu na velikost písmen), `new URL()` ji přijme, má hostitele a nemá přihlašovací údaje.
+- Vše ostatní je `text`: běžný text, text s odkazem, více odkazů, holá doména (`example.com`), Markdown odkaz, schémata `javascript:`, `data:`, `file:`, `ftp:` a adresy se jménem a heslem.
+
+Při nejistotě vždy `text`. Frontend adresu neotevírá, nenačítá, nezobrazuje jako odkaz a nevkládá do URL, historie ani refereru.
+
+**Dočasné řešení:** podporované vstupy (text, URL) jsou zatím dané frontendem. Až backend poskytne autoritativní přehled schopností (kontrakt C1), musí ho frontend číst místo tohoto pravidla. Nedostupné vstupy (snímek obrazovky, PDF) a nepodporované (zvuk, video) jsou uvedeny jen textem; nemají žádné ovládací prvky.
+
+Pole má `spellcheck="false"` a `autocomplete="off"`, aby prohlížeč vložený text nenabízel k automatické kontrole pravopisu ani k uložení. Vkládání je nativní; stránka nečte schránku a nežádá o oprávnění. Na mobilu je pole vyšší (7,5 rem), primární akce zůstává na první obrazovce 360×640.
 
 ## Kanonické postavy a role
 

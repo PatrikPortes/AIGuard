@@ -354,7 +354,7 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
   .hero-lead { font-size: var(--text-body); margin-bottom: 12px; }
   .tool-card { padding: 16px; border-radius: 20px; }
   .tool-card label { margin: 8px 0 4px; }
-  .tool-card textarea { min-height: 6rem; height: 6.5rem; }
+  .tool-card textarea { min-height: 6rem; height: 7.5rem; }
   .tool-card button[type=submit] { margin-top: 12px; }
   .hero-guides { flex-direction: column; }
   .hero-duo { flex: none; width: 100%; max-width: 320px; }
