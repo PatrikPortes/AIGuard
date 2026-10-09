@@ -207,6 +207,21 @@ Pořadí:
 
 Po výsledku se stránka posune na začátek výsledku a fokus dostane `#result`. Na 360×640 i 320×568 je na první obrazovce nadpis, hlavní doporučení i tlačítko k ověření. Vložená zpráva se znovu nezobrazuje, dokud nejsou anotace C2. Neúplná odpověď (chybí shrnutí, žádné doporučení, nesprávné typy) vede ke stavu „Nepodařilo se obsah prověřit“ z F4, nikdy k výsledku. Žádná zelená, žádné odkazy, jen textové uzly.
 
+## „Už se to stalo?“ — průvodce omezením škody (M9)
+
+Samostatná statická stránka `public/uz-se-to-stalo.html` (cesta `/uz-se-to-stalo`). Pomáhá omezit možnou škodu; **nerozhoduje, zda šlo o podvod**. Odkazuje na ni štítek „Už se to stalo?“ v hlavičce homepage a zkrácený pás na homepage („Co udělat teď →“). Obsah není vložený do homepage.
+
+Struktura:
+- `h1` a krátký úvod;
+- „Nejdřív udělejte toto“: tři univerzální kroky;
+- „Děje se něco právě teď?“: policie s klikatelným `tel:158` jen pro probíhající situaci;
+- „Co se stalo? Otevřete vše, co platí.“: poznámka „Nevíte přesně?“, poznámka „Jen jste otevřeli odkaz?“ a šest nativních `<details>` (peníze, karta, přihlášení do banky nebo kód, heslo, vzdálený přístup nebo aplikace, doklad nebo osobní údaje), libovolně mnoho otevřených najednou;
+- „Co si schovat“, závěrečné upozornění a odkaz zpět na kontrolu zprávy.
+
+Technicky: žádný JavaScript, formulář, vstup, úložiště, API, obrázek ani externí http(s) odkaz; jediný odkaz mimo web je `tel:158`. Tisk skryje navigaci a v podporovaných prohlížečích vytiskne i zavřené části (`::details-content`). Privacy stránka štítek nedostala: na 320 px by se hlavička zalomila.
+
+**Stav obsahu:** text je převzatý z M9 content freeze. Zdroje bezpečnostních pokynů (Policie ČR, ČNB, NÚKIB, Portál veřejné správy, banky) **nejsou dosud ověřené proti plnému znění primárních stránek** a text podléhá nezávislé kontrole před zveřejněním. Cesta `/uz-se-to-stalo` zatím není v serverovém allowlistu (čeká na revizi Codexu).
+
 ## Kanonické postavy a role
 
 Vzhled Věrky určuje šest PNG z refreshe 2026-10 (`public/assets/characters/verka/verka-{welcome,explaining,thinking,warning,success}.png` a `public/assets/characters/verkarob.png`). Vzhled Roba nadále určuje `docs/design/VERIM_CHARACTER_REFERENCE.png`; Věrka na tomto listu je historická. Každá produkční varianta musí zachovat stejný výtvarný styl, proporce, obličej, barvy a znak štítu na oblečení. Znak je součástí schválené kresby a nemění se. Samostatné assety a jejich stav jsou v [ASSETS.md](ASSETS.md).
