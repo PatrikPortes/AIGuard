@@ -1,6 +1,6 @@
-/* Věřím tomu? — public "coming soon" landing.
-   Same tokens as the application design system (docs/design/DESIGN_SYSTEM.md).
-   No external fonts, no JavaScript, no inline styles. */
+/* Věřím tomu? — coming-soon launch teaser.
+   Application colour tokens; bolder and more minimal than the app itself.
+   No JavaScript, no external fonts or images, no inline styles. */
 
 :root {
   --brand: #6c63ff;
@@ -10,19 +10,10 @@
   --cream: #fffce5;
   --surface: #ffffff;
   --brand-soft: #f0eeff;
-  --blue-soft: #eef8ff;
-  --border: #e5e3f0;
   --muted: #3f4c63;
   --focus-ring: #3730a3;
   --concern-accent: #b45309;
-  --knowledge-ink: #3f4f66;
-  --knowledge-accent: #56677f;
-  --knowledge-surface: #eef2f7;
-  --measure: 62ch;
   --target-min: 48px;
-  --radius-control: 12px;
-  --radius-card: 28px;
-  --shadow-soft: 0 12px 36px rgb(35 27 93 / 7%);
 
   font-size: 112.5%; /* 18 px by default, respects the user's browser setting */
   font-family: ui-rounded, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -31,98 +22,111 @@
   background: var(--cream);
 }
 * { box-sizing: border-box; }
-body { margin: 0; }
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background-image:
-    repeating-radial-gradient(circle at 17% 23%, rgb(15 27 61 / 1.2%) 0 1px, transparent 1px 7px),
-    repeating-radial-gradient(circle at 71% 64%, rgb(15 27 61 / 0.8%) 0 1px, transparent 1px 11px);
+html, body { overflow-x: clip; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* Soft brand glows, CSS only. */
+  background:
+    radial-gradient(60rem 40rem at 85% 20%, rgb(108 99 255 / 16%), transparent 60%),
+    radial-gradient(40rem 30rem at 95% 85%, rgb(56 189 248 / 14%), transparent 60%),
+    radial-gradient(36rem 28rem at -10% 10%, rgb(108 99 255 / 7%), transparent 60%),
+    var(--cream);
 }
-@media (prefers-contrast: more), print { body::before { display: none; } }
-img { max-width: 100%; height: auto; display: block; }
+img { display: block; max-width: 100%; height: auto; }
 a { color: var(--brand-action); text-underline-offset: 4px; }
 :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
-h1, h2, h3 { line-height: 1.2; letter-spacing: -.02em; }
-h2 { font-size: clamp(1.5rem, 4vw, 2rem); margin: 0 0 12px; }
-h3 { font-size: 1.15rem; margin: 0 0 4px; }
-p, li { max-width: var(--measure); }
+h1, h2 { margin: 0; }
 
-.skip-link {
-  position: absolute; left: 16px; top: -120px; z-index: 10;
-  display: inline-flex; align-items: center; min-height: var(--target-min);
-  background: var(--surface); padding: 12px 20px; border-radius: var(--radius-control);
-}
-.skip-link:focus { top: 12px; }
-
-.site-header, main, .site-footer { max-width: 1120px; margin: 0 auto; padding-left: 32px; padding-right: 32px; }
-.site-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.site-header, .hero, .site-footer { max-width: 1200px; margin: 0 auto; padding-left: 40px; padding-right: 40px; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 22px; padding-bottom: 10px; }
 .brand { display: inline-flex; align-items: center; min-height: var(--target-min); color: var(--ink); text-decoration: none; }
-.wordmark { font-size: 1.75rem; font-weight: 850; letter-spacing: -.055em; white-space: nowrap; }
+.wordmark { font-size: 1.8rem; font-weight: 850; letter-spacing: -.055em; white-space: nowrap; }
 .wordmark > span { color: var(--brand-action); }
-/* A status label, not a button: soft badge without a button-like outline. */
-.status-pill { margin: 0; padding: 6px 16px; border-radius: 999px; background: var(--brand-soft); color: var(--ink); font-weight: 750; white-space: nowrap; }
-.status-pill::before { content: ""; display: inline-block; width: .6em; height: .6em; margin-right: .5em; border-radius: 50%; background: var(--concern-accent); vertical-align: .05em; }
 
-/* Hero */
-.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 56px 0 48px; }
-.hero h1 { font-size: clamp(2.6rem, 7vw, 4.2rem); margin: 0; letter-spacing: -.045em; }
-.tagline { font-size: clamp(1.3rem, 3vw, 1.7rem); font-weight: 750; color: var(--brand-action); margin: 4px 0 20px; }
-.hero-lead { font-size: 1.125rem; margin: 0 0 24px; }
-.status-card { background: var(--surface); border: 1px solid var(--border); border-left: 8px solid var(--brand); border-radius: 20px; padding: 18px 22px; box-shadow: var(--shadow-soft); max-width: 34rem; }
-.status-card p { margin: 0; }
-.status-card-title { font-weight: 800; font-size: 1.15rem; margin-bottom: 4px !important; }
-.hero-figure { margin: 0; justify-self: center; width: 100%; max-width: 380px; }
+/* Hero: text left, artwork right on desktop; reading order text → status/art → teaser. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-areas: "text visual" "features visual" "note visual" "trust trust";
+  grid-template-rows: auto auto 1fr auto;
+  column-gap: 56px;
+  align-items: start;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+.hero-text { grid-area: text; padding-top: 12px; }
+.hero-visual { grid-area: visual; position: relative; padding-top: 28px; }
+.features { grid-area: features; }
+.soon-note { grid-area: note; }
+.trust { grid-area: trust; }
 
-/* Sections */
-.section { padding: 40px 0; border-top: 1px solid var(--border); }
-.section-lead { color: var(--muted); margin: 0 0 20px; }
-.why-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; }
-.why-list li { padding: 4px 0 4px 16px; border-left: 4px solid var(--knowledge-accent); }
+h1 { font-size: clamp(2.6rem, 6.2vw, 5rem); line-height: 1.02; letter-spacing: -.05em; font-weight: 850; }
+h1 span { display: block; color: var(--brand-action); }
+.situations { margin: 24px 0 10px; font-size: 1.15rem; font-weight: 700; color: var(--ink); max-width: 30rem; }
+.lead { margin: 0; color: var(--muted); max-width: 32rem; }
 
-.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 12px; }
-.steps li { counter-increment: step; position: relative; padding: 16px 20px 16px 68px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; max-width: 46rem; }
-.steps li::before { content: counter(step); position: absolute; left: 18px; top: 14px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-action); font-weight: 800; }
+/* Artwork on a soft gradient stage; the image's bottom edge sits flush on the stage edge. */
+.hero-art {
+  position: relative;
+  margin: 0;
+  border-radius: 48px;
+  background:
+    radial-gradient(70% 60% at 50% 35%, rgb(255 255 255 / 85%), transparent 70%),
+    linear-gradient(160deg, #e9e6ff 0%, #dff2fe 100%);
+  box-shadow: 0 30px 80px rgb(35 27 93 / 14%);
+  overflow: hidden;
+}
+.hero-art::before, .hero-art::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+.hero-art::before { width: 46%; aspect-ratio: 1; top: -14%; right: -12%; border: 18px solid rgb(108 99 255 / 14%); }
+.hero-art::after { width: 26%; aspect-ratio: 1; bottom: 12%; left: -9%; border: 12px solid rgb(56 189 248 / 18%); }
+.hero-art img { position: relative; z-index: 1; width: 100%; margin-top: 40px; }
 
-.quotes { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
-.quotes li { background: var(--knowledge-surface); color: var(--knowledge-ink); border-radius: 20px 20px 20px 6px; padding: 14px 18px; font-weight: 650; }
+/* Launch status: a bold label on the artwork. A status, not a button. */
+.soon-badge {
+  position: absolute; z-index: 2; top: 0; left: -18px; margin: 0;
+  display: flex; flex-direction: column; line-height: 1.05;
+  padding: 14px 22px; border-radius: 22px;
+  background: var(--ink); color: #ffffff;
+  box-shadow: 0 16px 40px rgb(15 27 61 / 28%);
+  transform: rotate(-4deg);
+}
+.soon-badge span:first-child { font-size: clamp(1.5rem, 2.6vw, 2.1rem); font-weight: 900; letter-spacing: -.01em; text-transform: uppercase; }
+.soon-badge span:last-child { font-size: 1rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #c9c4ff; margin-top: 4px; }
 
-.duo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.duo-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 16px 20px; }
-.duo-card img { width: 96px; flex-shrink: 0; }
-.duo-card p { margin: 0; color: var(--muted); }
+.features { margin-top: 28px; }
+.features h2 { font-size: 1rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.features ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.features li { padding: 8px 16px; border-radius: 999px; background: var(--surface); border: 1px solid #ddd9f3; font-weight: 700; }
 
-.principles { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-.principles li { padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-left: 6px solid var(--brand-action); border-radius: var(--radius-control); max-width: 46rem; }
+.soon-note { margin: 20px 0 0; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.soon-note::before { content: ""; flex: none; width: .7em; height: .7em; border-radius: 50%; background: var(--concern-accent); }
 
-.closing { margin: 24px 0 48px; padding: 32px; border-radius: var(--radius-card); background: var(--ink); color: #ffffff; }
-.closing h2 { color: #ffffff; }
-.closing p { margin: 0 0 8px; }
-.closing-strong { font-size: 1.3rem; font-weight: 800; margin: 12px 0 0 !important; }
+.trust { margin: 36px 0 0; padding: 14px 20px; border-left: 6px solid var(--brand-action); background: rgb(255 255 255 / 70%); border-radius: 12px; max-width: 48rem; font-weight: 600; }
 
-.site-footer { padding-top: 24px; padding-bottom: 32px; border-top: 1px solid var(--border); color: var(--muted); }
+.site-footer { padding-top: 20px; padding-bottom: 32px; color: var(--muted); border-top: 1px solid #e5e3f0; }
 .site-footer p { margin: 0 0 4px; }
 
-@media (max-width: 800px) {
-  .hero { grid-template-columns: 1fr; gap: 24px; padding: 32px 0; }
-  .hero-figure { max-width: 300px; }
-  .why-list, .duo-grid { grid-template-columns: 1fr; }
+/* Tablet and mobile: brand → headline → copy → status + artwork → teaser → note → trust. */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; grid-template-areas: "text" "visual" "features" "note" "trust"; grid-template-rows: none; padding-top: 12px; }
+  .hero-text { padding-top: 0; }
+  .hero-visual { margin-top: 24px; padding-top: 24px; }
+  .hero-art { border-radius: 36px; }
+  .hero-art img { margin-top: 36px; }
+  .soon-badge { left: -6px; }
 }
 @media (max-width: 600px) {
-  .site-header, main, .site-footer { padding-left: 16px; padding-right: 16px; }
+  .site-header, .hero, .site-footer { padding-left: 16px; padding-right: 16px; }
+  .site-header { padding-top: 14px; }
   .wordmark { font-size: 1.4rem; }
-  .status-pill { padding: 4px 12px; }
-  .section { padding: 32px 0; }
-  .steps li { padding: 14px 16px 14px 60px; }
-  .steps li::before { left: 14px; }
-  .closing { padding: 24px 20px; }
-  .duo-card img { width: 72px; }
-}
-@media (max-width: 359px) {
-  /* Same narrow-header treatment as the app: one line, wrapping only as an overflow fallback. */
-  .site-header { flex-wrap: wrap; gap: 8px; padding-left: 12px; padding-right: 12px; }
-  .wordmark { font-size: 1.25rem; }
-  .status-pill { padding: 4px 8px; }
+  h1 { font-size: clamp(2.3rem, 11vw, 3rem); }
+  .situations { font-size: 1.05rem; margin-top: 16px; }
+  .soon-badge { padding: 10px 16px; border-radius: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (prefers-contrast: more) {
+  body { background: var(--cream); }
 }
