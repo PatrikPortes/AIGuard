@@ -146,7 +146,7 @@ export function createServer({
         bodyReleases.push(sessionBodies.enter(sessionId));
         const input = await readJson(req, { timeoutMs: bodyTimeoutMs, signal: controller.signal });
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
-        if (pipeline.validate) pipeline.validate(input); else validateInput(input);
+        const preparedInput = pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
         if (requireBotCheck) {
           if (!botVerifier) throw new ServiceError('BOT_CHECK_REQUIRED');
@@ -174,7 +174,7 @@ export function createServer({
           if (analysisSignal.aborted) return reject(new ServiceError('AI_TIMEOUT'));
           analysisSignal.addEventListener('abort', () => reject(new ServiceError('AI_TIMEOUT')), { once: true });
         });
-        const work = Promise.resolve().then(() => pipeline.analyze(input, { signal: analysisSignal }));
+        const work = Promise.resolve().then(() => pipeline.analyze(input, { signal: analysisSignal, preparedInput }));
         // A worker ignoring cancellation must continue occupying its slot until
         // it actually stops. Timeout must not open unlimited replacement slots.
         const workerRelease = releaseAnalysis; releaseAnalysis = undefined;

@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { analyze, intakeAgent, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
+import { analyze, intakeAgent, reusePreparedInput, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
 import { analysisSchema, validateOutput } from './schema.js';
 import { ProviderError, ServiceError } from './errors.js';
 
@@ -84,8 +84,10 @@ export class AnalysisPipeline {
   validate(input) {
     return validateInput(input, this.maxContentBytes);
   }
-  async analyze(input, { signal } = {}) {
-    const intake = this.validate(input);
+  async analyze(input, { signal, preparedInput } = {}) {
+    // Byte limits are rechecked even when trusted preparation is reused.
+    // Consent and other request metadata are read from the raw input below.
+    const intake = this.validate(reusePreparedInput(input, preparedInput));
     if (this.closed) throw new ServiceError('AI_UNAVAILABLE');
     const rules = analyze(intake);
     if (this.mode === 'rules') return rules;

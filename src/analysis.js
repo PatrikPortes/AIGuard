@@ -8,11 +8,21 @@ const invisibleCharacters = /[\p{Default_Ignorable_Code_Point}\p{Cf}]/gu;
 const latinCharacters = /\p{Script=Latin}/gu;
 const asciiLatinCharacters = /[a-z]/gu;
 const outsideAsciiArabic = /[^\x00-\x7f\u0600-\u06ff]/u;
+const outsideArabicWithoutLatin = /[^\x00-\x40\x5b-\x60\x7b-\x7f\p{Script=Arabic}]/u;
 const arabicInvisibleCharacters = /[\u0600-\u0605\u061c\u06dd]/gu;
 const tokenCharacter = /[\p{L}\p{M}]/u;
+// NFKC expansion frequently walks the same Arabic block. Derive its exact
+// letter/mark membership from the original predicate once, without retaining
+// user content or allocating one substring per character during matching.
+const arabicTokenCharacters = Array.from({ length: 256 }, (_, index) =>
+  tokenCharacter.test(String.fromCharCode(0x0600 + index)));
 const letterToken = /[\p{L}\p{M}]+/uy;
 const confusableCharacters = /[аоесрхуіјѕӏορα]/gu;
 const combiningMarks = /\p{M}/gu;
+// Weak membership is a server-only provenance marker, not a content cache.
+// Entries are immutable and live only as long as the caller's request does.
+const preparedInputs = new WeakSet();
+
 export function matchingRepresentation(original) {
   // ASCII has no NFKC/NFD changes, ignorables or mapped confusables. Avoid
   // thousands of per-token Unicode normalizations/RegExp allocations for it.
@@ -21,6 +31,12 @@ export function matchingRepresentation(original) {
   const hiddenCharacters = invisibleCharacter.test(original);
   let foldedConfusables = false;
   const nfkc = original.normalize('NFKC');
+  // This whole-input domain has no case mapping, Latin tokens, confusables or
+  // ignorables to remove. NFKC remains necessary and is kept unchanged. Check
+  // the original, not its up-to-18-fold expansion, before avoiding no-op scans
+  // and copies. Every Arabic scalar's normalization is checked by differential
+  // tests; any mixed script, Latin letter or invisible uses the generic path.
+  if (!hiddenCharacters && !outsideArabicWithoutLatin.test(original)) return { content: nfkc, hiddenCharacters, foldedConfusables };
   // Arabic presentation forms can expand input up to 18-fold. In this
   // explicitly checked block there are no Latin characters; its eight
   // ignorable/format characters are enumerated and verified against Unicode
@@ -34,28 +50,51 @@ export function matchingRepresentation(original) {
   // Every character is scanned at most a constant number of times; no
   // callback/match array is created for each unrelated non-Latin word.
   const parts = [];
-  let copiedUntil = 0, match;
+  let copiedUntil = 0;
+  // A single request-local value avoids repeating pure folding on identical
+  // neighbouring Latin-containing tokens. No content survives this call.
+  let previousToken, previousFold;
   latin.lastIndex = 0;
-  while ((match = latin.exec(normalized))) {
+  while (latin.test(normalized)) {
+    // Only offsets are needed. Boolean matching avoids allocating two match
+    // arrays per token while keeping the same Unicode/sticky predicates.
+    let start = latin.lastIndex - 1;
+    const last = normalized.charCodeAt(start);
+    if (last >= 0xdc00 && last <= 0xdfff && start > 0
+        && normalized.charCodeAt(start - 1) >= 0xd800 && normalized.charCodeAt(start - 1) <= 0xdbff) start--;
     // Some Latin-script symbols are not letters/marks; the original token
     // grammar excludes them, so they must not become token entry points.
-    if (!tokenCharacter.test(match[0])) continue;
-    let start = match.index;
+    if (!tokenCharacter.test(normalized.slice(start, latin.lastIndex))) continue;
     while (start > copiedUntil) {
       const last = normalized.charCodeAt(start - 1);
       const previous = last >= 0xdc00 && last <= 0xdfff && start > 1
         && normalized.charCodeAt(start - 2) >= 0xd800 && normalized.charCodeAt(start - 2) <= 0xdbff ? start - 2 : start - 1;
-      if (!tokenCharacter.test(normalized.slice(previous, start))) break;
+      const isTokenCharacter = last >= 0x0600 && last <= 0x06ff
+        ? arabicTokenCharacters[last - 0x0600]
+        : tokenCharacter.test(normalized.slice(previous, start));
+      if (!isTokenCharacter) break;
       start = previous;
     }
     letterToken.lastIndex = start;
-    const token = letterToken.exec(normalized)[0];
-    const end = start + token.length;
+    // The selected Latin letter/mark and backward walk guarantee this match.
+    letterToken.test(normalized);
+    const end = letterToken.lastIndex;
+    const token = normalized.slice(start, end);
     // Genuine Cyrillic/Greek-only tokens are never selected or transliterated.
-    const folded = token.replace(confusableCharacters, char => confusables.get(char));
-    if (folded !== token) foldedConfusables = true;
-    parts.push(normalized.slice(copiedUntil, start), folded.normalize('NFD').replace(combiningMarks, ''));
-    copiedUntil = end;
+    if (token !== previousToken) {
+      const folded = token.replace(confusableCharacters, char => confusables.get(char));
+      if (folded !== token) foldedConfusables = true;
+      previousToken = token;
+      previousFold = folded.normalize('NFD').replace(combiningMarks, '');
+    }
+    // A cached confusable was already observed earlier in this same call, so
+    // the cumulative foldedConfusables flag remains set when it is reused.
+    // Unchanged tokens need no reconstruction. Keep scanning and folding every
+    // token; copy the complete intervening text when a real change is found.
+    if (previousFold !== token) {
+      parts.push(normalized.slice(copiedUntil, start), previousFold);
+      copiedUntil = end;
+    }
     latin.lastIndex = end;
   }
   if (!parts.length) return { content: normalized, hiddenCharacters, foldedConfusables };
@@ -84,6 +123,7 @@ const rules = [
 ];
 
 export function intakeAgent(input) {
+  if (preparedInputs.has(input)) return input;
   if (!input || typeof input !== 'object' || !['text', 'url'].includes(input.type)) throw new Error('Vyberte text nebo URL.');
   if (typeof input.content !== 'string' || !input.content.trim()) throw new Error('Vložte obsah, který chcete ověřit.');
   if (input.content.length > 10000) throw new Error('Vstup může mít nejvýše 10 000 znaků.');
@@ -93,7 +133,16 @@ export function intakeAgent(input) {
     try { url = new URL(content.trim()); } catch { throw new Error('Vložte úplnou URL začínající https:// nebo http://.'); }
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Podporujeme jen HTTP(S) URL bez přihlašovacích údajů.');
   }
-  return { type: input.type, content, matching: matchingRepresentation(content) };
+  const intake = Object.freeze({ type: input.type, content, matching: Object.freeze(matchingRepresentation(content)) });
+  preparedInputs.add(intake);
+  return intake;
+}
+
+// Only a privately branded intake for these exact raw fields can be reused.
+// JSON fields, copied objects and client-provided matching data are untrusted.
+export function reusePreparedInput(input, prepared) {
+  return preparedInputs.has(prepared) && input?.type === prepared.type && input?.content === prepared.content
+    ? prepared : input;
 }
 
 export function fraudAgent({ content, type, matching = matchingRepresentation(content) }) {
