@@ -13,6 +13,17 @@ try {
   const state = await health.json();
   assert.equal(state.mode, 'rules'); assert.equal(state.engine, 'rules-v1'); assert.equal(state.ai_configured, false);
   for (const path of ['/', '/privacy', '/app.js', '/style.css']) assert.equal((await request(path)).status, 200);
+  // Loan flow UI, loaded on demand by app.js: legitimate exact routes with their
+  // own types; look-alike paths stay outside the allowlist.
+  for (const [path, type] of [['/loan.js', 'text/javascript; charset=utf-8'], ['/loan.css', 'text/css; charset=utf-8']]) {
+    const response = await request(path);
+    assert.equal(response.status, 200); assert.equal(response.headers.get('content-type'), type);
+    const body = await response.text();
+    if (mode === 'local') assert.equal(body, await readFile(new URL(`../public${path}`, import.meta.url), 'utf8'));
+  }
+  for (const path of ['/LOAN.JS', '/Loan.css', '/loan.js/', '/loan.js.', '/loan.mjs', '/loan', '/public/loan.js', '/assets/loan.js', '/loan.css.map']) {
+    assert.ok([400, 404].includes((await request(path)).status));
+  }
   for (const path of ['/.env', '/.git/HEAD', '/docs/ARCHITECTURE.md', '/tests/ingress.test.js', '/scripts/production-guard.js', '/src/server.js', '/assets/characters/', '/assets/characters/unknown.png']) {
     assert.equal((await request(path)).status, 404);
   }
@@ -46,7 +57,7 @@ try {
     const response = await request('/api/analyze', { method: 'POST', headers: { 'content-type': 'application/json', Origin: base, Cookie: cookie.split(';')[0] }, body: JSON.stringify(input) });
     assert.equal(response.status, 200); assert.equal((await response.json()).engine, 'rules-v1');
   }
-  console.log(`Deployment smoke ${mode}: PASS (rules, private paths, 14 immutable WebP routes + legacy aliases, ingress)`);
+  console.log(`Deployment smoke ${mode}: PASS (rules, private paths, loan UI assets + look-alikes, 14 immutable WebP routes + legacy aliases, ingress)`);
 } catch {
   // Fixed text only; never expose response bodies or credentials from failed checks.
   console.error(`Deployment smoke ${['local', 'https'].includes(mode) ? mode : 'invalid mode'}: FAIL`);

@@ -1,0 +1,38 @@
+/* Loan flow questions (loaded with /loan.js). Each option's whole label is its
+   tap target: the native input covers the label and the visible mark is drawn
+   on the following span, so no :has() support is required. */
+.loan-questions { margin-top: 16px; padding: 16px; border-radius: var(--radius-control); background: var(--brand-soft); }
+.loan-mode { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 12px; }
+.loan-mode-title { margin: 0; font-weight: 750; }
+.loan-mode .secondary-action { background: var(--surface); }
+.loan-intro { margin: 0 0 12px; font-size: var(--text-body); }
+.question { border: 0; padding: 0; margin: 0; min-width: 0; }
+.question + .question { margin-top: 20px; }
+.question legend { font-weight: 650; padding: 0; margin-bottom: 8px; }
+.tool-card .question .hint { margin: 0 0 8px; }
+.choice-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice, .check { position: relative; display: block; margin: 0; font-weight: 600; }
+.choice { flex: 1 1 auto; }
+.check + .check { margin-top: 8px; }
+.choice input, .check input {
+  appearance: none; -webkit-appearance: none; position: absolute; inset: 0; z-index: 1;
+  width: 100%; height: 100%; margin: 0; border: 0; border-radius: var(--radius-control); background: transparent; cursor: pointer;
+}
+.choice span, .check span {
+  display: flex; align-items: center; gap: 10px; min-height: var(--target-min); padding: 10px 14px;
+  border: 2px solid var(--field-border); border-radius: var(--radius-control); background: var(--surface);
+}
+.check span { align-items: flex-start; font-weight: 400; }
+.choice span::before, .check span::before {
+  content: ""; flex-shrink: 0; width: 22px; height: 22px; box-sizing: border-box;
+  border: 2px solid var(--field-border); background: var(--surface);
+}
+.choice span::before { border-radius: 50%; }
+.check span::before { border-radius: 6px; margin-top: 2px; display: grid; place-items: center; color: #ffffff; font-size: 16px; font-weight: 900; line-height: 1; }
+.choice input:checked + span, .check input:checked + span { border-color: var(--brand-action); background: var(--surface); box-shadow: inset 0 0 0 1px var(--brand-action); }
+.choice input:checked + span::before { border-color: var(--brand-action); background: var(--brand-action); box-shadow: inset 0 0 0 4px var(--surface); }
+.check input:checked + span::before { content: "✓"; border-color: var(--brand-action); background: var(--brand-action); }
+.choice input:focus-visible + span, .check input:focus-visible + span { outline: 4px solid var(--focus-ring); outline-offset: 2px; }
+@media (forced-colors: active) {
+  .choice input:checked + span::before, .check input:checked + span::before { forced-color-adjust: none; background: Highlight; border-color: Highlight; color: HighlightText; }
+}

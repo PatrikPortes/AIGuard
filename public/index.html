@@ -31,6 +31,7 @@
         <p class="hint" id="content-help">Zpráva, e-mail, SMS nebo odkaz, nejvýše 10 000 znaků. Nepotřebné osobní údaje smažte.</p>
         <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
         <button id="submit" type="submit" disabled><span id="submit-label">Prověřit zprávu</span> <span aria-hidden="true">→</span></button>
+        <button type="button" id="loan-entry" class="loan-entry" hidden><span class="example-icon violet" aria-hidden="true">Kč</span> Prověřit nabídku půjčky</button>
         <div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div>
         <div id="error-panel" class="error-panel" hidden><img id="error-character" class="character-avatar" src="/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p id="error-speaker" class="speaker">Robo · systémová informace</p><div id="error" role="alert"><p id="error-title" class="error-title"></p><p id="error-message"></p><p id="error-safety"></p></div><div class="error-actions"><button type="button" id="retry" class="secondary-action" hidden>Zkusit znovu</button><button type="button" id="edit-content" class="secondary-action">Upravit zprávu</button></div></div></div>
       </form>
@@ -67,6 +68,7 @@
 </div>
 <section class="result-card" aria-labelledby="explanation-title"><p class="speaker">Věrka · vysvětlení</p><h3 id="explanation-title">Co z kontroly vyplývá</h3><p id="summary"></p></section>
 <section class="result-card" aria-labelledby="signals-title"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3 id="signals-title">Co si zaslouží pozornost</h3></div><ul id="signals"></ul></section>
+<section id="loan-followup" class="result-card loan-followup" aria-labelledby="loan-followup-title" hidden><h3 id="loan-followup-title">Jde o nabídku půjčky?</h3><p>Odpovězte na dvě krátké otázky a výsledek upřesníme. Nemusíte odpovídat.</p><button type="button" id="loan-followup-open" class="secondary-action">Odpovědět na otázky</button></section>
 <section class="result-card unknowns-card" aria-labelledby="unknowns-title"><h3 id="unknowns-title">Co nevíme</h3><ul id="uncertainties"></ul></section>
 <section class="result-card verification-card" aria-labelledby="verification-title"><p class="speaker">Věrka · nezávislé ověření</p><h3 id="verification-title" tabindex="-1">Jak to bezpečně ověřit</h3><ol id="verification"></ol></section>
 <details class="technical-details"><summary>Chci vědět víc</summary><p>Nejprve hledáme známé signály pomocí pravidel. V AI režimu je doplňuje serverový model. Neznáme skutečný kontext zprávy ani totožnost odesílatele.</p><ul id="technical"></ul></details>
@@ -85,6 +87,7 @@
     <li><strong>Balík nelze doručit</strong><span>Zpráva o zásilce chce doplatek nebo kliknutí na odkaz.</span></li>
     <li><strong>Nedoplatek nebo faktura</strong><span>Nečekaná výzva k zaplacení, často s krátkým termínem.</span></li>
     <li><strong>Investice s jistým výnosem</strong><span>Nabídka slibuje vysoký zisk bez rizika.</span></li>
+    <li><strong>Půjčka „pro každého“</strong><span>Nabídka slibuje jisté schválení, ale nejdřív chce poplatek nebo vaše údaje.</span></li>
     <li><strong>Nová známost chce peníze</strong><span>Člověk, kterého znáte jen z internetu, žádá o pomoc s penězi.</span></li>
   </ul>
   <div class="examples">

@@ -288,6 +288,11 @@ button[type=submit][aria-disabled=true] { background: var(--disabled); cursor: p
 .copy-help { margin-top: 8px; padding-top: 0; border-top: 0; }
 .copy-help ol { margin-top: 4px; }
 
+/* Loan entry sits below the main button: the first view is unchanged. */
+.loan-entry { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; background: var(--cool-background); color: var(--ink); border: 2px solid var(--border); font-weight: 650; text-align: left; }
+.loan-entry:hover { border-color: var(--brand-action); }
+.loan-followup .secondary-action { margin-top: 4px; }
+
 /* Věrka + Robo: two separate approved assets, each shown whole (no crop, no filter). */
 .hero-guides { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 8px; }
 .hero-guides .speech-bubble { margin: 0; max-width: 340px; }

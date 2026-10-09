@@ -5,6 +5,7 @@ const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
 let analysis;
 let mode;
+let busy = false;
 const errorPanel = document.querySelector('#error-panel');
 const retry = document.querySelector('#retry');
 const operationStatus = document.querySelector('.operation-status');
@@ -79,6 +80,37 @@ const examples = {
   bank: 'Vaše banka: ihned zadejte heslo a potvrzovací kód na https://banka-priklad.invalid, jinak bude účet zablokován.',
   normal: 'Ahoj, zítra se potkáme v deset u knihovny. Těším se na procházku.',
 };
+// Loan flow: same form and result plus two optional questions from /loan.js,
+// loaded on demand. Answers are fixed choices, never sensitive values.
+const loanEntry = document.querySelector('#loan-entry');
+const content = document.querySelector('#content');
+let loanMode = false;
+let loanUi;
+const isLoan = () => loanMode;
+function setLoanMode(value) {
+  loanMode = value;
+  loanUi?.show(value);
+  loanEntry.hidden = value;
+  if (!busy) document.querySelector('#submit-label').textContent = submitLabel();
+}
+async function openLoan(focus) {
+  try {
+    loanUi ||= await import('/loan.js');
+    await loanUi.ready();
+  } catch { showError('NETWORK'); return; }
+  loanUi.mount({ before: document.querySelector('#ai-consent'), onExit: () => { setLoanMode(false); content.focus(); } });
+  setLoanMode(true);
+  focus();
+}
+loanEntry.addEventListener('click', () => openLoan(() => content.focus()));
+document.querySelector('#loan-followup-open').addEventListener('click', () => openLoan(() => {
+  const title = loanUi.title();
+  title.scrollIntoView({ block: 'start' });
+  title.focus({ preventScroll: true });
+}));
+// Shown only when this module runs; without it nothing can be sent.
+loanEntry.hidden = false;
+if (location.hash === '#pujcka') openLoan(() => {});
 document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => {
   document.querySelector('#content').value = examples[button.dataset.example];
   document.querySelector('#content').focus();
@@ -97,7 +129,8 @@ function classifyInput(value) {
   } catch { return 'text'; }
 }
 function analysisRequest(content) {
-  return { type: classifyInput(content), content, ai_consent: mode === 'ai' && document.querySelector('#consent').checked };
+  const request = { type: classifyInput(content), content, ai_consent: mode === 'ai' && document.querySelector('#consent').checked };
+  return isLoan() ? { ...request, topic: 'loan', loan_context: loanUi.context() } : request;
 }
 function list(id, items) {
   const target = document.querySelector(id);
@@ -118,7 +151,7 @@ const missingVerification = 'Žádost si ověřte jinou cestou. Použijte kontak
 // F5a interim result: neutral heading, no score, no outcome derived in the browser.
 // The first recommended action comes from the backend in its own order; nothing
 // here is inferred from risk_score, risk_level or the number of signals.
-function render() {
+function render(answered) {
   if (!analysis) return;
   const [primary, ...rest] = analysis.recommended_actions;
   document.querySelector('#primary-action').textContent = primary;
@@ -129,10 +162,12 @@ function render() {
   list('#uncertainties', analysis.uncertainties?.length
     ? analysis.uncertainties.map(text => uncertaintyCopy.get(text) || text) : [missingUncertainty]);
   list('#verification', analysis.verification_steps?.length ? analysis.verification_steps : [missingVerification]);
+  document.querySelector('#loan-followup').hidden = !(analysis.topic === 'loan' && !answered);
   list('#technical', [
     analysis.engine === 'rules-v1' ? 'Použita pouze pravidla, bez AI.' : 'Použita pravidla a AI.',
     ...(analysis.engine !== 'rules-v1' && analysis.uncertainty ? [`Nejistota AI: ${{ low: 'menší', medium: 'střední', high: 'vysoká' }[analysis.uncertainty] || 'neuvedena'}.`, `Druhá AI kontrola: ${analysis.critic_used ? 'ano' : 'ne'}.`] : []),
     analysis.input_type === 'url' ? 'Vložen samotný odkaz. Stránku jsme neotevřeli.' : 'Vložen text.',
+    ...(analysis.topic === 'loan' ? ['Posouzeno jako nabídka půjčky. Registr ČNB jsme neprohledávali.'] : []),
   ]);
 }
 document.querySelector('#to-verification').addEventListener('click', () => {
@@ -151,12 +186,12 @@ function isAnalysis(data) {
     && Array.isArray(data.signals) && data.signals.every(signal => isText(signal?.title) && isText(signal?.explanation))
     && ['verification_steps', 'uncertainties'].every(key => isSafetyList(data[key]));
 }
-let busy = false;
+function submitLabel() { return isLoan() ? 'Prověřit nabídku' : 'Prověřit zprávu'; }
 function setBusy(value) {
   busy = value;
   form.setAttribute('aria-busy', String(value));
   submit.setAttribute('aria-disabled', String(value));
-  document.querySelector('#submit-label').textContent = value ? 'Prověřuji…' : 'Prověřit zprávu';
+  document.querySelector('#submit-label').textContent = value ? 'Prověřuji…' : submitLabel();
   operationStatus.classList.toggle('is-busy', value);
   document.querySelector('#processing').hidden = !value;
   if (value) document.querySelector('#processing').scrollIntoView({ block: 'nearest' });
@@ -189,7 +224,7 @@ form.addEventListener('submit', async event => {
   setBusy(false);
   if (!failure) {
     try {
-      analysis = data; render(); result.hidden = false;
+      analysis = data; render(Boolean(request.loan_context && Object.keys(request.loan_context).length)); result.hidden = false;
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;

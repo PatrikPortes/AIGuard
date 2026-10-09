@@ -16,6 +16,9 @@ const assets = new Map([
   ['/uz-se-to-stalo', ['uz-se-to-stalo.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+  // Loan flow UI, loaded on demand by app.js (keeps the homepage first view light).
+  ['/loan.js', ['loan.js', 'text/javascript; charset=utf-8']],
+  ['/loan.css', ['loan.css', 'text/css; charset=utf-8']],
   ['/character-assets.js', ['character-assets.js', 'text/javascript; charset=utf-8']],
   ["/assets/characters/robo/robo-analyzing.png", ["assets/characters/robo/robo-analyzing.png", 'image/png']],
   ["/assets/characters/robo/robo-capacity.png", ["assets/characters/robo/robo-capacity.png", 'image/png']],

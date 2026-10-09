@@ -122,6 +122,71 @@ const rules = [
   { id: 'authority', weight: 15, pattern: /bank[ay]|polici[ei]|kuryr|zasilk|financni urad/u, title: 'Odkaz na instituci nebo doručení', explanation: 'Jméno známé organizace samo o sobě nepotvrzuje totožnost odesílatele.' },
 ];
 
+// Loan / credit offers. These rules run only in a loan situation: the user chose
+// the loan flow, or the text itself talks about a loan. Ordinary words such as
+// "poplatek" or "doklad" are never a signal on their own. Patterns read the same
+// folded matching copy as the rules above and use only bounded repetition.
+const loanWords = /\b(?:za)?pujc(?:k|c|ek)|\bpujcovn|\bnebankovni|\bhypotek|\buver(?:u|em|y|ech|um|ov[a-z]*)?\b/u;
+const idDocument = '(?:obcansk|obcank|doklad[a-z]* totoznost|osobni(?:ho|m)? doklad|cestovni(?:ho)? pas|\\bpasu\\b|ridicsk[a-z]* prukaz|ridicak)';
+const beforePayout = /\b(?:pred|nez)\b.{0,40}(?:vyplac|vyplat|poskytnut|uvolnen|odeslan|pripsan|prevedeni|cerpan|schvalen|posleme|zasleme|dostanete|obdrzite|pripiseme)/u;
+const advancePayment = /(?<!ne)(?:zaplat|uhrad|poukaz)|poplat|zaloh|pojisten|kauc|\bplatb/u;
+const noAdvancePayment = /\b(?:nic|zadn[a-z]*)\b.{0,20}(?:plat|hrad|poplat)|nemusite.{0,20}(?:platit|hradit)|\bbez (?:poplatk|zaloh)/u;
+const loanRules = [
+  { id: 'loan_advance_fee', weight: 60,
+    pattern: /aktivacni poplat|poplat[a-z]* za (?:vyrizeni|vyplac|uvoln|aktivac|schval|zprostredk|sepsani|odeslani)|vratn[a-z]* (?:zaloh|poplat|kauc|pojist)|(?<!(?:bez|zadn[a-z]{1,3}|nic) )(?:pojisteni|poplat[a-z]*|zaloh[a-z]*|kauc[a-z]*|castk[a-z]*) predem|predem (?:zaplat|uhrad|posl|poukaz|zasl)|(?<!ne)(?:zaplat|uhrad|posl|poukaz)[a-z]*.{0,30}\bpredem/u,
+    // "Before payout" and a payment must appear in the same sentence.
+    ordered: content => content.split(/[.!?;\n\r\u2028\u2029]/u).some(sentence => beforePayout.test(sentence) && advancePayment.test(sentence) && !noAdvancePayment.test(sentence)),
+    title: 'Platba předem před získáním půjčky', explanation: 'Tohle je varovný signál. Po zaplacení „poplatku“, „zálohy“ nebo „pojištění“ často peníze zmizí a půjčka nepřijde.' },
+  { id: 'loan_bank_login', weight: 65,
+    pattern: /(?:prihlasovac|\blogin|uzivatelsk[a-z]* jmen|\bhesl).{0,40}(?:bankovnictv|\bbank)|(?:bankovnictv|\bbank[a-z]*).{0,40}(?:prihlasovac|\blogin|\bhesl)|prihlaste se.{0,40}(?:bankovnictv|\bbank(?!ovni identit))/u,
+    title: 'Žádost o přihlašovací údaje do bankovnictví', explanation: 'Tohle je varovný signál. S přihlašovacími údaji může cizí člověk ovládat váš účet. Nesdělujte je nikomu, ani poskytovateli půjčky.' },
+  { id: 'loan_sms_code', weight: 65,
+    pattern: /(?:posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej|vyfot)[a-z]*.{0,40}(?:(?:\bsms|overovac|potvrzovac|autorizacn|jednorazov|aktivacn)[a-z]* ?kod|\bkod[a-z]* (?:z|ze|v) sms)|(?:(?:\bsms|overovac|potvrzovac|autorizacn|jednorazov)[a-z]* ?kod|\bkod[a-z]* (?:z|ze|v) sms).{0,40}(?:posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej)/u,
+    title: 'Žádost o kód z SMS', explanation: 'Tohle je varovný signál. Kódem z SMS se obvykle potvrzuje platba nebo přihlášení. Kdo ho získá, může jednat vaším jménem.' },
+  { id: 'loan_card_details', weight: 65,
+    pattern: /(?:\bcisl|\budaj|platnost|\bkod)[a-z]*.{0,30}(?:platebni karty|\bkart(?:y|u|e)\b)|(?:platebni karty|\bkart(?:y|u|e)\b).{0,30}(?:\bcisl|\budaj|platnost)|\bcvv\b|\bcvc\b/u,
+    title: 'Žádost o údaje z platební karty', explanation: 'Tohle je varovný signál. Údaje z karty umožňují platit vaším jménem. K získání půjčky by neměly být potřeba.' },
+  { id: 'loan_remote_access', weight: 65,
+    pattern: /anydesk|teamviewer|rustdesk|quick ?support|airdroid|vzdalen[a-z]* (?:pristup|ploch|sprav|pripojen|ovladan)|sdilen[a-z]* obrazovk|(?:nainstal|stahn)[a-z]*.{0,60}(?:abychom|aby (?:nas|nase|vam)).{0,40}(?:pripoj|videl|ovlad|pomohl)/u,
+    title: 'Žádost o instalaci aplikace nebo vzdálený přístup', explanation: 'Tohle je varovný signál. Přes aplikaci pro vzdálený přístup může cizí člověk vidět a ovládat váš telefon nebo počítač, včetně bankovnictví.' },
+  { id: 'loan_id_document', weight: 30,
+    pattern: new RegExp(`(?:\\bfot|kopi|sken|snim|vyfot|nafot)[a-z]*.{0,40}${idDocument}|${idDocument}[a-z]*.{0,40}(?:\\bfot|kopi|sken|snim|z obou stran|obe strany)`, 'u'),
+    title: 'Žádost o fotku nebo kopii dokladu', explanation: 'Fotka nebo kopie dokladu se dá zneužít, například ke sjednání půjčky na vaše jméno. Pošlete ji jen poskytovateli, kterého jste si sami nezávisle ověřili.' },
+  { id: 'loan_guaranteed', weight: 35,
+    pattern: /(?:schvaleni|schvalen[aeiy]|schvalime|schvalujeme)[a-z]*.{0,30}(?:(?<!ne)(?<!neni )(?:garant|zarucen)|\bjist[aeiyo]|100 ?%|\bvzdy\b|\bkazd|\bvsem\b|bez vyjimky)|(?:(?<!ne)(?<!neni )(?:garant|zarucen)|\bjist[aeiyo]|100 ?%)[a-z]*.{0,30}schval|schvalime (?:kazd|vsech)/u,
+    title: 'Slib jistého schválení', explanation: 'Tohle je varovný signál. Poctivý poskytovatel musí nejdřív posoudit, zda budete půjčku schopni splácet. Schválení proto nemůže slíbit předem.' },
+  { id: 'loan_no_registry', weight: 30,
+    pattern: /\bbez (?:registr|nahlizeni do registr|kontroly registr|prover)|\bpro kazdeho\b|\bi (?:pro |s |se )?(?:dluznik|exekuc|zaznam[a-z]* v registr|zapis[a-z]* v registr)|bez ohledu na (?:registr|exekuc|dluh|prijem)|\bbez dolozeni prijm/u,
+    title: 'Půjčka „bez registru“ nebo „pro každého“', explanation: 'Tohle je varovný signál. Poctivý poskytovatel musí posoudit, zda budete půjčku schopni splácet. Nabídka „pro každého“ tuto kontrolu obchází nebo ji jen slibuje.' },
+  { id: 'loan_pressure', weight: 20,
+    pattern: /(?:nabidk|akce|sazb|urok)[a-z]*.{0,30}(?:plati|konci|vyprsi|\bjen\b|pouze).{0,20}(?:dnes|zitra|do pulnoci|\d{1,2} ?(?:hod|min))|rozhodnete se (?:hned|ihned|rychle|dnes)|\bjen pro (?:prvnich|nekolik|par)\b|omezen[a-z]* (?:pocet|nabidk)|\bposledni (?:volne|misto|den)\b|neprodlen/u,
+    title: 'Tlak na rychlé rozhodnutí o půjčce', explanation: 'Tohle je varovný signál. Půjčka je závazek na dlouhou dobu. Kdo vás nutí rozhodnout se hned, nedává vám čas si nabídku ověřit.' },
+];
+const loanSensitive = ['loan_bank_login', 'loan_sms_code', 'loan_card_details', 'loan_remote_access', 'loan_id_document'];
+
+// Guided loan questions: fixed choices about WHAT the other party asked for. The
+// sensitive value itself (document, password, code, card number) is never accepted.
+const advanceAnswers = new Set(['yes', 'no', 'unsure']);
+const requestAnswers = new Map([
+  ['id_document', 'loan_id_document'], ['bank_login', 'loan_bank_login'], ['sms_code', 'loan_sms_code'],
+  ['card_details', 'loan_card_details'], ['remote_access', 'loan_remote_access'], ['none', null], ['unsure', null],
+]);
+function loanContext(input) {
+  if (input.topic === undefined && input.loan_context === undefined) return undefined;
+  if (input.topic !== 'loan') throw new Error('Neplatné téma.');
+  // Only an absent field means "not answered"; null or any other type is rejected.
+  const answers = input.loan_context === undefined ? {} : input.loan_context;
+  if (!answers || typeof answers !== 'object' || Array.isArray(answers) || Object.getPrototypeOf(answers) !== Object.prototype
+    || Object.keys(answers).some(key => key !== 'advance_payment' && key !== 'requests')) throw new Error('Neplatné odpovědi.');
+  const advance = answers.advance_payment === undefined ? null : answers.advance_payment;
+  const requests = answers.requests === undefined ? [] : answers.requests;
+  if (answers.advance_payment !== undefined && !advanceAnswers.has(advance)) throw new Error('Neplatné odpovědi.');
+  if (!Array.isArray(requests) || requests.length > requestAnswers.size || new Set(requests).size !== requests.length
+    || !requests.every(value => typeof value === 'string' && requestAnswers.has(value))
+    || (requests.length > 1 && requests.some(value => value === 'none' || value === 'unsure'))) throw new Error('Neplatné odpovědi.');
+  return Object.freeze({ advance_payment: advance, requests: Object.freeze([...requests].sort()) });
+}
+
 export function intakeAgent(input) {
   if (preparedInputs.has(input)) return input;
   if (!input || typeof input !== 'object' || !['text', 'url'].includes(input.type)) throw new Error('Vyberte text nebo URL.');
@@ -133,7 +198,8 @@ export function intakeAgent(input) {
     try { url = new URL(content.trim()); } catch { throw new Error('Vložte úplnou URL začínající https:// nebo http://.'); }
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Podporujeme jen HTTP(S) URL bez přihlašovacích údajů.');
   }
-  const intake = Object.freeze({ type: input.type, content, matching: Object.freeze(matchingRepresentation(content)) });
+  const loan = loanContext(input);
+  const intake = Object.freeze({ type: input.type, content, matching: Object.freeze(matchingRepresentation(content)), ...(loan && { topic: 'loan', loan }) });
   preparedInputs.add(intake);
   return intake;
 }
@@ -141,17 +207,42 @@ export function intakeAgent(input) {
 // Only a privately branded intake for these exact raw fields can be reused.
 // JSON fields, copied objects and client-provided matching data are untrusted.
 export function reusePreparedInput(input, prepared) {
-  return preparedInputs.has(prepared) && input?.type === prepared.type && input?.content === prepared.content
-    ? prepared : input;
+  if (!preparedInputs.has(prepared) || input?.type !== prepared.type || input?.content !== prepared.content) return input;
+  let loan;
+  try { loan = loanContext(input); } catch { return input; }
+  return JSON.stringify(loan) === JSON.stringify(prepared.loan) ? prepared : input;
 }
 
-export function fraudAgent({ content, type, matching = matchingRepresentation(content) }) {
+export function hasLoanWarning(signals) {
+  return signals.some(signal => signal.id.startsWith('loan_'));
+}
+
+function loanSituation({ type, matching, topic }) {
+  return topic === 'loan' || (type === 'text' && loanWords.test(matching.content));
+}
+
+export function fraudAgent({ content, type, matching = matchingRepresentation(content), topic, loan }) {
   const signals = type === 'text' ? rules.filter(rule => rule.pattern.test(matching.content) || rule.ordered?.(matching.content)).map(({ pattern, ordered, ...rule }) => rule) : [];
   if (matching.hiddenCharacters || matching.foldedConfusables) signals.push({ id: 'unusual_characters', weight: 5, title: 'Neobvyklý zápis znaků', explanation: 'Text obsahuje neviditelné nebo podobně vypadající znaky. Mohou mít běžný jazykový důvod, ale také skrývat rizikové výrazy.' });
   const links = type === 'url' ? [content] : (content.match(/https?:\/\/[^\s<>"']+/giu) || []);
   if (links.length) signals.push({ id: 'link', weight: 10, title: 'Obsahuje internetový odkaz', explanation: 'Cíl odkazu nebyl otevřen ani ověřen. Odkaz sám o sobě není důkaz podvodu.' });
   if (links.some(link => { try { const url = new URL(link); return url.protocol === 'http:' || url.username || url.password || isIP(url.hostname.replace(/^\[|\]$/g, '')) || url.hostname.includes('xn--'); } catch { return false; } })) signals.push({ id: 'unusual_url', weight: 25, title: 'Odkaz potřebuje zvláštní opatrnost', explanation: 'Odkaz používá nešifrovaný přenos, číselnou adresu, vložené přihlašovací údaje nebo zvláštní zápis domény. To samo podvod nedokazuje.' });
-  return signals;
+  if (!loanSituation({ type, matching, topic })) return signals;
+  // Text rules and the user's own answers produce the same fixed signals once.
+  const found = new Set(type === 'text' ? loanRules.filter(rule => rule.pattern.test(matching.content) || rule.ordered?.(matching.content)).map(rule => rule.id) : []);
+  if (loan?.advance_payment === 'yes') found.add('loan_advance_fee');
+  for (const answer of loan?.requests || []) if (requestAnswers.get(answer)) found.add(requestAnswers.get(answer));
+  const generic = new Set(signals.map(signal => signal.id));
+  if (generic.has('urgency')) found.delete('loan_pressure');
+  // A specific loan signal replaces the broader generic one it explains better.
+  const replaced = new Set([
+    ...(found.has('loan_advance_fee') ? ['money'] : []),
+    ...(['loan_bank_login', 'loan_sms_code', 'loan_card_details'].some(id => found.has(id)) ? ['credentials'] : []),
+  ]);
+  return [
+    ...loanRules.filter(rule => found.has(rule.id)).map(({ pattern, ordered, ...rule }) => rule),
+    ...signals.filter(signal => !replaced.has(signal.id)),
+  ];
 }
 
 export function verificationAgent() {
@@ -171,11 +262,46 @@ export function safetyCritic(result) {
 export function resultLevel(score, type, signalCount) {
   return type === 'url' || signalCount === 0 || score < 30 ? 'unassessed' : score < 60 ? 'caution' : score < 80 ? 'high' : 'very_high';
 }
-export function resultSummary(score, type, signalCount) {
+// loanWarning: at least one loan-specific signal. A mere mention of a payment
+// in a loan text is not described as a warning sign.
+export function resultSummary(score, type, signalCount, topic, loanWarning = false) {
   return type === 'url' ? 'Cíl odkazu nebyl ověřen. Stránku jsme nenavštívili; z tohoto výsledku nelze určit její bezpečnost.'
+    : topic === 'loan' ? (loanWarning || score >= 60
+      ? 'U této nabídky půjčky jsme našli varovné signály. Než cokoli zaplatíte, podepíšete nebo pošlete, ověřte si poskytovatele nezávisle.'
+      : signalCount ? 'U této nabídky jsme našli věci, které je vhodné ověřit. Mohou se objevit i u poctivé nabídky. Poskytovatele si přesto ověřte nezávisle.'
+      : 'U této nabídky půjčky jsme nenašli známé varovné signály. Z toho nelze poznat, zda je nabídka v pořádku. Poskytovatele si přesto ověřte nezávisle.')
     : score >= 60 ? 'Obsah obsahuje více výrazných rizikových signálů. Požadavek si nezávisle ověřte.'
     : signalCount ? 'Našli jsme signály, které je vhodné ověřit. Mohou se objevit i v legitimní komunikaci.'
     : 'Pravidla nenašla známé signály. Z toho nelze poznat, zda je obsah důvěryhodný.';
+}
+
+// Fixed, reviewed loan guidance. No registry lookup is made or simulated: the
+// user is sent to the official source and told what this result cannot confirm.
+function loanActions(signalIds) {
+  const primary = signalIds.has('loan_advance_fee')
+    ? 'Nic předem neplaťte. Platba předem před získáním půjčky si zaslouží zvýšenou opatrnost.'
+    : loanSensitive.some(id => signalIds.has(id))
+      ? 'Neposílejte doklady, přihlašovací údaje, kódy ani údaje z karty a nic neinstalujte, dokud si poskytovatele nezávisle neověříte.'
+      : 'Než cokoli podepíšete nebo zaplatíte, ověřte si poskytovatele nezávisle.';
+  return [primary, 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Na rozhodnutí o půjčce máte čas. Smlouvu si v klidu přečtěte, než ji podepíšete.', 'Podezřelé odkazy a přílohy neotevírejte.'];
+}
+const loanVerification = [
+  'Poskytovatele si ověřte nezávisle. Na webu České národní banky, který si otevřete sami, zjistěte, zda má oprávnění poskytovat spotřebitelské úvěry. Nepoužívejte odkaz ani telefon ze zprávy.',
+  'Porovnejte přesný název firmy z nabídky s názvem v seznamu ČNB. Podobný název ještě neznamená, že jde o stejnou firmu.',
+  'Než cokoli podepíšete nebo zaplatíte, poraďte se s někým, komu důvěřujete.',
+  'Použijte jiný komunikační kanál. Nepřebírejte telefon ani odkaz z posuzované zprávy.',
+];
+export function loanUncertainties(intake) {
+  const loan = intake.loan;
+  return [
+    'Neověřovali jsme, zda má poskytovatel oprávnění od České národní banky. Tento výsledek to nepotvrzuje ani nevyvrací.',
+    'Ani zápis v seznamu ČNB nezaručuje, že nabídka opravdu přišla od této firmy. Podvodníci se za skutečné firmy někdy vydávají.',
+    ...(loan && (loan.advance_payment || loan.requests.length) ? ['Vaše odpovědi na doplňující otázky jsme vzali v úvahu. Neověřovali jsme je.'] : []),
+    ...(loan?.advance_payment === 'no' ? ['To, že po vás platbu předem nechtějí, ještě neznamená, že je nabídka v pořádku.'] : []),
+    ...(loan?.advance_payment === 'unsure' ? ['Pokud po vás budou chtít cokoli zaplatit ještě před vyplacením půjčky, berte to jako varovný signál.'] : []),
+    ...(loan?.requests.includes('none') ? ['To, že po vás zatím nic z uvedeného nechtějí, ještě neznamená, že je nabídka v pořádku.'] : []),
+    ...(loan?.requests.includes('unsure') ? ['Pokud po vás budou chtít doklad, přihlašovací údaje, kód, údaje z karty nebo vzdálený přístup, berte to jako varovný signál.'] : []),
+  ];
 }
 
 export function analyze(input) {
@@ -183,16 +309,20 @@ export function analyze(input) {
   const signals = fraudAgent(intake);
   const score = Math.min(100, signals.reduce((sum, signal) => sum + signal.weight, 0));
   const level = resultLevel(score, intake.type, signals.length);
+  const topic = loanSituation(intake) ? 'loan' : undefined;
   return safetyCritic({
     id: randomUUID(), input_type: intake.type, engine: 'rules-v1', risk_score: score, risk_level: level,
-    summary: resultSummary(score, intake.type, signals.length),
+    ...(topic && { topic }),
+    summary: resultSummary(score, intake.type, signals.length, topic, hasLoanWarning(signals)),
     signals: signals.map(({ weight, ...signal }) => signal),
-    recommended_actions: ['Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.'],
-    verification_steps: verificationAgent(),
+    recommended_actions: topic ? loanActions(new Set(signals.map(signal => signal.id)))
+      : ['Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.'],
+    verification_steps: topic ? [...loanVerification] : verificationAgent(),
     uncertainties: [
       'Tento prototyp používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
       'Neověřili jsme totožnost odesílatele, pravdivost tvrzení ani obsah odkazovaných stránek.',
       ...(intake.type === 'url' ? ['URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.'] : []),
+      ...(topic ? loanUncertainties(intake) : []),
     ],
   });
 }

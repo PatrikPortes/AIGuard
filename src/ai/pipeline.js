@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { analyze, intakeAgent, reusePreparedInput, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
+import { analyze, hasLoanWarning, intakeAgent, loanUncertainties, reusePreparedInput, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
 import { analysisSchema, validateOutput } from './schema.js';
 import { ProviderError, ServiceError } from './errors.js';
 
@@ -52,9 +52,10 @@ export class TextAIWorker {
     return safetyCritic({
       id: rules.id, input_type: input.type, engine: 'rules+ai-v1',
       risk_score: score, risk_level: resultLevel(score, input.type, signals.length),
+      ...(rules.topic && { topic: rules.topic }),
       // Model-generated summaries can be steered without violating a schema.
       // The public conclusion always comes from reviewed server templates.
-      summary: resultSummary(score, input.type, signals.length), signals,
+      summary: resultSummary(score, input.type, signals.length, rules.topic, hasLoanWarning(rules.signals)), signals,
       recommended_actions: rules.recommended_actions, verification_steps: rules.verification_steps,
       uncertainty: assessment.uncertainty, critic_used: criticUsed,
       uncertainties: [
@@ -63,6 +64,7 @@ export class TextAIWorker {
         'Skóre je vyšší z odhadu AI a pravidel. Nejde o kalibrovanou pravděpodobnost.',
         ...(!criticUsed && reviewRequired ? ['Výsledek má zvýšenou nejistotu nebo rozpor s pravidly; druhá AI kontrola nebyla zapnuta.'] : []),
         ...(input.type === 'url' ? ['URL jsme nenavštívili. Obsah ani bezpečnost stránky nebyly ověřeny.'] : []),
+        ...(rules.topic === 'loan' ? loanUncertainties(input) : []),
       ],
     });
   }
