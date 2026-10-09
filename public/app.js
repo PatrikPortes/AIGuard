@@ -30,6 +30,7 @@ const failures = {
   CLIENT_TIMEOUT: { kind: 'retry', title: 'Prověření trvalo příliš dlouho.', message: 'Zkuste to prosím znovu.' },
   UNEXPECTED: { kind: 'retry', title: 'Nepodařilo se obsah prověřit.', message: 'Odpověď služby nebyla úplná. Zkuste to prosím znovu.' },
   SERVER: { kind: 'retry', title: 'Nepodařilo se obsah prověřit.', message: 'Služba má teď potíže. Zkuste to prosím znovu, případně později.' },
+  AI_UNAVAILABLE: { kind: 'wait', title: 'Prověřování je dočasně nedostupné.', message: 'Zkuste to prosím později. Vložený obsah zůstává v poli.' },
   SESSION_START: { kind: 'session', title: 'Prověřování se nepodařilo připravit.', message: 'Zkuste to prosím znovu. Pokud se to bude opakovat, načtěte stránku později.' },
 };
 let lastFailure;
@@ -66,7 +67,7 @@ async function initialize() {
       ? runtime.ai_configured ? 'Text vyhodnotí pravidla a AI. Výsledek je orientační; odkazy neotevíráme.' : 'AI ověření zatím není dostupné. Zkuste to později.'
       : 'Zatím kontrolujeme jen text a odkazy podle pevných pravidel, bez umělé inteligence. Snímky obrazovky a PDF připravujeme.';
     document.querySelector('#consent-label').textContent = `Souhlasím s odesláním vloženého textu poskytovateli ${runtime.provider_label || 'AI'}. Před odesláním odstraním nepotřebné osobní údaje.`;
-    document.querySelector('#ai-consent').hidden = mode !== 'ai';
+    document.querySelector('#ai-consent').hidden = mode !== 'ai' || !runtime.ai_configured;
     submit.disabled = mode === 'ai' && !runtime.ai_configured;
     return true;
   } catch {
@@ -138,9 +139,9 @@ function list(id, items) {
 }
 // Presentation compatibility for the existing backend templates. Preserve their
 // limitations without referring to a score that this UI does not display.
+const DISCLAIMER = 'Jde o odhad rizika, nikoli důkaz, že jde o podvod. Nízké skóre nepotvrzuje bezpečnost.';
 const uncertaintyCopy = new Map([
-  ['Jde o odhad rizika, nikoli důkaz, že jde o podvod. Nízké skóre nepotvrzuje bezpečnost.',
-    'To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.'],
+  [DISCLAIMER, 'To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.'],
   ['URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.',
     'Prohlédli jsme pouze znění odkazu. Stránku jsme nenavštívili a nevíme, zda je bezpečná.'],
   ['Skóre je vyšší z odhadu AI a pravidel. Nejde o kalibrovanou pravděpodobnost.',
@@ -151,7 +152,7 @@ const missingVerification = 'Žádost si ověřte jinou cestou. Použijte kontak
 // F5a interim result: neutral heading, no score, no outcome derived in the browser.
 // The first recommended action comes from the backend in its own order; nothing
 // here is inferred from risk_score, risk_level or the number of signals.
-function render(answered) {
+function render(loanFlow) {
   if (!analysis) return;
   const [primary, ...rest] = analysis.recommended_actions;
   document.querySelector('#primary-action').textContent = primary;
@@ -160,9 +161,12 @@ function render(answered) {
   document.querySelector('#summary').textContent = analysis.summary;
   list('#signals', analysis.signals.length ? analysis.signals.map(signal => `${signal.title}. ${signal.explanation}`) : ['Známé signály jsme nenašli. Podvod tím není vyloučen.']);
   list('#uncertainties', analysis.uncertainties?.length
-    ? analysis.uncertainties.map(text => uncertaintyCopy.get(text) || text) : [missingUncertainty]);
+    ? analysis.uncertainties.map(text => text === DISCLAIMER && analysis.signals.length
+      ? 'Varovné signály nejsou důkaz podvodu. Než cokoli uděláte, ověřte si to nezávisle.' : uncertaintyCopy.get(text) || text) : [missingUncertainty]);
+  // AI mode, but this result came from the rules alone (fallback).
+  document.querySelector('#engine-note').hidden = !(mode === 'ai' && analysis.engine === 'rules-v1');
   list('#verification', analysis.verification_steps?.length ? analysis.verification_steps : [missingVerification]);
-  document.querySelector('#loan-followup').hidden = !(analysis.topic === 'loan' && !answered);
+  document.querySelector('#loan-followup').hidden = !(analysis.topic === 'loan' && !loanFlow);
   list('#technical', [
     analysis.engine === 'rules-v1' ? 'Použita pouze pravidla, bez AI.' : 'Použita pravidla a AI.',
     ...(analysis.engine !== 'rules-v1' && analysis.uncertainty ? [`Nejistota AI: ${{ low: 'menší', medium: 'střední', high: 'vysoká' }[analysis.uncertainty] || 'neuvedena'}.`, `Druhá AI kontrola: ${analysis.critic_used ? 'ano' : 'ne'}.`] : []),
@@ -224,7 +228,7 @@ form.addEventListener('submit', async event => {
   setBusy(false);
   if (!failure) {
     try {
-      analysis = data; render(Boolean(request.loan_context && Object.keys(request.loan_context).length)); result.hidden = false;
+      analysis = data; render(request.topic === 'loan'); result.hidden = false;
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;
@@ -254,3 +258,4 @@ retry.addEventListener('click', async () => {
   form.requestSubmit();
 });
 document.querySelector('#edit-content').addEventListener('click', () => document.querySelector('#content').focus());
+document.querySelector('#next-check').addEventListener('click', () => { content.scrollIntoView({ block: 'center' }); content.select(); });

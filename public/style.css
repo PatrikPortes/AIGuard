@@ -173,6 +173,9 @@ input[type=checkbox] { width: 24px; height: 24px; flex-shrink: 0; margin: 4px 0 
    until the backend semantic outcome (C4) exists. Action first. */
 .result-lead { border: 2px solid var(--border); border-radius: 22px; padding: 20px 24px; background: var(--surface); }
 .result-heading { display: flex; align-items: center; gap: 14px; }
+.result-takeaway { font-size: var(--text-result); font-weight: 700; margin: 12px 0 0; }
+#engine-note { margin: 8px 0 0; }
+#next-check { width: 100%; margin-top: 16px; }
 .result-heading h2 { margin: 0; }
 .result-now h3 { font-size: var(--text-body); color: var(--muted); margin: 16px 0 4px; }
 .result-now .primary-action { font-size: 1.25rem; font-weight: 700; line-height: 1.5; margin: 0; }

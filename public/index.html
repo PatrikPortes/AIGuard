@@ -59,6 +59,8 @@
 <section id="result" class="panel result" hidden aria-labelledby="result-title" tabindex="-1">
 <div class="result-lead">
   <div class="result-heading"><img class="character-avatar" src="/assets/characters/optimized/verka-explaining.eeec7a93a44e09d692f946ae7af8993af79e73e976156140bea37e3999018021.webp" width="384" height="351" alt="" aria-hidden="true" loading="lazy" decoding="async"><h2 id="result-title">Co jsme zjistili</h2></div>
+  <p id="summary" class="result-takeaway"></p>
+  <p id="engine-note" class="hint" hidden>Tentokrát výsledek vychází jen z pevných pravidel. Kontrola s AI teď nebyla dostupná.</p>
   <section class="result-now" aria-labelledby="actions-title">
     <h3 id="actions-title">Co udělat teď</h3>
     <p id="primary-action" class="primary-action"></p>
@@ -66,12 +68,12 @@
     <ul id="actions" class="secondary-actions"></ul>
   </section>
 </div>
-<section class="result-card" aria-labelledby="explanation-title"><p class="speaker">Věrka · vysvětlení</p><h3 id="explanation-title">Co z kontroly vyplývá</h3><p id="summary"></p></section>
 <section class="result-card" aria-labelledby="signals-title"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3 id="signals-title">Co si zaslouží pozornost</h3></div><ul id="signals"></ul></section>
 <section id="loan-followup" class="result-card loan-followup" aria-labelledby="loan-followup-title" hidden><h3 id="loan-followup-title">Jde o nabídku půjčky?</h3><p>Odpovězte na dvě krátké otázky a výsledek upřesníme. Nemusíte odpovídat.</p><button type="button" id="loan-followup-open" class="secondary-action">Odpovědět na otázky</button></section>
 <section class="result-card unknowns-card" aria-labelledby="unknowns-title"><h3 id="unknowns-title">Co nevíme</h3><ul id="uncertainties"></ul></section>
 <section class="result-card verification-card" aria-labelledby="verification-title"><p class="speaker">Věrka · nezávislé ověření</p><h3 id="verification-title" tabindex="-1">Jak to bezpečně ověřit</h3><ol id="verification"></ol></section>
 <details class="technical-details"><summary>Chci vědět víc</summary><p>Nejprve hledáme známé signály pomocí pravidel. V AI režimu je doplňuje serverový model. Neznáme skutečný kontext zprávy ani totožnost odesílatele.</p><ul id="technical"></ul></details>
+<button type="button" id="next-check" class="secondary-action">Prověřit další zprávu</button>
 </section>
 <section id="uz-se-to-stalo" class="happened-band" aria-labelledby="happened-title" tabindex="-1">
   <h2 id="happened-title">Už se to stalo?</h2>
