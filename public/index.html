@@ -50,19 +50,26 @@
   <aside class="hero-guides" aria-label="Věrka a Robo">
     <div class="speech-bubble"><p class="speaker">Věrka · vaše průvodkyně</p><p>Ukážu vám, čeho si všimnout.</p></div>
     <div class="hero-duo">
-      <img class="hero-verka" src="/assets/characters/optimized/verka-welcome.f068c864375dcb2103990f9860dffd1e068e0acdf627ab97248a8642ec640354.webp" width="384" height="360" alt="Věrka, vaše průvodkyně, mává na pozdrav" decoding="async">
+      <img class="hero-verka" src="/assets/characters/optimized/verka-welcome.3b7831ccbbcf825dd0fe21982570ed75843405d16b865635d5dded574e0f1ded.webp" width="384" height="351" alt="Věrka, vaše průvodkyně, vás s úsměvem vítá" decoding="async">
       <img class="hero-robo" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="Robo, pomocník, který zpracovává kontrolu, mává na pozdrav" decoding="async">
     </div>
   </aside>
 </section>
 <section id="result" class="panel result" hidden aria-labelledby="result-title" tabindex="-1">
-<div class="result-top"><div><p class="eyebrow">Pojďme si to projít</p><h2 id="result-title">Výsledek analýzy</h2></div><label class="toggle"><input type="checkbox" id="simple"> Vysvětlit jednoduše</label></div>
-<div id="risk" class="risk-banner"><div class="risk-message"><img id="risk-character" class="character-avatar" src="/assets/characters/optimized/verka-warning.59f0839a05c99cea903247c555c25c5cfed83fed83e5db633287bc9fe5544794.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><h3 id="risk-level"></h3><p id="risk-description">Odhad rizikových signálů</p></div></div><div class="risk-circle"><strong id="risk-number"></strong><span id="risk-scale">/ 100</span></div></div>
-<div class="guide-summary"><img class="character-avatar" src="/assets/characters/optimized/verka-explaining.4c1ae77446d72006a712dfeff21de26aab8a57e26fffce122f19f2861f010d03.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p class="speaker">Věrka · co jsem zjistila</p><p id="summary"></p></div></div>
-<p class="notice uncertainty-note">Jde o odhad rizika, nikoli důkaz, že jde o podvod. Nízké skóre nepotvrzuje bezpečnost.</p>
-<div class="result-columns"><section class="signals-card"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-warning.37c31312e899c29738bf5101ffb014d14bbe25286036facba28140ed99133524.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3>Co si zaslouží pozornost?</h3></div><ul id="signals"></ul></section><section class="actions-card"><h3>Co teď udělat?</h3><ol id="actions"></ol></section></div>
-<section class="verification-card"><div class="character-heading"><img class="character-avatar" src="/assets/characters/optimized/robo-tip.8a6797405a618b0c403415b831cb07b93087e02079441384eb4607f9f737c7f4.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3>Jak to bezpečně ověřit</h3></div><ol id="verification"></ol></section>
-<details><summary>Jak jsme k tomu došli a co nevíme</summary><p>Nejprve hledáme známé signály pomocí pravidel. V AI režimu je doplňuje serverový model. Skóre se opírá o nalezené signály; neznáme skutečný kontext ani totožnost odesílatele.</p><ul id="uncertainties"></ul></details>
+<div class="result-lead">
+  <div class="result-heading"><img class="character-avatar" src="/assets/characters/optimized/verka-explaining.eeec7a93a44e09d692f946ae7af8993af79e73e976156140bea37e3999018021.webp" width="384" height="351" alt="" aria-hidden="true" loading="lazy" decoding="async"><h2 id="result-title">Co jsme zjistili</h2></div>
+  <section class="result-now" aria-labelledby="actions-title">
+    <h3 id="actions-title">Co udělat teď</h3>
+    <p id="primary-action" class="primary-action"></p>
+    <button type="button" id="to-verification" class="result-route">Jak to bezpečně ověřit</button>
+    <ul id="actions" class="secondary-actions"></ul>
+  </section>
+</div>
+<section class="result-card" aria-labelledby="explanation-title"><p class="speaker">Věrka · vysvětlení</p><h3 id="explanation-title">Co z kontroly vyplývá</h3><p id="summary"></p></section>
+<section class="result-card" aria-labelledby="signals-title"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3 id="signals-title">Co si zaslouží pozornost</h3></div><ul id="signals"></ul></section>
+<section class="result-card unknowns-card" aria-labelledby="unknowns-title"><h3 id="unknowns-title">Co nevíme</h3><ul id="uncertainties"></ul></section>
+<section class="result-card verification-card" aria-labelledby="verification-title"><p class="speaker">Věrka · nezávislé ověření</p><h3 id="verification-title" tabindex="-1">Jak to bezpečně ověřit</h3><ol id="verification"></ol></section>
+<details class="technical-details"><summary>Chci vědět víc</summary><p>Nejprve hledáme známé signály pomocí pravidel. V AI režimu je doplňuje serverový model. Neznáme skutečný kontext zprávy ani totožnost odesílatele.</p><ul id="technical"></ul></details>
 </section>
 <section id="uz-se-to-stalo" class="happened-band" aria-labelledby="happened-title" tabindex="-1">
   <h2 id="happened-title">Už se to stalo?</h2>

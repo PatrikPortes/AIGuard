@@ -7,28 +7,36 @@ Vizuální pravidla: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 | Reference | Cesta | Účel | Velikost | SHA-256 |
 |---|---|---|---|---|
 | Visual reference | `docs/design/VERIM_VISUAL_REFERENCE.png` | Layout, UI, barvy a celkový vizuální styl | 2 271 157 bajtů | `de9df4c1fb675ecad70ada53e2bdc3984f2971e42693bdc4782ef2817548fef4` |
-| Character reference | `docs/design/VERIM_CHARACTER_REFERENCE.png` | Kanonický vzhled, role, proporce a stavy Věrky a Roba | 2 734 785 bajtů | `d08da8919f8e55ff7f6ca8ac594b0c36f44a7f886d8dcfa5e3b24a96ef7b2db1` |
+| Character reference | `docs/design/VERIM_CHARACTER_REFERENCE.png` | Kanonický vzhled Roba; pro Věrku od refreshe 2026-10 historický materiál | 2 734 785 bajtů | `d08da8919f8e55ff7f6ca8ac594b0c36f44a7f886d8dcfa5e3b24a96ef7b2db1` |
 
-Oba PNG jsou uložené beze změny originálu. Zdroj: `Unknown.png` z `Unknown.png.zip` a `Unknown-2.png` z `Unknown-2.png.zip`. Při rozporu má character reference prioritu pro postavy, visual reference pro layout/UI. Reference se uchovávají jako dlouhodobé originály, ne jako frontendové produkční assety. Character reference není sprite sheet.
+Oba PNG jsou uložené beze změny originálu. Zdroj: `Unknown.png` z `Unknown.png.zip` a `Unknown-2.png` z `Unknown-2.png.zip`. Pro aktuální Věrku je autoritativních šest PNG refreshe níže; původní character reference je pro ni historická. Pro samostatné stavy Roba zůstává autoritativní character reference. Nová společná ilustrace je samostatně schválenou výjimkou uvedenou níže. Visual reference zůstává původní inspirací pro layout/UI; aktuální UX určuje FRONTEND_DESIGN_DIRECTION.md. Reference nejsou frontendové produkční assety ani sprite sheet.
 
 ## Canonical production character assets
 
-**Aktuální sada obsahuje 14 schválených canonical production assetů.** `Archiv 2.zip` nahradil 11 jednotlivých PNG z původního `Archiv.zip` a dodal nový společný hero `verkarob.png`. `verka-welcome.png` a `verka-thinking.png` nebyly v nové dodávce a zůstávají beze změny. Originální názvy a PNG bytes jsou zachované. Jen tyto jednotlivé soubory jsou určené přímo pro UI; character sheet zůstává referencí. Netvořit alternativní postavy, neprovádět výřezy ani jejich vzhled nahrazovat emoji či generickými ilustracemi. Chybějící stavy zůstávají bez nového assetu; pokud by pro ně vznikla komponenta, použije současný označený placeholder.
+**Aktuální refresh Věrky (2026-10):** pět stavů Věrky a společný obrázek jsou dodány patchem `verka-refresh-proposal.patch` s manifestem `verka-refresh-hash-manifest.json`. Těchto šest PNG je autoritativní vizuální reference Věrky. Manifest uvádí zdroj `verka.zip`, členy `verka-succes.png` → `verka-success.png` a `verka-rob.png` → `verkarob.png`; samotný archiv nebyl v dostupných předaných zdrojích nalezen, takže tento původ je deklarovaný, nikoli nezávisle potvrzený. Aktuální bytes, rozměry, alpha a SHA-256 byly nezávisle ověřeny; aktuální tabulky jsou oddělené od historické evidence níže.
+
+**Schválení společné ilustrace vlastníkem (2026-10-09):** nový `verkarob.png`, včetně odlišného výrazu a štítu Roba, je schválený společný vizuál. Jde pouze o tuto ilustraci; samostatných osm stavů Roba (PNG i WebP a jejich mapování) zůstává bajtově beze změny. Toto výtvarné schválení není přijetím bezpečnostního rizika ani povolením deploymentu.
+
+**Schválení současného thinking masteru vlastníkem (2026-10-09):** `verka-thinking.png` v nynější podobě 1204×1021 se SHA-256 `ba9d0901ccacf3c2ae0566cd3a3ead843694945e6ad0be358884b69b97e82e77` je schválený nový autoritativní source asset. Toto produktové rozhodnutí platí pro současný dodaný soubor; neznamená nezávislé ověření ořezu nebo zachování pixelů nedostupného originálu.
+
+**Ořez `verka-thinking.png` — NEOVĚŘENO:** výstup má 1204×1021. Manifest deklaruje původní 1536×1024 PNG, box `[12,3,1216,1024]`, odstranění pouze alfa-0 okrajů a identitu zachovaných RGBA pixelů. Původní PNG se SHA-256 `b564d27f6cab9825663ddfe205553e8bd1db80d9ba34c88687903c4a91433a81` nebyl nalezen v dostupných archivech ani lokálních zdrojích. Rozměry boxu odpovídají výstupu, ale identita zachovaných pixelů a transparentnost odstraněných okrajů nejsou nezávisle potvrzeny.
+
+**Aktuální sada obsahuje 14 schválených canonical production assetů:** pět nových stavů Věrky, osm nezměněných stavů Roba a nový společný obrázek. **Historie Phase 3:** `Archiv 2.zip` tehdy nahradil 11 PNG z `Archiv.zip` a přidal společný hero; tehdy ponechané welcome/thinking byly nahrazeny až nynějším refreshem. Původní hashe a výsledky těchto etap jsou zachované v historických sekcích níže. Používat pouze dodané schválené obrázky; nevytvářet vlastní varianty, další výřezy ani náhrady CSS/emoji/generickými ilustracemi. Chybějící stavy zůstávají bez nového assetu; případná komponenta použije současný označený placeholder.
 
 Preferovaný formát dalších dodávek zůstává transparentní WebP nebo PNG podle výsledné kvality a velikosti. Existující dodané soubory se nekonvertují ani nekomprimují bez dalšího pokynu.
 
 ### Věrka — hlavní komunikační průvodkyně
 
-Hnědé vlasy ve vysokém drdolu, velké hnědé oči, fialovo-modrá mikina, štít Věřím?, přátelský a klidný cartoon vzhled. Použití: uvítání, otázky, vysvětlení, upozornění, doporučení, výsledky a pozitivní feedback.
+Zrzavě kaštanové kudrnaté vlasy ve vysokém drdolu, kulaté brýle, velké hnědé oči, fialová mikina a štít podle schválených PNG refreshe. Použití: uvítání, otázky, vysvětlení, upozornění, doporučení a výsledky; pozitivní feedback pouze po bezpečném kroku uživatele. Červený trojúhelník je schválenou součástí warning ilustrace; další alarmující UI prvky se nepřidávají.
 
 | Soubor / chybějící basename | Stav | Současné použití |
 |---|---|---|
 | `public/assets/characters/verka/verka-default` | Chybí | Výchozí průvodkyně |
-| `public/assets/characters/verka/verka-welcome.png` | Dodáno a schváleno | Schválený welcome stav, nyní bez samostatného použití; hero používá společný `verkarob.png` |
-| `public/assets/characters/verka/verka-thinking.png` | Dodáno a schváleno | Karta výsledku: zvýšená opatrnost / nejistota / neověřený nebo bezsignálový obsah |
+| `public/assets/characters/verka/verka-welcome.png` | Dodáno a schváleno | Aktuální homepage hero: samostatný welcome portrét, `.hero-verka`, WebP z mapování |
+| `public/assets/characters/verka/verka-thinking.png` | Dodáno a schváleno | V neutrálním výsledku F5a nyní nepoužito; schválený asset zůstává dostupný |
 | `public/assets/characters/verka/verka-question` | Chybí | Doplňující otázka |
-| `public/assets/characters/verka/verka-explaining.png` | Dodáno a schváleno | Věrčin souhrn výsledku |
-| `public/assets/characters/verka/verka-warning.png` | Dodáno a schváleno | Karta vysokého rizika a vstupní upozornění |
+| `public/assets/characters/verka/verka-explaining.png` | Dodáno a schváleno | Neutrální nadpis výsledku F5a „Co jsme zjistili“ |
+| `public/assets/characters/verka/verka-warning.png` | Dodáno a schváleno | Vstupní upozornění; výsledková karta rizika byla ve F5a odstraněna |
 | `public/assets/characters/verka/verka-success.png` | Dodáno a schváleno | Schváleno, nyní bez verdict použití; nízké score nesmí samo aktivovat success |
 | `public/assets/characters/verka/verka-thumbsup` | Chybí | Povzbuzení |
 
@@ -38,12 +46,12 @@ Malý bílý robot s tmavým obličejem/displejem, modrými/cyan prvky a štíte
 
 | Soubor / chybějící basename | Stav | Současné použití |
 |---|---|---|
-| `public/assets/characters/robo/robo-default.png` | Dodáno a schváleno | Neutrální hlavička bez nalezených signálů; v hero je Robo součástí `verkarob.png` |
+| `public/assets/characters/robo/robo-default.png` | Dodáno a schváleno | Aktuální homepage hero: samostatný `.hero-robo`; také neutrální hlavička signálů ve všech výsledcích F5a |
 | `public/assets/characters/robo/robo-analyzing.png` | Dodáno a schváleno | Existující loading při probíhajícím požadavku |
 | `public/assets/characters/robo/robo-searching.png` | Dodáno a schváleno | Dodáno, zatím nepoužito — neexistuje odpovídající hledání |
-| `public/assets/characters/robo/robo-warning.png` | Dodáno a schváleno | Hlavička nalezených signálů |
+| `public/assets/characters/robo/robo-warning.png` | Dodáno a schváleno | Ve výsledku F5a nyní nepoužito; schválený asset zůstává dostupný |
 | `public/assets/characters/robo/robo-success.png` | Dodáno a schváleno | Pouze dokončená systémová kontrola; není závěr o bezpečnosti |
-| `public/assets/characters/robo/robo-tip.png` | Dodáno a schváleno | Existující blok bezpečného nezávislého ověření |
+| `public/assets/characters/robo/robo-tip.png` | Dodáno a schváleno | V ověřovacím bloku F5a nyní nepoužito; schválený asset zůstává dostupný |
 | `public/assets/characters/robo/robo-capacity.png` | Dodáno a schváleno | Existující error blok při vyčerpané kapacitě, přetížení nebo rate limitu |
 | `public/assets/characters/robo/robo-error.png` | Dodáno a schváleno | Existující error blok při technické / síťové chybě |
 
@@ -51,18 +59,18 @@ Success u obou postav nesmí znamenat záruku pravosti nebo bezpečnosti posuzov
 
 ## CANONICAL HERO CHARACTER ASSET
 
-**Dodáno a schváleno:** `public/assets/characters/verkarob.png`, původní člen `verkarob.png` z `Archiv 2.zip`. Věrka dostala nápad, Robo přemýšlí; postavy stojí zády k sobě. Jde o hlavní společnou ilustraci značky, nikoli nový komunikační nebo analytický stav.
+**Aktuální schválený soubor:** `public/assets/characters/verkarob.png` z refreshe, deklarovaný člen `verka-rob.png` v `verka.zip`; dodán patchem a manifestem. Věrka dostala nápad, Robo přemýšlí; postavy stojí zády k sobě. Nový výraz a štít Roba v této společné ilustraci jsou výslovně schváleny vlastníkem. Samostatné stavy Roba se nemění. Předchozí Phase 3 verze pocházela z `Archiv 2.zip`; její SHA je zachovaný v historii.
 
-Použití: `public/index.html`, hero u hlavního nadpisu, `.hero-character img`; URL `/assets/characters/verkarob.png`. Nahrazuje samostatný welcome portrét a doprovodný Robo default obrázek pouze v hero. Věrčina uvítací bublina, nadpis a CTA zůstávají. Desktop: text a ilustrace vedle sebe, obrázek maximálně 420 px široký. Mobile 390/320 px: ilustrace pod textem a CTA, maximálně 280 px široká, vždy uvnitř dostupné šířky. Cream pozadí stránky prosvítá skutečným alfa kanálem. Celé plátno se zobrazuje s `height:auto` a `object-fit:contain`, bez ořezu, deformace, filtrů nebo maskování.
+**Aktuální UI:** `public/index.html` používá samostatný pár `.hero-verka` (welcome) + `.hero-robo` (default). Společný `verkarob.png`/jeho WebP je schválený a serverem dostupný asset, ale nynější homepage jej nenačítá. Legacy URL `/assets/characters/verkarob.png` vrací 301 na přesný hash-WebP z `public/character-assets.js`. Historická Phase 3 homepage používala společný hero (`.hero-character img`, max420px desktop/max280px mobile); toto není popis současného layoutu. V této kontrole se layout ani napojení společné ilustrace nemění.
 
-Významový český alt je uveden právě jednou: „Věrka a Robo – průvodci bezpečným ověřováním digitálního obsahu“. Hero obrázek nemá `aria-hidden`; další duplicitní popisek není přidán.
+Historický a doporučený významový český alt společné ilustrace: „Věrka a Robo – průvodci bezpečným ověřováním digitálního obsahu“. Aktuální homepage má samostatné alt texty welcome/default portrétů; nepřidává se neexistující společný obrázek ani duplicitní popis.
 
 ## Další produkční assety
 
 | Asset | Stav | Požadovaný výstup / účel |
 |---|---|---|
 | Wordmark Věřím? + shield | Chybí | Samostatné autorizované SVG a PNG s průhledností; plná i kompaktní varianta; favicon. Do té doby skutečný textový wordmark. |
-| Hlavní hero / portrétní exporty Věrky a Roba | Dodaná sada zapojena | Hero používá společný `verkarob.png`; kompaktní bloky používají celé dodané obrázky se zachovaným poměrem stran. Delivery WebP z unchanged masters jsou nově doplněny v Remediation1 níže. |
+| Hlavní hero / portrétní exporty Věrky a Roba | Dodaná sada zapojena | Homepage používá samostatný welcome/default pár; společný hero je dodaný, schválený a nyní nepoužitý. Kompaktní bloky používají celé obrázky; aktuální delivery hashe jsou níže. |
 | Volitelné detailní výrazy a zadní pohled | Chybí, neblokuje | Samostatné autorizované exporty podle character reference; mimo povinný seznam 16 stavů. |
 | Volitelné prostředí / hero pozadí | Chybí, neblokuje | Schválená samostatná ilustrace krémového přátelského prostředí; žádný výřez reference. |
 | Font | Zatím systémový | Případný odsouhlasený WOFF2 s českou diakritikou a doloženou licencí; bez externího CDN. |
@@ -75,9 +83,34 @@ U každého assetu dodat verzi, původ/autora, oprávnění k veřejnému použi
 **Nevystřihovat postavy z character sheetu, negenerovat alternativní podobu a nenahrazovat postavy CSS/emoji/externími ikonami.** Používat výhradně dodané schválené obrázky; současný označený placeholder ponechat pouze pro chybějící konkrétní asset. Reference a produkční assety jsou rozdílné soubory. Napojení mění jen existující komponenty; nevytváří nové business flow.
 
 
+## Aktuální technická evidence — refresh Věrky
+
+Zdroj aktuálních šesti souborů: dodaný patch a hash manifest; `verka.zip` je deklarovaný nedostupný původ. Vizuální podoba včetně společného Roba je schválena vlastníkem. Všech šest PNG a šest WebP má skutečnou alfu 0–255 a souhlasící bytes/SHA; WebP se pixelově shodují s nezávisle LANCZOS-zmenšeným celým PNG plátnem. Původní ořez thinking zůstává neověřený, jak je uvedeno výše. Samostatných osm Robo PNG i osm WebP a obě původní reference jsou bajtově shodné s base `92c5c55047fb6f46d768d971b7710b7188e5e91e`.
+
+| Asset | Formát | Rozměry | Bajtů | SHA-256 |
+|---|---|---|---:|---|
+| `verka-welcome` | PNG | 1312×1199 | 1765231 | `3da631dc0ad13ce5c3bb0c6b70088ddbbb12b237b9eb976096afd575662a4127` |
+| `verka-welcome` | WebP | 384×351 | 127662 | `3b7831ccbbcf825dd0fe21982570ed75843405d16b865635d5dded574e0f1ded` |
+| `verka-explaining` | PNG | 1312×1199 | 1844450 | `0f432d0b4b2f2e53e13f747d206a3a9e2aa87c2579818c29ecca7dff8321bba7` |
+| `verka-explaining` | WebP | 384×351 | 121826 | `eeec7a93a44e09d692f946ae7af8993af79e73e976156140bea37e3999018021` |
+| `verka-thinking` | PNG | 1204×1021 | 2140817 | `ba9d0901ccacf3c2ae0566cd3a3ead843694945e6ad0be358884b69b97e82e77` |
+| `verka-thinking` | WebP | 384×326 | 101362 | `34fdaa51631be6b866f9457b130f66e29f0c7d11864b4201a8efd191037ea6aa` |
+| `verka-warning` | PNG | 1312×1199 | 1908762 | `728e71dcb94311b3adf98a4051ea3db7651ed33f2132cd51ccd67dd05b6b23a6` |
+| `verka-warning` | WebP | 384×351 | 145336 | `3d0b462212668cbc69ac4d1373eee5eea4637ef09fa33ac066284459851df4b2` |
+| `verka-success` | PNG | 1312×1199 | 1974116 | `b42918dc01de74b1d8631658cc23b604db0c5f92cffa356dc1661ce4ddd71b61` |
+| `verka-success` | WebP | 384×351 | 137826 | `a2bcee36ab02132f8d2f272b68210d255e69c13f5e9b54d2ed929b9ae1ee8578` |
+| `verkarob` | PNG | 1312×1199 | 2285104 | `970380687af7664f2017ffa36fe0a9a82a93682d67a6a41f0507fdcadb75e93e` |
+| `verkarob` | WebP | 840×768 | 712672 | `01ffcd184ab472461c50aaf5925a377b76a762784b5556897789ffa7a6cd29b3` |
+
+PNG cesty: `public/assets/characters/verka/verka-{welcome,explaining,thinking,warning,success}.png` a `public/assets/characters/verkarob.png`. WebP cesty: `public/assets/characters/optimized/<asset>.<full-sha256>.webp`. Aktuální hodnoty jsou také v `public/character-assets.js`; stejné hashe ve starších historických tabulkách nadále platí pouze pro nezměněné samostatné Robo stavy.
+
+Statický server povoluje pouze 14 konkrétních hash-WebP URL, ověřuje jejich bytes/SHA i před 304 a zachovává PNG názvy jako 301 aliasy. Šest odstraněných Věrčiných/starého společného hash-WebP URL vrací 404. Žádný wildcard, CSP změna ani nový externí request. HTML/API/JS/CSS mají no-store; hash-WebP immutable cache/ETag.
+
+Homepage načítá welcome/default pár, nikoli společný hero. Ověřený first-view budget proto nelze přenést na případné budoucí zapojení 712672B společné ilustrace; po integraci je třeba nové měření ≤300 KiB. Samostatné schválené Věrka review F5a neobsahovalo; nynější necommitnutý integrační kandidát spojuje oba schválené směry a vyžaduje vlastní validaci. Ořez thinking zůstává nezávisle neověřený. Security Gate BLOCKED; Production BLOCKED; výtvarné schválení není povolením nasazení.
+
 ## Historická technická kontrola dodané sady — Phase 3
 
-Tato sekce uchovává původní validaci dodaných masters. Současné HTTP cache/delivery/neutral-state chování definuje Remediation1 níže; Phase3 test count40 není současný count.
+Tato sekce uchovává původní Phase 3 rozměry, hashe, zdroje, UI a výsledky kontrol před refreshem. Je historická; její tvrzení o aktuální sadě/hero/serveru platí k tehdejší etapě. Současný stav je uveden výše a v aktuální technické evidenci. Phase 3 test count40 není současný count.
 
 Zdroj opravených souborů a hero: `Archiv 2.zip`. Všech 12 dodaných PNG prošlo dekódováním a kontrolou ZIP CRC; uložené soubory jsou bytově totožné se ZIP členy. macOS resource forks nejsou produkční assety a nebyly importovány. Aktuální sada obsahuje 14 PNG, celkem 23 659 415 bajtů. Zachován originální pixelový obsah, rozměry i barevný režim; žádné převzorkování, změna kresby nebo komprese.
 
@@ -125,7 +158,9 @@ Přístupnost: prošla kontrola českého alt textu hero bez duplikace, dekorati
 **PHASE 3 CHARACTER ASSETS: PASS**
 
 
-## Security Remediation 1 — optimalizovaná delivery
+## Historie — Security Remediation 1: optimalizovaná delivery
+
+Následující evidence a hashe zachycují tehdejší optimalizaci Phase 3 masters, před novou Věrkou. Tvrzení o nezměněných PNG/reference/layoutu platí k této historické etapě; šest současných PNG/WebP je uvedeno v aktuální evidenci výše.
 
 Výslovné zadání CR07 dovoluje technickou optimalizaci bez změny schválené identity. **14 canonical PNG masters a obě references mají stejné bytes/SHA jako schválená Phase3.** Žádná nová kresba, změna barev/proporcí/obsahu, background nebo crop. UI používá celé resize canvas v lossless transparentním WebP; master zůstává canonical.
 

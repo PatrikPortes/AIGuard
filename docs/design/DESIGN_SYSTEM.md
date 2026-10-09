@@ -5,7 +5,7 @@
 
 ## Pořadí autority
 
-1. **`docs/design/VERIM_CHARACTER_REFERENCE.png`** — závazný vzhled Věrky a Roba.
+1. **Vzhled postav** — Věrka: šest PNG z refreshe 2026-10 (`public/assets/characters/verka/verka-{welcome,explaining,thinking,warning,success}.png` a `public/assets/characters/verkarob.png`). Robo: `docs/design/VERIM_CHARACTER_REFERENCE.png`. Pro Věrku je tento list jen historický materiál, dokud nebude zrevidována nová referenční dokumentace.
 2. **`docs/design/FRONTEND_DESIGN_DIRECTION.md`** — závazné UX, layout, interakce, responzivní chování a produktový směr frontendu.
 3. **`docs/design/DESIGN_SYSTEM.md`** (tento dokument) — tokeny, komponenty a implementační primitiva.
 4. **`docs/design/VERIM_VISUAL_REFERENCE.png`** — původní vizuální a layoutová inspirace.
@@ -193,13 +193,27 @@ Pole má `spellcheck="false"` a `autocomplete="off"`, aby prohlížeč vložený
 
 Každá chyba má nadpis, vysvětlení a větu „Výsledek teď nemáme. Neznamená to, že je zpráva bezpečná.“ Texty jsou pevné ve frontendu; text chyby ze serveru ani vložený obsah se nezobrazují. Chyba je v `role="alert"`, posune se do zorného pole, ale fokus zůstává na tlačítku. Obsah pole zůstává. Nic se neopakuje automaticky; „Zkusit znovu“ odešle stejný obsah jen po kliknutí. Pod 400 px se postava v panelech řadí nad text.
 
+## Výsledek — přechodná neutrální verze (F5a)
+
+Dokud backend neposkytuje sémantický výsledek (C4), kontroly (C3) a anotace (C2), výsledek **nemá žádný verdikt**. Nezobrazuje číselné skóre, kruhový ukazatel, úrovně rizika, čtyři kanonické výsledky ani přepínač „Vysvětlit jednoduše“. Frontend nic neodvozuje z `risk_score`, `risk_level` ani počtu signálů.
+
+Pořadí:
+1. **„Co jsme zjistili“** (jediné `h2`, Věrka `explaining`) a „Co udělat teď“: první položka `recommended_actions` z backendu, v jeho pořadí, zvýrazněná. Pod ní tlačítko „Jak to bezpečně ověřit“, které posune k ověřovacím krokům a přesune tam fokus. Pak zbylá doporučení.
+2. „Co z kontroly vyplývá“: `summary` ze serverové šablony.
+3. „Co si zaslouží pozornost“: signály (Robo `default`), nebo „Známé signály jsme nenašli. Podvod tím není vyloučen.“
+4. „Co nevíme“: `uncertainties`, vždy viditelné. Tři známé starší serverové věty o skóre mají ve frontendu textové ekvivalenty bez skóre; jejich bezpečnostní význam se zachovává a backendový kontrakt se nemění.
+5. „Jak to bezpečně ověřit“: `verification_steps`. Pokud tento seznam nebo `uncertainties` chybí či je prázdný, zobrazí se obecné upozornění na nedostatek informací, případně postup ověření přes dříve známý kontakt nebo oficiální aplikaci. Nejde o tvrzení, že jsme něco ověřili; telefon ani odkaz z posuzované zprávy se nedoporučují. Nesprávné datové typy a neplatné položky vedou k chybovému stavu F4.
+6. „Chci vědět víc“ (sbalené): pravidla nebo pravidla a AI, typ vstupu. Bez skóre.
+
+Po výsledku se stránka posune na začátek výsledku a fokus dostane `#result`. Na 360×640 i 320×568 je na první obrazovce nadpis, hlavní doporučení i tlačítko k ověření. Vložená zpráva se znovu nezobrazuje, dokud nejsou anotace C2. Neúplná odpověď (chybí shrnutí, žádné doporučení, nesprávné typy) vede ke stavu „Nepodařilo se obsah prověřit“ z F4, nikdy k výsledku. Žádná zelená, žádné odkazy, jen textové uzly.
+
 ## Kanonické postavy a role
 
-Vzhled určuje `docs/design/VERIM_CHARACTER_REFERENCE.png`. Každá produkční varianta musí zachovat stejný výtvarný styl, proporce, obličej, barvy a znak štítu na oblečení. Znak je součástí schválené kresby a nemění se. Samostatné assety a jejich stav jsou v [ASSETS.md](ASSETS.md).
+Vzhled Věrky určuje šest PNG z refreshe 2026-10 (`public/assets/characters/verka/verka-{welcome,explaining,thinking,warning,success}.png` a `public/assets/characters/verkarob.png`). Vzhled Roba nadále určuje `docs/design/VERIM_CHARACTER_REFERENCE.png`; Věrka na tomto listu je historická. Každá produkční varianta musí zachovat stejný výtvarný styl, proporce, obličej, barvy a znak štítu na oblečení. Znak je součástí schválené kresby a nemění se. Samostatné assety a jejich stav jsou v [ASSETS.md](ASSETS.md).
 
 ### Věrka — HUMAN-FACING GUIDE
 
-Hlavní digitální průvodkyně: mladá přátelská kreslená postava, hnědé vlasy v charakteristickém vysokém drdolu, velké hnědé oči, fialovo-modrá mikina se znakem štítu, klidný a důvěryhodný výraz. Vítá, ptá se, vysvětluje, upozorňuje, doporučuje další postup, provází výsledky a dává pozitivní feedback **pouze po dokončeném bezpečném kroku uživatele**.
+Hlavní digitální průvodkyně: mladá přátelská kreslená postava, zrzavě kaštanové kudrnaté vlasy ve vysokém drdolu, kulaté brýle, fialová mikina se znakem štítu, klidný a důvěryhodný výraz. Varovný stav obsahuje červený výstražný trojúhelník jako součást schválené kresby; další poplašně červené prvky rozhraní se nepřidávají. Vítá, ptá se, vysvětluje, upozorňuje, doporučuje další postup, provází výsledky a dává pozitivní feedback **pouze po dokončeném bezpečném kroku uživatele**.
 
 | Stav | Použití |
 |---|---|

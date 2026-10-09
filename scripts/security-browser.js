@@ -8,6 +8,12 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const server = createServer({ pipeline: new AnalysisPipeline() });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH, headless: true });
+async function assertScoreFreeResult(page, name) {
+  assert.equal(await page.locator('#result-title').textContent(), 'Co jsme zjistili', name);
+  assert.equal(await page.locator('#risk, #risk-level, #risk-number, #risk-scale, .risk-circle, #result[data-level], #result [data-level]').count(), 0, name);
+  // Include collapsed details: they are still reachable user-facing copy.
+  assert.doesNotMatch(await page.locator('#result').textContent(), /skór|score|\b0\s*[–-]\s*100\b|\/\s*100/iu, name);
+}
 try {
   const page = await browser.newPage();
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -18,7 +24,7 @@ try {
     await page.waitForFunction(() => !document.querySelector('#submit').disabled);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     for (const [selector, asset, alt] of [
-      ['.hero-verka', 'verka-welcome', 'Věrka, vaše průvodkyně, mává na pozdrav'],
+      ['.hero-verka', 'verka-welcome', 'Věrka, vaše průvodkyně, vás s úsměvem vítá'],
       ['.hero-robo', 'robo-default', 'Robo, pomocník, který zpracovává kontrolu, mává na pozdrav'],
     ]) {
       const hero = page.locator(selector);
@@ -46,9 +52,14 @@ try {
   await page.locator('#content').fill('<img src=x onerror=alert(1)>');
   await page.locator('#submit').click(); await page.locator('#result').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#summary img').count(), 0);
-  assert.equal(await page.locator('#risk-level').textContent(), 'Bezpečnost nelze určit');
-  assert.equal(await page.locator('#risk-character').getAttribute('src'), characterAssets['verka-thinking']);
+  assert.equal(await page.locator('#result-title').textContent(), 'Co jsme zjistili');
+  assert.ok(await page.locator('#uncertainties').isVisible());
+  assert.ok((await page.locator('#uncertainties li').count()) > 0);
+  assert.equal(await page.locator('#signals').textContent(), 'Známé signály jsme nenašli. Podvod tím není vyloučen.');
+  assert.equal(await page.locator('.result-heading img').getAttribute('src'), characterAssets['verka-explaining']);
   assert.equal(await page.locator('#signals-character').getAttribute('src'), characterAssets['robo-default']);
+  await assertScoreFreeResult(page, 'no-signal result');
+  assert.ok((await page.locator('#uncertainties').textContent()).includes('To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.'));
   await page.locator('#content').fill('https://banka-prihlaseni.invalid');
   const urlResponsePromise = page.waitForResponse(response => response.url() === base + '/api/analyze' && response.request().method() === 'POST');
   await page.locator('#submit').click();
@@ -56,9 +67,12 @@ try {
   assert.equal(urlResponse.status(),200);
   assert.deepEqual(urlResponse.request().postDataJSON(), { type: 'url', content: 'https://banka-prihlaseni.invalid', ai_consent: false });
   await page.waitForFunction(() => document.querySelector('#summary').textContent.includes('Stránku jsme nenavštívili'));
-  assert.equal(await page.locator('#risk-level').textContent(), 'Bezpečnost nelze určit');
-  assert.ok(await page.locator('#risk-scale').isHidden());
+  assert.equal(await page.locator('#result-title').textContent(), 'Co jsme zjistili');
+  assert.ok(await page.locator('#uncertainties').isVisible());
+  assert.ok((await page.locator('#verification li').count()) > 0);
+  assert.equal(await page.locator('#risk-level, #risk-number, #risk-scale, .risk-circle').count(), 0);
   assert.equal(await page.locator('#result a[href]').count(),0);
+  await assertScoreFreeResult(page, 'URL result');
   // Exercise the actual form, fetch and backend, not a copy of classifyInput().
   // Each case gets an isolated server with unchanged default security limits.
   const routingCases = [
@@ -118,9 +132,13 @@ try {
       assert.ok(requests.every(request => new URL(request.url).origin === origin && !request.url.includes(content) && !request.referrer.includes(content)),name);
       assert.deepEqual(await routed.evaluate(() => ({ history: history.length, local: { ...localStorage }, session: { ...sessionStorage } })),before,name);
       assert.deepEqual(caseErrors,[],name);
+      await assertScoreFreeResult(routed, name);
       if (type === 'url') {
-        assert.equal(await routed.locator('#risk-level').textContent(),'Bezpečnost nelze určit',name);
-        assert.ok(await routed.locator('#risk-scale').isHidden(),name);
+        assert.equal(await routed.locator('#result-title').textContent(),'Co jsme zjistili',name);
+        assert.ok(await routed.locator('#uncertainties').isVisible(),name);
+        assert.ok((await routed.locator('#uncertainties').textContent()).includes('Stránku jsme nenavštívili'),name);
+        assert.ok((await routed.locator('#verification li').count()) > 0,name);
+        assert.equal(await routed.locator('#risk-level, #risk-number, #risk-scale, .risk-circle').count(),0,name);
       }
       // Bypassing frontend routing must not bypass backend validation.
       if (name === 'incomplete HTTPS') {
@@ -144,6 +162,82 @@ try {
       await new Promise(resolve => { caseServer.close(resolve); caseServer.closeAllConnections(); });
     }
   }
+  // Result-only remediation: keep the real rules backend and default limits.
+  // Intercept responses to exercise omissions without enabling AI or changing
+  // the API contract. Invalid types must fail, not fabricate safety guidance.
+  const safetyCases = [
+    ['empty uncertainties', data => { data.uncertainties = []; }, 'uncertainty'],
+    ['missing uncertainties', data => { delete data.uncertainties; }, 'uncertainty'],
+    ['empty verification', data => { data.verification_steps = []; }, 'verification'],
+    ['missing verification', data => { delete data.verification_steps; }, 'verification'],
+    ['both empty', data => { data.uncertainties = []; data.verification_steps = []; }, 'both'],
+    ['both missing', data => { delete data.uncertainties; delete data.verification_steps; }, 'both'],
+    ['malformed uncertainties', data => { data.uncertainties = 'invalid'; }, 'error'],
+    ['malformed verification', data => { data.verification_steps = null; }, 'error'],
+    ['legacy uncertainty templates', data => { data.uncertainties = [
+      'Jde o odhad rizika, nikoli důkaz, že jde o podvod. Nízké skóre nepotvrzuje bezpečnost.',
+      'URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.',
+      'Skóre je vyšší z odhadu AI a pravidel. Nejde o kalibrovanou pravděpodobnost.',
+    ]; }, 'copy'],
+    ['score zero', data => { data.risk_score = 0; data.risk_level = 'unassessed'; }, 'score'],
+    ['score hundred', data => { data.risk_score = 100; data.risk_level = 'very_high'; }, 'score'],
+  ];
+  const scorePresentations = [];
+  for (const [name, mutate, expected] of safetyCases) {
+    const caseServer = createServer({ pipeline: new AnalysisPipeline() });
+    await new Promise(resolve => caseServer.listen(0, '127.0.0.1', resolve));
+    const context = await browser.newContext();
+    try {
+      const checked = await context.newPage();
+      const origin = `http://127.0.0.1:${caseServer.address().port}`;
+      const requests = [], caseErrors = [];
+      checked.on('request', request => requests.push(request.url()));
+      checked.on('pageerror', error => caseErrors.push(error.name));
+      await checked.route('**/api/analyze', async route => {
+        const response = await route.fetch(); const data = await response.json();
+        assert.equal(data.engine, 'rules-v1');
+        mutate(data); await route.fulfill({ response, json: data });
+      });
+      await checked.goto(origin);
+      await checked.waitForFunction(() => !document.querySelector('#submit').disabled);
+      await checked.locator('#content').fill('Ahoj, zítra se potkáme u knihovny.');
+      await checked.locator('#submit').click();
+      if (expected === 'error') {
+        await checked.locator('#error-panel').waitFor({ state: 'visible' });
+        assert.ok(await checked.locator('#result').isHidden(), name);
+        assert.equal(await checked.locator('#error-safety').textContent(), 'Výsledek teď nemáme. Neznamená to, že je zpráva bezpečná.', name);
+      } else {
+        await checked.locator('#result').waitFor({ state: 'visible' });
+        await assertScoreFreeResult(checked, name);
+        assert.ok(await checked.locator('#uncertainties').isVisible(), name);
+        assert.ok((await checked.locator('#uncertainties li').count()) > 0, name);
+        assert.ok((await checked.locator('#verification li').count()) > 0, name);
+        if (['uncertainty', 'both'].includes(expected)) {
+          assert.equal(await checked.locator('#uncertainties').textContent(), 'Nemáme dost informací, abychom vyloučili riziko. To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.', name);
+        }
+        if (['verification', 'both'].includes(expected)) {
+          assert.equal(await checked.locator('#verification').textContent(), 'Žádost si ověřte jinou cestou. Použijte kontakt, který už znáte, nebo oficiální aplikaci. Nepoužívejte telefon ani odkaz z posuzované zprávy.', name);
+        }
+        if (expected === 'copy') {
+          assert.deepEqual(await checked.locator('#uncertainties li').allTextContents(), [
+            'To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.',
+            'Prohlédli jsme pouze znění odkazu. Stránku jsme nenavštívili a nevíme, zda je bezpečná.',
+            'AI i pravidla se mohou mýlit. Výsledek není důkazem bezpečnosti ani podvodu.',
+          ]);
+        }
+        if (expected === 'score') scorePresentations.push(await checked.locator('#result').innerHTML());
+        assert.equal(await checked.locator('#result a[href], #result script, #result iframe').count(), 0, name);
+      }
+      assert.ok(requests.every(url => new URL(url).origin === origin), name);
+      assert.deepEqual(caseErrors, [], name);
+      console.log(`F5a safety: PASS (${name})`);
+    } finally {
+      await context.close();
+      await new Promise(resolve => { caseServer.close(resolve); caseServer.closeAllConnections(); });
+    }
+  }
+  assert.equal(scorePresentations.length, 2);
+  assert.equal(scorePresentations[0], scorePresentations[1], 'risk_score/risk_level must not change result text, styling, attributes or characters');
   // Verify text rendering even if a future model returns HTML-looking strings.
   const marker = '<img src=x onerror="window.xssExecuted=true">';
   await page.route('**/api/analyze', async route => {

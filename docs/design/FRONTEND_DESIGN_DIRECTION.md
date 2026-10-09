@@ -25,7 +25,7 @@ When sources disagree, this order applies:
 
 | Rank | Source | Authoritative for |
 | --- | --- | --- |
-| 1 | docs/design/VERIM_CHARACTER_REFERENCE.png | The appearance of Věrka and Robo |
+| 1 | Věrka: the six PNGs of the 2026-10 refresh (public/assets/characters/verka/*.png, public/assets/characters/verkarob.png). Robo: docs/design/VERIM_CHARACTER_REFERENCE.png | The appearance of Věrka and Robo (the old Věrka on the reference sheet is historical material) |
 | 2 | docs/design/FRONTEND_DESIGN_DIRECTION.md (this document) | UX, layout, interaction, responsive behaviour, frontend product direction |
 | 3 | docs/design/DESIGN_SYSTEM.md | Design tokens, components, implementation primitives |
 | 4 | docs/design/VERIM_VISUAL_REFERENCE.png | Original visual and layout inspiration |
@@ -148,7 +148,7 @@ Litmus test: a screenshot of the result screen should look at home in a police o
 
 Věrka: the user's guide. She speaks to the user, explains, and accompanies the user through results, verification and the „Už se to stalo?" path.
 Robo: analysis and system activity: checking, processing, technical states, errors and capacity.
-Their appearance comes only from VERIM_CHARACTER_REFERENCE.png and must not be altered. Responsive adaptation changes only scale, placement, spacing and composition.
+Věrka's appearance comes only from the six approved PNGs of the 2026-10 refresh; Robo's from VERIM_CHARACTER_REFERENCE.png. Neither may be altered. Responsive adaptation changes only scale, placement, spacing and composition.
 
 ### 6.2 Rules
 

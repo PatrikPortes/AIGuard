@@ -3,7 +3,6 @@ const form = document.querySelector('#analysis-form');
 const result = document.querySelector('#result');
 const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
-const simple = document.querySelector('#simple');
 let analysis;
 let mode;
 const errorPanel = document.querySelector('#error-panel');
@@ -75,7 +74,6 @@ async function initialize() {
   }
 }
 initialize();
-const levels = { unassessed: 'Bezpečnost nelze určit', low: 'Bezpečnost nelze určit', caution: 'Zvýšená opatrnost', high: 'Vysoké riziko', very_high: 'Velmi vysoké riziko' };
 const examples = {
   family: 'Mami, mám nové číslo a rozbitý telefon. Pošli mi ihned 12 000 Kč na nový účet. Nevolej mi, nemůžu mluvit.',
   bank: 'Vaše banka: ihned zadejte heslo a potvrzovací kód na https://banka-priklad.invalid, jinak bude účet zablokován.',
@@ -105,31 +103,53 @@ function list(id, items) {
   const target = document.querySelector(id);
   target.replaceChildren(...items.map(text => { const li = document.createElement('li'); li.textContent = text; return li; }));
 }
+// Presentation compatibility for the existing backend templates. Preserve their
+// limitations without referring to a score that this UI does not display.
+const uncertaintyCopy = new Map([
+  ['Jde o odhad rizika, nikoli důkaz, že jde o podvod. Nízké skóre nepotvrzuje bezpečnost.',
+    'To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.'],
+  ['URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.',
+    'Prohlédli jsme pouze znění odkazu. Stránku jsme nenavštívili a nevíme, zda je bezpečná.'],
+  ['Skóre je vyšší z odhadu AI a pravidel. Nejde o kalibrovanou pravděpodobnost.',
+    'AI i pravidla se mohou mýlit. Výsledek není důkazem bezpečnosti ani podvodu.'],
+]);
+const missingUncertainty = 'Nemáme dost informací, abychom vyloučili riziko. To, že jsme nenašli jasné varovné znaky, neznamená, že je zpráva bezpečná.';
+const missingVerification = 'Žádost si ověřte jinou cestou. Použijte kontakt, který už znáte, nebo oficiální aplikaci. Nepoužívejte telefon ani odkaz z posuzované zprávy.';
+// F5a interim result: neutral heading, no score, no outcome derived in the browser.
+// The first recommended action comes from the backend in its own order; nothing
+// here is inferred from risk_score, risk_level or the number of signals.
 function render() {
   if (!analysis) return;
-  const risk = document.querySelector('#risk');
-  document.querySelector('#risk-level').textContent = levels[analysis.risk_level];
-  const unassessed = ['unassessed', 'low'].includes(analysis.risk_level);
-  document.querySelector('#risk-number').textContent = unassessed ? '—' : analysis.risk_score;
-  document.querySelector('#risk-scale').hidden = unassessed;
-  document.querySelector('#risk-description').textContent = analysis.input_type === 'url' ? 'Cíl odkazu nebyl navštíven ani ověřen.' : unassessed ? 'Absence známých signálů nepotvrzuje důvěryhodnost.' : 'Odhad rizikových signálů';
-  risk.dataset.level = analysis.risk_level;
-  const riskState = ['high', 'very_high'].includes(analysis.risk_level) ? 'warning' : 'thinking';
-  document.querySelector('#risk-character').src = characterAssets[`verka-${riskState}`];
-  document.querySelector('#signals-character').src = characterAssets[`robo-${analysis.signals.length ? 'warning' : 'default'}`];
-  document.querySelector('#summary').textContent = simple.checked && analysis.input_type !== 'url'
-    ? analysis.risk_score >= 60 ? 'Zastavte se. Zpráva má varovné znaky. Než něco uděláte, ověřte si ji.' : 'Nevíme, zda zprávě můžete věřit. Ověřte si ji u člověka nebo firmy, které znáte.'
-    : analysis.summary;
-  list('#signals', analysis.signals.length ? analysis.signals.map(signal => simple.checked ? signal.title : `${signal.title}. ${signal.explanation}`) : ['Známé signály jsme nenašli. Podvod tím není vyloučen.']);
-  list('#actions', simple.checked ? ['Než pošlete peníze, ověřte si žádost.', 'Nikomu neposílejte hesla ani kódy.', 'Podezřelý odkaz neotvírejte.'] : analysis.recommended_actions);
-  list('#verification', analysis.verification_steps);
-  list('#uncertainties', [...analysis.uncertainties, analysis.engine === 'rules-v1' ? 'Použita pouze pravidla, bez AI.' : `Použita pravidla a AI. Nejistota: ${{low:'menší',medium:'střední',high:'vysoká'}[analysis.uncertainty]}. Druhá AI kontrola: ${analysis.critic_used ? 'ano' : 'ne'}.`]);
+  const [primary, ...rest] = analysis.recommended_actions;
+  document.querySelector('#primary-action').textContent = primary;
+  list('#actions', rest);
+  document.querySelector('#actions').hidden = rest.length === 0;
+  document.querySelector('#summary').textContent = analysis.summary;
+  list('#signals', analysis.signals.length ? analysis.signals.map(signal => `${signal.title}. ${signal.explanation}`) : ['Známé signály jsme nenašli. Podvod tím není vyloučen.']);
+  list('#uncertainties', analysis.uncertainties?.length
+    ? analysis.uncertainties.map(text => uncertaintyCopy.get(text) || text) : [missingUncertainty]);
+  list('#verification', analysis.verification_steps?.length ? analysis.verification_steps : [missingVerification]);
+  list('#technical', [
+    analysis.engine === 'rules-v1' ? 'Použita pouze pravidla, bez AI.' : 'Použita pravidla a AI.',
+    ...(analysis.engine !== 'rules-v1' && analysis.uncertainty ? [`Nejistota AI: ${{ low: 'menší', medium: 'střední', high: 'vysoká' }[analysis.uncertainty] || 'neuvedena'}.`, `Druhá AI kontrola: ${analysis.critic_used ? 'ano' : 'ne'}.`] : []),
+    analysis.input_type === 'url' ? 'Vložen samotný odkaz. Stránku jsme neotevřeli.' : 'Vložen text.',
+  ]);
 }
-simple.addEventListener('change', render);
+document.querySelector('#to-verification').addEventListener('click', () => {
+  const target = document.querySelector('#verification-title');
+  target.closest('section').scrollIntoView({ block: 'start' });
+  target.focus({ preventScroll: true });
+});
 // Minimal shape check so an incomplete response is reported, never shown as a result.
+const isText = value => typeof value === 'string' && value.trim().length > 0;
+// Missing/empty guidance gets generic process advice, never invented findings.
+// Wrong types or malformed entries remain rendering failures.
+const isSafetyList = value => value === undefined || (Array.isArray(value) && value.every(isText));
 function isAnalysis(data) {
-  return Boolean(data) && Object.hasOwn(levels, data.risk_level) && typeof data.summary === 'string'
-    && ['signals', 'recommended_actions', 'verification_steps', 'uncertainties'].every(key => Array.isArray(data[key]));
+  return Boolean(data) && isText(data.summary)
+    && Array.isArray(data.recommended_actions) && data.recommended_actions.length > 0 && data.recommended_actions.every(isText)
+    && Array.isArray(data.signals) && data.signals.every(signal => isText(signal?.title) && isText(signal?.explanation))
+    && ['verification_steps', 'uncertainties'].every(key => isSafetyList(data[key]));
 }
 let busy = false;
 function setBusy(value) {
@@ -169,7 +189,10 @@ form.addEventListener('submit', async event => {
   setBusy(false);
   if (!failure) {
     try {
-      analysis = data; render(); result.hidden = false; result.focus();
+      analysis = data; render(); result.hidden = false;
+      // Start reading at the result heading, not wherever focus scrolling lands.
+      result.scrollIntoView({ block: 'start' });
+      result.focus({ preventScroll: true });
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;
     } catch {

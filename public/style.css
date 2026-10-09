@@ -169,42 +169,22 @@ input[type=checkbox] { width: 24px; height: 24px; flex-shrink: 0; margin: 4px 0 
 /* No green/"safe" colouring for an example message (FDD §10.3). */
 .mint { background: var(--knowledge-surface); color: var(--knowledge-ink); }
 
-.result-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-.result-top h2 { margin: 0; }
-.toggle { min-height: var(--target-min); display: flex; align-items: center; gap: 10px; font-size: var(--text-body); margin: 0; padding: 0 8px; }
-.toggle input { margin: 0; }
-
-/* Outcome foundation: concern family for caution/high/very_high, knowledge family
-   otherwise. No green, no red alarm. The final four-outcome UI belongs to F5. */
-.risk-banner {
-  --state-ink: var(--knowledge-ink); --state-bg: var(--knowledge-surface); --state-accent: var(--knowledge-accent);
-  display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 24px; border-radius: 20px;
-  background: var(--state-bg); color: var(--state-ink); border: 2px solid var(--state-accent);
-}
-.risk-banner[data-level=caution], .risk-banner[data-level=high], .risk-banner[data-level=very_high] {
-  --state-ink: var(--concern-ink); --state-bg: var(--concern-surface); --state-accent: var(--concern-accent);
-}
-.risk-banner[data-level=unassessed], .risk-banner[data-level=low] {
-  --state-ink: var(--knowledge-ink); --state-bg: var(--knowledge-surface); --state-accent: var(--knowledge-accent);
-}
-.risk-message { display: flex; align-items: center; gap: 16px; }
-.risk-message h3 { font-size: 1.25rem; margin: 0 0 4px; }
-.risk-message p { font-size: var(--text-body); margin: 0; }
-.risk-circle {
-  border: 4px solid var(--state-accent); color: var(--state-ink); border-radius: 50%; background: var(--surface);
-  width: 86px; height: 86px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.1; flex-shrink: 0;
-}
-.risk-circle strong { font-size: 1.9rem; }
-.risk-circle span { font-size: var(--text-body); }
-
-.guide-summary { display: flex; align-items: flex-start; gap: 14px; margin: 24px 0; }
-.guide-summary #summary { margin: 0; font-size: var(--text-result); }
-.uncertainty-note { background: var(--knowledge-surface); border-color: var(--knowledge-accent); color: var(--knowledge-ink); }
-.result-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
-.signals-card, .actions-card, .verification-card { border-radius: 20px; padding: 24px; background: var(--cool-background); border: 1px solid var(--border); }
-/* Recommended actions are not a completed safe action: no green. */
-.actions-card { background: var(--cool-background); border-color: var(--border); }
-.verification-card { margin-top: 20px; background: var(--brand-soft); }
+/* F5a — interim neutral result (FDD §10): no score, no gauge, no outcome family
+   until the backend semantic outcome (C4) exists. Action first. */
+.result-lead { border: 2px solid var(--border); border-radius: 22px; padding: 20px 24px; background: var(--surface); }
+.result-heading { display: flex; align-items: center; gap: 14px; }
+.result-heading h2 { margin: 0; }
+.result-now h3 { font-size: var(--text-body); color: var(--muted); margin: 16px 0 4px; }
+.result-now .primary-action { font-size: 1.25rem; font-weight: 700; line-height: 1.5; margin: 0; }
+.result-now .secondary-actions { margin-top: 12px; }
+.result-route { margin-top: 16px; min-height: var(--target-primary); background: var(--brand-action); color: #fff; font-weight: 700; }
+.result-route:hover { background: var(--brand-action-hover); }
+.result-card { border-radius: 20px; padding: 20px 24px; background: var(--cool-background); border: 1px solid var(--border); margin-top: 20px; }
+.result-card h3 { margin: 0 0 8px; }
+.result-card #summary { margin: 0; font-size: var(--text-result); }
+.unknowns-card { background: var(--knowledge-surface); border-color: var(--knowledge-accent); }
+.verification-card { background: var(--brand-soft); scroll-margin-top: 16px; }
+.verification-card h3:focus { outline-offset: 4px; }
 ul, ol { padding-left: 24px; margin-bottom: 0; }
 li { padding: 5px 0; font-size: var(--text-body); }
 .result li { font-size: var(--text-result); }
@@ -230,7 +210,6 @@ footer { border-top: 1px solid var(--border); font-size: var(--text-body); color
   .site-header, footer { padding: 20px 24px; }
   main { padding: 0 24px 32px; }
   nav { gap: 16px; }
-  .result-columns { gap: 16px; }
   .steps { gap: 12px; }
   .steps > li { padding: 20px; }
 }
@@ -246,15 +225,9 @@ footer { border-top: 1px solid var(--border); font-size: var(--text-body); color
   .panel { padding: 22px 18px; border-radius: 22px; }
   .example-buttons { gap: 8px; }
   .example-buttons button { flex: 1 1 180px; }
-  .result-top { gap: 12px; }
-  .risk-banner { padding: 16px; gap: 12px; flex-wrap: wrap; }
-  .risk-message { min-width: 0; }
-  .risk-message { gap: 10px; }
-  .risk-message h3 { font-size: 1.15rem; }
-  .risk-circle { width: 68px; height: 68px; border-width: 3px; }
-  .risk-circle strong { font-size: 1.5rem; }
-  .result-columns, .steps { grid-template-columns: 1fr; }
-  .signals-card, .actions-card, .verification-card { padding: 18px; }
+  .steps { grid-template-columns: 1fr; }
+  .result-lead, .result-card { padding: 16px 18px; }
+  .result-route { width: 100%; }
   .steps { gap: 12px; margin: 24px 0; }
   .steps > li { padding: 20px; }
   .privacy-page { padding-top: 24px; }
@@ -298,7 +271,6 @@ button[type=submit][aria-disabled=true] { background: var(--disabled); cursor: p
 @media (max-width: 600px) {
   .character-avatar { width: 48px; }
   .character-heading { gap: 10px; }
-  .risk-message { align-items: flex-start; }
 }
 
 

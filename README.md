@@ -56,7 +56,7 @@ Skutečné OpenAI volání a kvalita jeho odpovědí musí být ověřeny; simul
 
 ## Schválený design
 
-Canonical visual reference: **`docs/design/VERIM_VISUAL_REFERENCE.png`**, character reference **`docs/design/VERIM_CHARACTER_REFERENCE.png`**, obě fyzicky uložené. [Design systém](docs/design/DESIGN_SYSTEM.md) stanovuje tokeny a role Věrky/Roba. [Evidence assetů](docs/design/ASSETS.md) obsahuje schválené produkční PNG používané UI včetně společného hero. Reference se nikdy nevkládají do webu ani z nich nevystřihujeme části.
+Canonical visual reference: **`docs/design/VERIM_VISUAL_REFERENCE.png`**, character reference **`docs/design/VERIM_CHARACTER_REFERENCE.png`** (Robo; Věrka od refreshe 2026-10 podle šesti PNG v `public/assets/characters/`), obě fyzicky uložené. [Design systém](docs/design/DESIGN_SYSTEM.md) stanovuje tokeny a role Věrky/Roba. [Evidence assetů](docs/design/ASSETS.md) obsahuje schválené produkční PNG používané UI včetně společného hero. Reference se nikdy nevkládají do webu ani z nich nevystřihujeme části.
 
 ## Security Gate 1 a cloudový provoz
 
