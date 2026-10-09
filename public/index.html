@@ -28,7 +28,7 @@
       <form id="analysis-form" method="post" action="/api/analyze">
         <label for="content">Obsah k ověření</label>
         <textarea id="content" rows="4" maxlength="10000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte zkopírovanou zprávu nebo odkaz…" aria-describedby="content-help"></textarea>
-        <p class="hint" id="content-help">Text zprávy, e-mailu nebo SMS, případně samotný odkaz. Odstraňte nepotřebné osobní údaje. Nejvýše 10 000 znaků.</p>
+        <p class="hint" id="content-help">Zpráva, e-mail, SMS nebo odkaz, nejvýše 10 000 znaků. Nepotřebné osobní údaje smažte.</p>
         <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
         <button id="submit" type="submit" disabled><span id="submit-label">Prověřit zprávu</span> <span aria-hidden="true">→</span></button>
         <div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div>

@@ -16,7 +16,7 @@ Obě originální PNG reference jsou uložené beze změny; velikosti a SHA-256 
 
 ## Identita a tón
 
-- Kanonický název produktu je **Věřím tomu?**; tagline **Radši ověřit než litovat.** Homepage používá od F2 název „Věřím tomu?“. Starší „Věřím?“ zůstává ještě na privacy stránce a sjednotí se v F11.
+- Kanonický název produktu je **Věřím tomu?**; tagline **Radši ověřit než litovat.** Homepage používá od F2 název „Věřím tomu?“, privacy stránka od F5b.
 - Věřím tomu? **není AI detektor**, ale průvodce bezpečným rozhodnutím. Nikdy nenaznačuje jistotu, kterou analýza nemá: „nenašli jsme problém“ ≠ „je to bezpečné“.
 - Čeština s **vykáním všude** — v uvítání, formuláři, výsledcích i chybách. Žádné tykání.
 - Jednoduchý jazyk je **výchozí stav**. Neexistuje samostatný „jednoduchý“ ani „senior“ režim. Technické detaily patří pod „Chci vědět víc“.
@@ -116,7 +116,7 @@ F1 mění pouze tokeny a CSS primitiva. Markup a chování se mění až v dalš
 
 | Současný vzor v markupu | Cílový stav | Etapa |
 |---|---|---|
-| Značka „Věřím?“, tykání v hero a bublině | **Hotovo v F2** na homepage (privacy stránka: F11) | F2 |
+| Značka „Věřím?“, tykání v hero a bublině | **Hotovo v F2** na homepage, privacy stránka v F5b | F2 |
 | Hero s velkou společnou ilustrací před nástrojem | **Hotovo v F2**: nástroj je hero, Věrka i Robo zachováni (viz níže) | F2 |
 | Ruční výběr typu obsahu | Jedno pole s automatickou detekcí, výběr jen jako oprava | Hotovo v F3 (bez opravného výběru; viz „Vstup (F3)“) |
 | Kruhové číselné skóre („/ 100“) | **Neodstraňuje se v F1.** Číselné skóre se uživatelům nezobrazuje (ani pod „Chci vědět víc“), pokud to později výslovně neschválí product owner | F5 |

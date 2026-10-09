@@ -306,7 +306,8 @@ button[type=submit][aria-disabled=true] { background: var(--disabled); cursor: p
 .situations, .capabilities { margin: 0 0 40px; }
 .section-lead { margin: 0 0 20px; color: var(--muted); }
 .situation-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.situation-list li { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-bubble); padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+/* F5b M3: informational rows, not card-like boxes; nothing here is interactive. */
+.situation-list li { border-left: 4px solid var(--knowledge-accent); padding: 4px 0 4px 16px; display: flex; flex-direction: column; gap: 6px; }
 .situation-list span { color: var(--muted); }
 .situations .examples { border-top: 0; margin-top: 20px; padding-top: 0; }
 
@@ -346,9 +347,14 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
   .hero-duo { flex: none; width: 100%; max-width: 320px; }
   .happened-band { padding: 22px 18px; border-left-width: 6px; }
   .situation-list, .capability-columns { grid-template-columns: 1fr; }
+  /* F5b M7: label above status on every row, not only where it happens to wrap. */
+  .input-status li { flex-direction: column; gap: 2px; }
 }
 @media (max-width: 359px) {
-  .site-header { flex-wrap: wrap; }
+  /* F5b M5: keep the header on one line; wrapping stays as an overflow fallback. */
+  .site-header { flex-wrap: wrap; gap: 8px; padding-left: 12px; padding-right: 12px; }
+  .wordmark { font-size: 1.25rem; }
+  .nav-happened { padding: 6px 12px; }
 }
 @media (max-width: 700px) {
   .nav-secondary { display: none; }

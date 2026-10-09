@@ -63,7 +63,7 @@ async function initialize() {
     mode = runtime.mode;
     document.querySelector('#engine-notice').textContent = mode === 'ai'
       ? runtime.ai_configured ? 'Text vyhodnotí pravidla a AI. Výsledek je orientační; odkazy neotevíráme.' : 'AI ověření zatím není dostupné. Zkuste to později.'
-      : 'Textový prototyp: používá pouze pravidla, bez AI modelu. Screenshoty a PDF připravujeme.';
+      : 'Zatím kontrolujeme jen text a odkazy podle pevných pravidel, bez umělé inteligence. Snímky obrazovky a PDF připravujeme.';
     document.querySelector('#consent-label').textContent = `Souhlasím s odesláním vloženého textu poskytovateli ${runtime.provider_label || 'AI'}. Před odesláním odstraním nepotřebné osobní údaje.`;
     document.querySelector('#ai-consent').hidden = mode !== 'ai';
     submit.disabled = mode === 'ai' && !runtime.ai_configured;
@@ -191,10 +191,10 @@ form.addEventListener('submit', async event => {
     try {
       analysis = data; render(); result.hidden = false;
       // Start reading at the result heading, not wherever focus scrolling lands.
-      result.scrollIntoView({ block: 'start' });
-      result.focus({ preventScroll: true });
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;
+      result.scrollIntoView({ block: 'start' });
+      result.focus({ preventScroll: true });
     } catch {
       analysis = undefined; result.hidden = true; failure = 'UNEXPECTED';
     }
