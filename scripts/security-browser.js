@@ -270,7 +270,55 @@ try {
     }
     await context.close();
   }
-  console.log('Security browser: PASS (text rendering/XSS, rules workflow, 1440/390/320, no overflow, canonical hero, neutral URL/no-signal visuals, no-JS/module-failure privacy)');
+  // M9 must be usable without application JavaScript or session/API requests.
+  // Never activate the tel link: checking a real emergency call is not a test.
+  for (const javaScriptEnabled of [false, true]) {
+    const context = await browser.newContext({ javaScriptEnabled });
+    try {
+      for (const width of [1440, 390, 360, 320]) {
+        const guide = await context.newPage();
+        await guide.setViewportSize({ width, height: 900 });
+        const requests = [], pageErrors = [], cspErrors = [];
+        guide.on('request', req => requests.push(req.url()));
+        guide.on('pageerror', error => pageErrors.push(error.name));
+        guide.on('console', message => {
+          if (/Content Security Policy|violates.*directive/iu.test(message.text())) cspErrors.push(message.text());
+        });
+        await guide.addInitScript(() => {
+          window.m9CspViolations = [];
+          document.addEventListener('securitypolicyviolation', event => window.m9CspViolations.push(event.violatedDirective));
+        });
+        const response = await guide.goto(base + '/uz-se-to-stalo');
+        assert.equal(response.status(), 200);
+        assert.equal(response.headers()['content-type'], 'text/html; charset=utf-8');
+        await guide.waitForLoadState('networkidle');
+        assert.equal(await guide.locator('h1').textContent(), 'Už se to stalo? Co udělat teď');
+        assert.equal(await guide.locator('script, form, input, textarea, select, iframe, img, picture').count(), 0);
+        const call = guide.locator('a[href="tel:158"]');
+        assert.equal(await call.count(), 1);
+        assert.equal(await call.getAttribute('aria-label'), '158 – zavolat Policii ČR');
+        assert.ok(await guide.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+        const summaries = guide.locator('details > summary');
+        assert.equal(await summaries.count(), 6);
+        for (let i = 0; i < 6; i++) {
+          const summary = summaries.nth(i);
+          await summary.focus(); await summary.press('Space');
+          assert.ok(await summary.evaluate(node => node.parentElement.open));
+          assert.ok(await summary.locator('..').locator('ul').isVisible());
+          await summary.press('Enter');
+          assert.equal(await summary.evaluate(node => node.parentElement.open), false);
+        }
+        assert.ok(requests.every(url => new URL(url).origin === base));
+        assert.ok(requests.every(url => ['/uz-se-to-stalo', '/style.css'].includes(new URL(url).pathname)));
+        assert.deepEqual(pageErrors, []);
+        assert.deepEqual(cspErrors, []);
+        if (javaScriptEnabled) assert.deepEqual(await guide.evaluate(() => window.m9CspViolations), []);
+        console.log(`M9 browser: PASS (${width}px, JS ${javaScriptEnabled ? 'on' : 'off'}, native keyboard details, no API/egress/CSP violations; tel not activated)`);
+        await guide.close();
+      }
+    } finally { await context.close(); }
+  }
+  console.log('Security browser: PASS (text rendering/XSS, rules workflow, 1440/390/320, no overflow, canonical hero, neutral URL/no-signal visuals, no-JS/module-failure privacy, M9 static/no-JS safety)');
 } finally {
   await browser.close(); await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
 }
