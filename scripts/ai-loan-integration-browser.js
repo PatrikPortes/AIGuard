@@ -68,7 +68,8 @@ try {
             assert.equal(result.ai_fallback_reason, 'provider_unavailable');
             assert.ok(result.uncertainties.includes('AI kontrola nebyla dokončena. Tento výsledek používá pouze pravidla; nejde o potvrzení bezpečnosti.'));
             assert.ok(await page.locator('#engine-note').isVisible());
-            assert.equal(await page.locator('#engine-note').textContent(), 'Tentokrát výsledek vychází jen z pevných pravidel. Kontrola s AI teď nebyla dostupná.');
+            // Consent was given and a provider may have been contacted: cautious wording.
+            assert.equal(await page.locator('#engine-note').textContent(), 'Kontrola s AI se tentokrát nepodařila. Tento výsledek vychází jen z našich pevných pravidel. Text zprávy mohl být s vaším souhlasem odeslán poskytovateli AI.');
             assert.equal(captures.length, 1);
           } else assert.equal(captures.length, 0);
         }
@@ -89,9 +90,18 @@ try {
     await page.goto(base);
     const state = await (await responsePromise).json();
     assert.equal(state.rules_fallback, true); assert.equal(state.ai_configured, false);
-    await page.waitForFunction(() => document.querySelector('#engine-notice').textContent.includes('AI ověření zatím není dostupné'));
-    // Preserve the integration requirement; failure is evidence for the frontend handoff.
+    await page.waitForFunction(() => document.querySelector('#engine-notice').textContent.includes('Kontrola s AI teď není k dispozici'));
     assert.equal(await page.locator('#submit').isDisabled(), false, 'permitted rules fallback must remain usable');
-    assert.ok(await page.locator('#ai-consent').isVisible(), 'existing consent requirement remains accessible');
+    // No provider can be contacted, so no external-AI consent is asked or claimed.
+    assert.ok(await page.locator('#ai-consent').isHidden(), 'no AI consent without a configured provider');
+    // This backend still demands ai_consent=true here (see backend handoff). The
+    // frontend must not fake consent and must not show a consent dead end.
+    const sent = page.waitForRequest(request => request.url().endsWith('/api/analyze'));
+    await page.locator('#content').fill('Nabízíme půjčku. Pošli peníze.');
+    await page.locator('#submit').click();
+    assert.equal((await sent).postDataJSON().ai_consent, false);
+    await page.locator('#error-panel').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#error-title').textContent(), 'Prověřování je dočasně nedostupné.');
+    assert.doesNotMatch(await page.locator('#error-panel').textContent(), /souhlas/iu);
   } finally { await page.close(); await close(server); pipeline.close(); }
 } finally { await browser.close(); await close(provider); }

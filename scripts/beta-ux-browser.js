@@ -76,13 +76,25 @@ try {
   }
 
   // AI configured, but this result came from the rules alone: say so, briefly.
+  // The note needs the explicit ai_status marker of the backend contract; a
+  // rules-v1 engine alone is never treated as a fallback.
   {
-    const { page } = await open(360, { session: AI_SESSION });
+    const { page } = await open(360, { session: AI_SESSION, analyze: async route => {
+      const response = await route.fetch(); const data = await response.json();
+      await route.fulfill({ response, json: { ...data, ai_status: 'not_performed', ai_fallback_reason: 'provider_unavailable' } });
+    } });
     await check(page, SCAM);
     await page.locator('#result').waitFor({ state: 'visible' });
     assert.ok(await page.locator('#engine-note').isVisible());
     await actionFirst(page, 'AI fallback');
-    assert.equal(await page.locator('#engine-note').textContent(), 'Tentokrát výsledek vychází jen z pevných pravidel. Kontrola s AI teď nebyla dostupná.');
+    assert.equal(await page.locator('#engine-note').textContent(), 'Kontrola s AI se tentokrát nepodařila. Tento výsledek vychází jen z našich pevných pravidel. Text zprávy mohl být s vaším souhlasem odeslán poskytovateli AI.');
+    await page.close();
+  }
+  {
+    const { page } = await open(360, { session: AI_SESSION });
+    await check(page, SCAM);
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.ok(await page.locator('#engine-note').isHidden(), 'no fallback note without the explicit marker');
     await page.close();
   }
   // AI result: no fallback note, and no provider, model or score in the result.

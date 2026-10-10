@@ -6,6 +6,10 @@ const submit = document.querySelector('#submit');
 let analysis;
 let mode;
 let providerLabel = 'AI';
+// External AI may be used only when configured; an explicit rules_fallback lets
+// an unconfigured AI deployment still answer with rules, without AI consent.
+let aiAvailable = false;
+let rulesFallback = false;
 let busy = false;
 const errorPanel = document.querySelector('#error-panel');
 const retry = document.querySelector('#retry');
@@ -45,6 +49,9 @@ const REJECTED = ['AI_INVALID_OUTPUT', 'AI_UNSUPPORTED_EVIDENCE', 'AI_UNSAFE_OUT
 let rejections = 0;
 let rejectedFor;
 function failureFor(code, httpStatus) {
+  // Without AI the user was never asked for AI consent. A backend that still
+  // demands it cannot answer now; never show a consent request with no checkbox.
+  if (code === 'AI_CONSENT_REQUIRED' && !aiAvailable) return 'AI_UNAVAILABLE';
   // One manual retry after a rejected AI answer; a second rejection ends it.
   if (REJECTED.includes(code)) return ++rejections > 1 ? 'REJECTED_AGAIN' : 'AI_INVALID_OUTPUT';
   if (failures[code]) return code;
@@ -78,12 +85,18 @@ async function initialize() {
     const runtime = await response.json();
     mode = runtime.mode;
     providerLabel = runtime.provider_label || 'AI';
+    aiAvailable = mode === 'ai' && runtime.ai_configured === true;
+    rulesFallback = mode === 'ai' && !aiAvailable && runtime.rules_fallback === true;
     document.querySelector('#engine-notice').textContent = mode === 'ai'
-      ? runtime.ai_configured ? `Text vyhodnotí naše pravidla a pomůže s ním AI od poskytovatele ${providerLabel}. Výsledek je orientační. Odkazy neotevíráme.` : 'AI ověření zatím není dostupné. Zkuste to později.'
+      ? aiAvailable ? `Text vyhodnotí naše pravidla a pomůže s ním AI od poskytovatele ${providerLabel}. Výsledek je orientační. Odkazy neotevíráme.`
+        : rulesFallback ? 'Kontrola s AI teď není k dispozici. Zprávu prověříme jen podle našich pravidel a text poskytovateli AI neposíláme. Výsledek je orientační. Odkazy neotevíráme.'
+        : 'AI ověření zatím není dostupné. Zkuste to později.'
       : 'Zatím kontrolujeme jen text a odkazy podle pevných pravidel, bez umělé inteligence. Snímky obrazovky a PDF připravujeme.';
     document.querySelector('#consent-label').textContent = `Souhlasím s odesláním vloženého textu poskytovateli ${runtime.provider_label || 'AI'}. Před odesláním odstraním nepotřebné osobní údaje.`;
-    document.querySelector('#ai-consent').hidden = mode !== 'ai' || !runtime.ai_configured;
-    submit.disabled = mode === 'ai' && !runtime.ai_configured;
+    // Consent is asked only for a provider that can actually be contacted.
+    document.querySelector('#ai-consent').hidden = !aiAvailable;
+    // An older backend without rules_fallback keeps the safe disabled state.
+    submit.disabled = mode === 'ai' && !aiAvailable && !rulesFallback;
     return true;
   } catch {
     mode = undefined; submit.disabled = true; showError('SESSION_START');
@@ -158,7 +171,8 @@ function classifyInput(value) {
   } catch { return 'text'; }
 }
 function analysisRequest(content) {
-  const request = { type: classifyInput(content), content, ai_consent: mode === 'ai' && document.querySelector('#consent').checked };
+  // Consent is never claimed for a provider the user was not asked about.
+  const request = { type: classifyInput(content), content, ai_consent: aiAvailable && document.querySelector('#consent').checked };
   return isLoan() ? { ...request, topic: 'loan', loan_context: loanUi.context() } : request;
 }
 function list(id, items) {
@@ -180,7 +194,7 @@ const missingVerification = 'Žádost si ověřte jinou cestou. Použijte kontak
 // F5a interim result: neutral heading, no score, no outcome derived in the browser.
 // The first recommended action comes from the backend in its own order; nothing
 // here is inferred from risk_score, risk_level or the number of signals.
-function render(loanFlow, loanAnswers) {
+function render(loanFlow, loanAnswers, aiConsent) {
   if (!analysis) return;
   const [primary, ...rest] = analysis.recommended_actions;
   document.querySelector('#primary-action').textContent = primary;
@@ -218,8 +232,18 @@ function render(loanFlow, loanAnswers) {
   list('#uncertainties', analysis.uncertainties?.length
     ? analysis.uncertainties.map(text => text === DISCLAIMER && analysis.signals.length
       ? 'Varovné signály nejsou důkaz podvodu. Než cokoli uděláte, ověřte si to nezávisle.' : uncertaintyCopy.get(text) || text) : [missingUncertainty]);
-  // AI mode, but this result came from the rules alone (fallback).
-  document.querySelector('#engine-note').hidden = !(mode === 'ai' && analysis.engine === 'rules-v1');
+  // Explicitly labelled rules fallback (ai_status), never inferred from engine.
+  // "Not sent" is stated only when no AI consent was given: the backend sends
+  // nothing to a provider without it. Otherwise the wording stays cautious.
+  const fallback = analysis.ai_status === 'not_performed';
+  document.querySelector('#engine-note').hidden = !fallback;
+  if (fallback) document.querySelector('#engine-note').textContent = `${{
+    not_configured: 'Kontrola s AI teď není k dispozici.', budget_unavailable: 'Kontrola s AI teď není k dispozici.',
+    timeout: 'Kontrola s AI nestihla doběhnout včas.', overloaded: 'Kontrola s AI byla právě přetížená.',
+    budget_exhausted: 'Kapacita kontroly s AI je teď vyčerpaná.', input_limit: 'Zpráva je pro kontrolu s AI příliš dlouhá.',
+    invalid_response: 'Odpověď AI nebyla dost spolehlivá, proto ji nepoužíváme.', text_only: 'U samotného odkazu kontrolu s AI neděláme.',
+  }[analysis.ai_fallback_reason] || 'Kontrola s AI se tentokrát nepodařila.'} Tento výsledek vychází jen z našich pevných pravidel. ${aiConsent
+    ? 'Text zprávy mohl být s vaším souhlasem odeslán poskytovateli AI.' : 'Text jsme poskytovateli AI neposílali.'}`;
   list('#verification', analysis.verification_steps?.length ? analysis.verification_steps : [missingVerification]);
   document.querySelector('#loan-followup').hidden = !(analysis.topic === 'loan' && !loanFlow);
   list('#technical', [
@@ -257,7 +281,7 @@ function setBusy(value) {
   busy = value;
   stageTimers.forEach(clearTimeout);
   stageTimers = value ? [
-    setTimeout(() => stage(mode === 'ai' ? 'Kontrola s AI chvíli trvá. Prosím počkejte.' : 'Kontrola chvíli trvá. Prosím počkejte.'), 8000),
+    setTimeout(() => stage(aiAvailable ? 'Kontrola s AI chvíli trvá. Prosím počkejte.' : 'Kontrola chvíli trvá. Prosím počkejte.'), 8000),
     setTimeout(() => stage('Ještě chvíli. Pokud to nepůjde, dáme vám vědět, co dál.'), 20000),
   ] : [];
   document.querySelector('#processing-detail').textContent = 'Chvíli prosím počkejte.';
@@ -272,7 +296,7 @@ form.addEventListener('submit', async event => {
   event.preventDefault();
   if (busy || recovering || submit.disabled) return;
   if (!mode) { showError('SESSION_START'); return; }
-  if (mode === 'ai' && !document.querySelector('#consent').checked) { showError('AI_CONSENT_REQUIRED'); return; }
+  if (aiAvailable && !document.querySelector('#consent').checked) { showError('AI_CONSENT_REQUIRED'); return; }
   // Keep keyboard focus in place when the control that started this disappears.
   if (errorPanel.contains(document.activeElement)) submit.focus();
   // Also cover programmatic replacement (examples/clipboard), which need not
@@ -306,7 +330,7 @@ form.addEventListener('submit', async event => {
   if (!failure) {
     try {
       rejections = 0;
-      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length)); result.hidden = false;
+      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); result.hidden = false;
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;
