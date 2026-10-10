@@ -94,14 +94,22 @@ try {
     assert.equal(await page.locator('#submit').isDisabled(), false, 'permitted rules fallback must remain usable');
     // No provider can be contacted, so no external-AI consent is asked or claimed.
     assert.ok(await page.locator('#ai-consent').isHidden(), 'no AI consent without a configured provider');
-    // This backend still demands ai_consent=true here (see backend handoff). The
-    // frontend must not fake consent and must not show a consent dead end.
+    assert.equal(state.provider_label, null);
+    // Genuine absence of a worker permits local rules without inventing consent.
+    const callsBefore = captures.length;
     const sent = page.waitForRequest(request => request.url().endsWith('/api/analyze'));
+    const completed = page.waitForResponse(response => response.url().endsWith('/api/analyze'));
     await page.locator('#content').fill('Nabízíme půjčku. Pošli peníze.');
     await page.locator('#submit').click();
     assert.equal((await sent).postDataJSON().ai_consent, false);
-    await page.locator('#error-panel').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#error-title').textContent(), 'Prověřování je dočasně nedostupné.');
-    assert.doesNotMatch(await page.locator('#error-panel').textContent(), /souhlas/iu);
+    const response = await completed; assert.equal(response.status(), 200);
+    const result = await response.json();
+    assert.equal(result.engine, 'rules-v1'); assert.equal(result.ai_status, 'not_performed');
+    assert.equal(result.ai_fallback_reason, 'not_configured');
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.ok(await page.locator('#error-panel').isHidden());
+    assert.equal(await page.locator('#engine-note').textContent(), 'Kontrola s AI teď není k dispozici. Tento výsledek vychází jen z našich pevných pravidel. Text jsme poskytovateli AI neposílali.');
+    assert.equal(captures.length, callsBefore, 'unconfigured request never reaches the provider');
+    console.log('AI/Loan real browser: PASS unconfigured fallback; hidden consent, ai_consent=false, labelled rules result, zero provider calls');
   } finally { await page.close(); await close(server); pipeline.close(); }
 } finally { await browser.close(); await close(provider); }

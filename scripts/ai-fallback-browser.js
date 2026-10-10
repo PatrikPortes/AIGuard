@@ -1,11 +1,9 @@
 // Optional browser regression for the explicitly labelled AI rules fallback.
 // Needs Playwright installed OUTSIDE this project:
 //   PLAYWRIGHT_MODULE=<path to playwright/index.mjs> [AI_BROWSER_OUTPUT=<dir>] node scripts/ai-fallback-browser.js
-// Uses real AnalysisPipeline instances wherever the backend already implements
-// the behaviour (src/ai/pipeline.js). Only the state that still needs the
-// backend handoff (unconfigured AI answering without AI consent) is mocked, with
-// exactly the documented fields: ai_status, ai_fallback_reason and the fixed
-// uncertainty line. No provider is contacted.
+// Real AnalysisPipeline for unconfigured fallback, runtime failures and stale
+// session configuration. Contract-rendering variants below remain UI fixtures.
+// No external provider is contacted.
 import assert from 'node:assert/strict';
 import { createServer } from '../src/server.js';
 import { AnalysisPipeline } from '../src/ai/pipeline.js';
@@ -53,22 +51,18 @@ const actionFirst = page => page.evaluate(() => ['#primary-action', '#summary', 
 
 const rules = await serve(new AnalysisPipeline());
 // Unconfigured AI with fallback, exactly as runtime.js builds it today.
-const unconfigured = await serve(new AnalysisPipeline({ mode: 'ai', unavailableCode: 'AI_INVALID_CONFIG', fallbackToRules: true }));
+const unconfiguredPipeline = new AnalysisPipeline({ mode: 'ai', unavailableCode: 'AI_INVALID_CONFIG', fallbackToRules: true });
+const unconfigured = await serve(unconfiguredPipeline);
 // Configured AI whose worker fails at runtime: a real backend fallback response.
 const failing = await serve(new AnalysisPipeline({ mode: 'ai', fallbackToRules: true, queue: new BoundedQueue({}),
   worker: { run: async () => { throw new ServiceError('AI_TIMEOUT'); } } }));
 try {
-  // 1. Unconfigured AI + fallback, after the backend handoff: usable, no consent,
+  // 1. Real unconfigured AI + fallback: usable, no consent,
   //    explicit note saying the text was not sent (no consent was given).
-  const handoffSession = { mode: 'ai', ai_configured: false, engine: 'rules+ai-v1', timeout_ms: 10000, provider_label: 'OpenAI', rules_fallback: true };
-  const handoffAnalyze = async route => {
-    assert.equal(route.request().postDataJSON().ai_consent, false);
-    const response = await route.fetch();            // the real rules result (rules server)
-    const data = await response.json();
-    await route.fulfill({ response, json: { ...data, ai_status: 'not_performed', ai_fallback_reason: 'not_configured', uncertainties: [...data.uncertainties, LIMIT] } });
-  };
   for (const width of [320, 360, 390]) {
-    const { page, state } = await open(rules.base, width, { session: handoffSession, analyze: handoffAnalyze });
+    const { page, state } = await open(unconfigured.base, width);
+    const session = await page.evaluate(() => fetch('/api/session').then(r => r.json()));
+    assert.equal(session.ai_configured, false); assert.equal(session.rules_fallback, true); assert.equal(session.provider_label, null);
     assert.equal(await page.locator('#submit').isDisabled(), false);
     assert.ok(await page.locator('#ai-consent').isHidden(), 'no AI consent without a configured provider');
     assert.equal(await page.locator('#engine-notice').textContent(), 'Kontrola s AI teď není k dispozici. Zprávu prověříme jen podle našich pravidel a text poskytovateli AI neposíláme. Výsledek je orientační. Odkazy neotevíráme.');
@@ -89,25 +83,36 @@ try {
     if (width === 360) await page.locator('#result').screenshot({ path: `${out}/fallback-unconfigured-360.png` });
     await page.close();
   }
-  console.log('AI fallback browser: PASS (unconfigured + fallback after handoff: usable, no consent, ai_consent=false, labelled "not sent", action first, 320/360/390)');
+  console.log('AI fallback browser: PASS (real unconfigured + fallback: usable, no consent, ai_consent=false, labelled "not sent", action first, 320/360/390)');
 
-  // 2. The same state against the REAL current backend: it still demands AI
-  //    consent. The frontend fakes nothing and shows no consent dead end.
+  // 2. Configuration changes after a real unconfigured session was loaded.
+  // The stale hidden checkbox cannot authorize the newly configured worker.
   {
     const { page, state } = await open(unconfigured.base);
     const session = await page.evaluate(() => fetch('/api/session').then(r => r.json()));
     assert.equal(session.rules_fallback, true); assert.equal(session.ai_configured, false);
     assert.equal(await page.locator('#submit').isDisabled(), false);
     assert.ok(await page.locator('#ai-consent').isHidden());
+    let calls = 0;
+    const lateQueue = new BoundedQueue({});
+    unconfiguredPipeline.worker = { run: async () => { calls++; throw new ServiceError('AI_TIMEOUT'); } };
+    unconfiguredPipeline.queue = lateQueue;
+    unconfiguredPipeline.unavailableCode = undefined;
+    const rejected = page.waitForResponse(response => response.url().endsWith('/api/analyze'));
     await submit(page);
+    const response = await rejected;
+    assert.equal(response.status(), 400); assert.equal((await response.json()).code, 'AI_CONSENT_REQUIRED');
     await page.locator('#error-panel').waitFor({ state: 'visible' });
     assert.equal(state.bodies.at(-1).ai_consent, false);
     assert.equal(await page.locator('#error-title').textContent(), 'Prověřování je dočasně nedostupné.');
     assert.doesNotMatch(await page.locator('#error-panel').innerText(), /souhlas|AI_CONSENT/iu);
     assert.ok(await page.locator('#error-guidance').isVisible());
     assert.ok(await page.locator('#result').isHidden());
+    assert.equal(calls, 0, 'configuration change never bypasses explicit consent');
     await page.close();
-    console.log('AI fallback browser: PASS (real current backend still requires consent: no fake consent, no dead end, guidance shown — backend handoff needed)');
+    unconfiguredPipeline.worker = undefined; unconfiguredPipeline.queue = undefined;
+    unconfiguredPipeline.unavailableCode = 'AI_INVALID_CONFIG'; lateQueue.close();
+    console.log('AI fallback browser: PASS (real session-to-submit configuration change: consent rejected, zero worker calls, no fake consent, safe guidance)');
   }
 
   // 3. Unconfigured AI WITHOUT fallback support (older backend): stays disabled.

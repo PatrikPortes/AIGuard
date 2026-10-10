@@ -102,6 +102,14 @@ export class AnalysisPipeline {
   validate(input) {
     return validateInput(input, this.maxContentBytes);
   }
+  isAIUnconfigured() {
+    // Only an absent worker with no error or an explicit configuration error
+    // is genuinely unconfigured. Runtime failure markers, an existing worker,
+    // or a missing queue never grant a consent exception. Check current server
+    // state, not an earlier session report or a caller-supplied flag.
+    return this.mode === 'ai' && !this.worker
+      && (this.unavailableCode == null || this.unavailableCode === 'AI_INVALID_CONFIG');
+  }
   async analyze(input, { signal, preparedInput } = {}) {
     // Byte limits are rechecked even when trusted preparation is reused.
     // Consent and other request metadata are read from the raw input below.
@@ -109,6 +117,12 @@ export class AnalysisPipeline {
     if (this.closed) throw new ServiceError('AI_UNAVAILABLE');
     const rules = analyze(intake);
     if (this.mode === 'rules') return rules;
+    if (this.fallbackToRules && this.isAIUnconfigured()) {
+      if (signal?.aborted) throw new ServiceError('AI_TIMEOUT');
+      // Synchronous terminal branch: no queue, routing, critic, reservation
+      // or provider can run for this request, with or without AI consent.
+      return this.rulesFallback(rules, 'AI_INVALID_CONFIG');
+    }
     if (input.ai_consent !== true) throw new ServiceError('AI_CONSENT_REQUIRED', 400);
     if (signal?.aborted) throw new ServiceError('AI_TIMEOUT');
     if (this.fallbackToRules && intake.type !== 'text') return this.rulesFallback(rules, 'AI_TEXT_ONLY');
@@ -138,6 +152,6 @@ export class AnalysisPipeline {
     return { ...rules, ai_status: 'not_performed', ai_fallback_reason: reason,
       uncertainties: [...rules.uncertainties, 'AI kontrola nebyla dokončena. Tento výsledek používá pouze pravidla; nejde o potvrzení bezpečnosti.'] };
   }
-  status() { return { mode: this.mode, ai_configured: Boolean(this.worker && !this.unavailableCode), engine: this.mode === 'rules' ? 'rules-v1' : 'rules+ai-v1', timeout_ms: this.timeoutMs, provider_label: this.mode === 'ai' ? this.providerLabel : null, ...(this.fallbackToRules ? { rules_fallback: true } : {}) }; }
+  status() { return { mode: this.mode, ai_configured: Boolean(this.worker && !this.unavailableCode), engine: this.mode === 'rules' ? 'rules-v1' : 'rules+ai-v1', timeout_ms: this.timeoutMs, provider_label: this.mode === 'ai' && !this.isAIUnconfigured() ? this.providerLabel : null, ...(this.fallbackToRules ? { rules_fallback: true } : {}) }; }
   close() { if (this.closed) return; this.closed = true; this.queue?.close(); this.worker?.budget?.close?.(); }
 }

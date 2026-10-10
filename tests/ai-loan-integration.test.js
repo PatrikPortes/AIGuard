@@ -101,7 +101,7 @@ test('AI/Loan: raw provider HTTP bytes, routing, retries, critic and reservation
   t.diagnostic(`${analyses} secured HTTP analyses; ${providerCalls} loopback provider requests; no external AI`);
 });
 
-test('AI/Loan: explicit unavailable fallback preserves complete local Loan guidance and still requires consent', async () => {
+test('AI/Loan: genuinely unconfigured fallback preserves complete local Loan guidance without claiming AI consent', async () => {
   const pipeline = new AnalysisPipeline({ mode: 'ai', unavailableCode: 'AI_INVALID_CONFIG', fallbackToRules: true });
   const input = { type: 'text', content: 'Nabídka půjčky.', topic: 'loan', loan_context: { advance_payment: 'yes', requests: ['bank_login'] }, ai_consent: true };
   try {
@@ -110,6 +110,9 @@ test('AI/Loan: explicit unavailable fallback preserves complete local Loan guida
     for (const note of rules.uncertainties) assert.ok(result.uncertainties.includes(note));
     assert.equal(result.engine, 'rules-v1'); assert.equal(result.ai_status, 'not_performed'); assert.equal(result.ai_fallback_reason, 'not_configured');
     assert.equal(pipeline.status().rules_fallback, true); assert.equal(pipeline.status().ai_configured, false);
-    await assert.rejects(pipeline.analyze({ ...input, ai_consent: false }), error => error.code === 'AI_CONSENT_REQUIRED');
+    assert.equal(pipeline.status().provider_label, null);
+    const noConsent = await pipeline.analyze({ ...input, ai_consent: false });
+    for (const key of ['topic', 'summary', 'signals', 'recommended_actions', 'verification_steps']) assert.deepEqual(noConsent[key], rules[key]);
+    assert.equal(noConsent.ai_fallback_reason, 'not_configured');
   } finally { pipeline.close(); }
 });
