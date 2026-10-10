@@ -16,8 +16,8 @@
 // - "First view" = every request completed by load + network idle (500 ms quiet),
 //   i.e. what the browser fetches to render the initial viewport without interaction.
 // - Transfer size = Chrome DevTools Protocol Network.loadingFinished.encodedDataLength
-//   (headers + body as received). This local server sends NO content compression;
-//   behind Cloudflare, text resources may be compressed and transfer would be smaller.
+//   (headers + body as received, including negotiated static-text gzip).
+//   Compression is counted as actually delivered; no request is excluded.
 //   WebP images are not further compressed by HTTP compression.
 // - LCP = last buffered 'largest-contentful-paint' entry; FCP from paint timing.
 // - Profiles: emulated mobile with throttling approximating Lighthouse "Slow 4G"

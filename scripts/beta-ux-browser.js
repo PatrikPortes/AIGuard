@@ -32,20 +32,30 @@ async function check(page, text) {
   await page.locator('#submit').click();
   await page.waitForFunction(() => document.querySelector('#analysis-form').getAttribute('aria-busy') === 'false');
 }
+async function actionFirst(page, name) {
+  const order = await page.evaluate(() => {
+    const action = document.querySelector('#primary-action');
+    const summary = document.querySelector('#summary');
+    const note = document.querySelector('#engine-note');
+    return { action: action.getBoundingClientRect().top, summary: summary.getBoundingClientRect().top,
+      signals: document.querySelector('#signals').getBoundingClientRect().top,
+      actionBeforeSummary: Boolean(action.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING),
+      actionBeforeNote: Boolean(action.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING),
+      inLead: Boolean(document.querySelector('.result-lead #primary-action')),
+      overflow: document.documentElement.scrollWidth > innerWidth };
+  });
+  assert.ok(order.inLead && order.actionBeforeSummary && order.actionBeforeNote &&
+    order.action < order.summary && order.summary < order.signals, `${name}: safe action → assessment → signals, in visual and reading order`);
+  assert.ok(order.action >= 0 && order.action < 640, `${name}: safe action in the first screen of the result`);
+  assert.equal(order.overflow, false);
+}
 
 try {
   for (const width of [320, 360, 390]) {
     const { page, errors } = await open(width);
     await check(page, SCAM);
     await page.locator('#result').waitFor({ state: 'visible' });
-    // Main takeaway first: the summary sits under the heading, before the action.
-    const order = await page.evaluate(() => {
-      const top = selector => document.querySelector(selector).getBoundingClientRect().top;
-      return { summary: top('#summary'), action: top('#primary-action'), signals: top('#signals'), inLead: Boolean(document.querySelector('.result-lead #summary')), overflow: document.documentElement.scrollWidth > innerWidth };
-    });
-    assert.ok(order.inLead && order.summary < order.action && order.action < order.signals, `${width}: takeaway → action → signals`);
-    assert.ok(order.summary < 640, `${width}: takeaway in the first screen of the result`);
-    assert.equal(order.overflow, false);
+    await actionFirst(page, `${width}: suspicious text`);
     // Signals were found: never claim that nothing was found.
     const unknowns = await page.locator('#uncertainties').textContent();
     assert.ok(!unknowns.includes(NOTHING_FOUND), `${width}: contradiction`);
@@ -58,10 +68,11 @@ try {
     assert.ok(await page.evaluate(() => { const r = document.querySelector('#content').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }));
     // No signal: the reviewed "nothing found ≠ safe" copy stays.
     await check(page, QUIET);
+    await actionFirst(page, `${width}: unassessed text`);
     assert.ok((await page.locator('#uncertainties').textContent()).includes(NOTHING_FOUND));
     assert.deepEqual(errors, []);
     await page.close();
-    console.log(`Beta UX browser: PASS (${width}px: takeaway first, no "nothing found" with signals, next check, no overflow)`);
+    console.log(`Beta UX browser: PASS (${width}px: safe action first, no "nothing found" with signals, next check, no overflow)`);
   }
 
   // AI configured, but this result came from the rules alone: say so, briefly.
@@ -70,6 +81,7 @@ try {
     await check(page, SCAM);
     await page.locator('#result').waitFor({ state: 'visible' });
     assert.ok(await page.locator('#engine-note').isVisible());
+    await actionFirst(page, 'AI fallback');
     assert.equal(await page.locator('#engine-note').textContent(), 'Tentokrát výsledek vychází jen z pevných pravidel. Kontrola s AI teď nebyla dostupná.');
     await page.close();
   }
@@ -83,6 +95,7 @@ try {
     await check(page, SCAM);
     await page.locator('#result').waitFor({ state: 'visible' });
     assert.ok(await page.locator('#engine-note').isHidden());
+    await actionFirst(page, 'AI result');
     assert.match(await page.locator('#signals').textContent(), /Neobvyklý způsob platby/);
     assert.doesNotMatch(await page.locator('#result').textContent(), /OpenAI|gpt|skór|score|\d+\s*%/iu);
     await page.close();
@@ -154,7 +167,28 @@ try {
     assert.equal(bodies.at(-1).content, QUIET);
     await page.close();
   }
-  console.log('Beta UX browser: PASS (AI fallback note, AI result without provider/score, AI unavailable states, loan follow-up, fresh content after success/error, same-request retry)');
+  // N-3 also holds when the frontend advertises AI mode. Only the session
+  // metadata is stubbed; the real rules server rejects/validates the bodies.
+  {
+    const { page, errors } = await open(360, { session: AI_SESSION });
+    await page.locator('#loan-entry').click();
+    await page.locator('#loan-questions').waitFor({ state: 'visible' });
+    await page.locator('input[name="advance_payment"][value="yes"]').check();
+    await page.locator('input[name="requests"][value="sms_code"]').check();
+    const rejected = page.waitForResponse(response => response.url().endsWith('/api/analyze'));
+    await check(page, 'Půjčka: ' + 'é'.repeat(8000));
+    assert.equal((await (await rejected).json()).code, 'AI_INPUT_LIMIT');
+    const sent = page.waitForRequest(request => request.url().endsWith('/api/analyze'));
+    await check(page, 'Půjčka: zde je zkrácený text nabídky.');
+    const request = JSON.parse((await sent).postData());
+    assert.equal(request.ai_consent, true); assert.equal(request.topic, 'loan');
+    assert.deepEqual(request.loan_context, { advance_payment: 'yes', requests: ['sms_code'] });
+    await page.locator('#result').waitFor({ state: 'visible' });
+    await actionFirst(page, 'AI-mode loan correction');
+    assert.deepEqual(errors, []);
+    await page.close();
+  }
+  console.log('Beta UX browser: PASS (safe action before assessment, AI fallback note, AI result without provider/score, AI unavailable states, loan follow-up, fresh content after success/error, same-request retry, AI_INPUT_LIMIT loan correction)');
 } finally {
   await browser.close();
   server.close();

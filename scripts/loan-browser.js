@@ -41,6 +41,13 @@ const measure = page => page.evaluate(() => {
     targets: targets.length,
   };
 });
+async function assertActionFirst(page) {
+  assert.ok(await page.evaluate(() => {
+    const action = document.querySelector('#primary-action'), summary = document.querySelector('#summary');
+    return Boolean(action.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+      action.getBoundingClientRect().top < summary.getBoundingClientRect().top;
+  }), 'loan safe action precedes assessment in visual and reading order');
+}
 
 try {
   for (const [width, height] of [[320, 568], [360, 640], [390, 844], [1440, 900]]) {
@@ -93,6 +100,7 @@ try {
     assert.match(resultText, /Platba předem před získáním půjčky/);
     assert.match(resultText, /Žádost o kód z SMS/);
     assert.match(await page.locator('#primary-action').textContent(), /^Nic předem neplaťte\./);
+    await assertActionFirst(page);
     assert.match(await page.locator('#verification').textContent(), /Poskytovatele si ověřte nezávisle\./);
     assert.match(await page.locator('#technical').textContent(), /Registr ČNB jsme neprohledávali\./);
     assert.ok(await page.locator('#loan-followup').isHidden(), 'no follow-up after answers were given');
@@ -156,6 +164,80 @@ try {
     assert.deepEqual(state.errors, []);
     await context.close();
     console.log('Loan browser: PASS (follow-up offered for a loan result without answers; focus moves to the questions; text kept)');
+  }
+
+  // N-3: the real UTF-8 limit rejects this input. Correcting that same loan
+  // keeps answers; success, explicit new examples and leaving still reset them.
+  for (const width of [320, 360, 390]) {
+    const { context, page, state } = await open(width, 640);
+    await page.goto(base);
+    await page.waitForFunction(() => !document.querySelector('#submit').disabled);
+    const tooLong = 'Půjčka: ' + 'é'.repeat(8000);
+    const answers = { advance_payment: 'yes', requests: ['sms_code'] };
+    async function rejectLoan() {
+      await page.locator('#loan-entry').click();
+      await page.locator('#loan-questions').waitFor({ state: 'visible' });
+      await page.locator('input[name="advance_payment"][value="yes"]').check();
+      await page.locator('input[name="requests"][value="sms_code"]').check();
+      await page.locator('#content').fill(tooLong);
+      const rejected = page.waitForResponse(response => response.url().endsWith('/api/analyze'));
+      await page.locator('#submit').click();
+      const response = await rejected;
+      assert.equal(response.status(), 400); assert.equal((await response.json()).code, 'AI_INPUT_LIMIT');
+      await page.waitForFunction(() => document.querySelector('#analysis-form').getAttribute('aria-busy') === 'false');
+      assert.match(await page.locator('#error-message').textContent(), /Odpovědi k této nabídce zůstávají vybrané/);
+    }
+    await rejectLoan();
+    await page.locator('#edit-content').click();
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'content');
+    // Blank content passes native "required" but is still rejected by the
+    // backend; another validation error remains part of this correction.
+    await page.locator('#content').fill(' ');
+    const invalid = page.waitForResponse(response => response.url().endsWith('/api/analyze'));
+    await page.locator('#submit').click();
+    assert.equal((await (await invalid).json()).code, 'INVALID_INPUT');
+    await page.waitForFunction(() => document.querySelector('#analysis-form').getAttribute('aria-busy') === 'false');
+    const corrected = 'Půjčka: ' + 'é'.repeat(100);
+    if (width === 360) await page.evaluate(value => { document.querySelector('#content').value = value; }, corrected);
+    else await page.locator('#content').fill(corrected);
+    assert.ok(await page.locator('#loan-questions').isVisible());
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 2);
+    assert.equal(await page.locator('#submit-label').textContent(), 'Prověřit nabídku');
+    const response = page.waitForResponse(response => response.url().endsWith('/api/analyze'));
+    await page.locator('#submit').click();
+    assert.equal((await response).status(), 200);
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.deepEqual(JSON.parse(state.bodies.at(-1)).loan_context, answers);
+    assert.equal(JSON.parse(state.bodies.at(-1)).content, corrected);
+    assert.match(await page.locator('#signals').textContent(), /Platba předem/);
+    assert.match(await page.locator('#signals').textContent(), /kód z SMS/);
+    await assertActionFirst(page);
+    // Completion ends correction intent: changed content is a new ordinary check.
+    await page.locator('#content').fill('Ahoj, zítra se uvidíme.');
+    assert.ok(await page.locator('#loan-questions').isHidden());
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0);
+    await page.locator('#submit').click();
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.deepEqual(Object.keys(JSON.parse(state.bodies.at(-1))).sort(), ['ai_consent', 'content', 'type']);
+    assert.doesNotMatch(await page.locator('#signals').textContent(), /Platba předem|kód z SMS/);
+    // An example is explicit new-analysis intent even while a rejected loan is being corrected.
+    await rejectLoan();
+    await page.locator('[data-example="normal"]').click();
+    assert.ok(await page.locator('#loan-questions').isHidden());
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0);
+    await page.locator('#submit').click();
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.deepEqual(Object.keys(JSON.parse(state.bodies.at(-1))).sort(), ['ai_consent', 'content', 'type']);
+    // Explicit leave/reopen also clears rejected-input correction and old answers.
+    await rejectLoan();
+    await page.getByRole('button', { name: 'Prověřit jinou zprávu' }).click();
+    assert.ok(await page.locator('#error-panel').isHidden());
+    await page.locator('#loan-entry').click();
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0);
+    assert.deepEqual(state.errors, []); assert.deepEqual(state.csp, []);
+    assert.ok(state.requests.every(url => url.startsWith(base)));
+    await context.close();
+    console.log(`Loan N-3 browser: PASS (${width}px: real AI_INPUT_LIMIT, same-analysis correction, validation retry, fresh analysis/example, exit/reopen)`);
   }
 
   // Direct link opens the loan flow; without JavaScript there is no entry at all.

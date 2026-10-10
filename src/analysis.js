@@ -142,9 +142,14 @@ const rules = [
 // long; evaluate their reach once, rather than backtracking from every prefix.
 function loanScan(content) {
   const matches = new Map();
+  const presence = new Map();
   let asciiEnds;
   const gapEnds = new Map();
   return {
+    has(pattern) {
+      if (!presence.has(pattern)) presence.set(pattern, pattern.test(content));
+      return presence.get(pattern);
+    },
     matches(pattern) {
       if (!matches.has(pattern)) {
         // Restart after the start, not the end, to retain overlaps. A consuming
@@ -195,6 +200,11 @@ const part = (pattern, ascii = false, gap = 0) => ({ pattern, ascii, gap });
 function loanPattern(...alternatives) {
   return { test(content, scan = loanScan(content)) {
     return alternatives.some(parts => {
+      // Every fragment is mandatory. Check existence before enumerating its
+      // overlapping occurrences: an absent fragment makes the whole branch
+      // impossible. This avoids allocating thousands of dead-end matches on
+      // repeated loan roots, without changing gaps, suffixes or detection.
+      if (!parts.every(part => scan.has(part.pattern))) return false;
       // Work backwards: a fragment is viable iff a viable next fragment
       // starts in [end, ASCII-run-end + bounded gap]. A reverse lookup avoids
       // rescanning the same word for each repeated root. O(n) for the fixed

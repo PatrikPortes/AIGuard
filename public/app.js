@@ -51,7 +51,8 @@ function showError(code) {
   retry.hidden = !['retry', 'session'].includes(failure.kind);
   errorPanel.hidden = false;
   // Fill the alert after it is visible so screen readers announce the new text.
-  [failure.title, failure.message, NO_RESULT].forEach((text, index) => { parts[index].textContent = text; });
+  const message = correctingLoanInput ? `${failure.message} Odpovědi k této nabídce zůstávají vybrané. Pro jinou zprávu zvolte „Prověřit jinou zprávu“.` : failure.message;
+  [failure.title, message, NO_RESULT].forEach((text, index) => { parts[index].textContent = text; });
   // Bring the message into view on small screens without moving keyboard focus.
   errorPanel.scrollIntoView({ block: 'nearest' });
 }
@@ -88,9 +89,14 @@ const content = document.querySelector('#content');
 let loanMode = false;
 let loanUi;
 let submittedContent;
+let correctingLoanInput = false;
 const isLoan = () => loanMode;
 function setLoanMode(value) {
-  if (!value) loanUi?.reset();
+  if (!value) {
+    loanUi?.reset();
+    if (correctingLoanInput) hideError();
+    correctingLoanInput = false;
+  }
   loanMode = value;
   loanUi?.show(value);
   loanEntry.hidden = value;
@@ -104,6 +110,7 @@ async function openLoan(focus) {
   loanUi.mount({ before: document.querySelector('#ai-consent'), onExit: () => { setLoanMode(false); content.focus(); } });
   if (!loanMode) loanUi.reset();
   submittedContent = undefined;
+  correctingLoanInput = false;
   setLoanMode(true);
   focus();
 }
@@ -117,6 +124,9 @@ document.querySelector('#loan-followup-open').addEventListener('click', () => op
 loanEntry.hidden = false;
 if (location.hash === '#pujcka') openLoan(() => {});
 document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => {
+  // Choosing another example is explicit new-analysis intent, even while
+  // correcting a rejected loan input. Its answers must not follow the example.
+  setLoanMode(false); submittedContent = undefined;
   document.querySelector('#content').value = examples[button.dataset.example];
   document.querySelector('#content').focus();
 }));
@@ -213,10 +223,11 @@ form.addEventListener('submit', async event => {
   if (errorPanel.contains(document.activeElement)) submit.focus();
   // Also cover programmatic replacement (examples/clipboard), which need not
   // dispatch an input event. A different message cannot inherit loan answers.
-  if (submittedContent !== undefined && content.value !== submittedContent) {
+  if (!correctingLoanInput && submittedContent !== undefined && content.value !== submittedContent) {
     setLoanMode(false); submittedContent = undefined;
   }
   hideError();
+  correctingLoanInput = false;
   document.querySelector('#status-character').hidden = true; result.hidden = true; analysis = undefined;
   const request = analysisRequest(document.querySelector('#content').value);
   submittedContent = request.content;
@@ -248,7 +259,12 @@ form.addEventListener('submit', async event => {
       analysis = undefined; result.hidden = true; failure = 'UNEXPECTED';
     }
   }
-  if (failure) { status.textContent = ''; showError(failure); }
+  if (failure) {
+    // Rejected content can be edited as the same loan analysis. Completion,
+    // explicit new-check/example and leaving the flow end this correction.
+    correctingLoanInput = isLoan() && ['AI_INPUT_LIMIT', 'BODY_TOO_LARGE', 'INVALID_INPUT'].includes(failure);
+    status.textContent = ''; showError(failure);
+  }
 });
 // Recovery is always started by the user; nothing retries on its own. One click
 // renews the session at most once and then submits at most once.
@@ -269,9 +285,9 @@ retry.addEventListener('click', async () => {
 });
 document.querySelector('#edit-content').addEventListener('click', () => document.querySelector('#content').focus());
 content.addEventListener('input', () => {
-  // Replacing a submitted message starts a new ordinary check. Retry of the
-  // same failed request keeps its answers; returning to loan mode is explicit.
-  if (submittedContent !== undefined && content.value !== submittedContent) {
+  // A rejected input can be corrected in the same loan flow. Otherwise a
+  // changed submitted message starts a new check; unchanged retry stays local.
+  if (!correctingLoanInput && submittedContent !== undefined && content.value !== submittedContent) {
     setLoanMode(false);
     submittedContent = undefined;
   }

@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { createRuntime } from './ai/runtime.js';
 import { validateInput } from './ai/pipeline.js';
 import { createHash } from 'node:crypto';
+import { gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { ServiceError } from './ai/errors.js';
 import { AnonymousSessions, WindowLimiter, ClientAdmission } from './limits.js';
 import { clientIpResolver, clientIdentity, normalizeIp } from './client-ip.js';
@@ -44,6 +46,18 @@ const headers = {
   'X-Frame-Options': 'DENY', 'Cache-Control': 'no-store',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
+const compressStatic = promisify(gzip);
+function acceptsGzip(value = '') {
+  // Header size is already bounded by the HTTP parser. Only an explicitly
+  // accepted gzip token is used; q=0 and malformed parameters fall back to
+  // the original representation. Never compress API/session/user responses.
+  return value.split(',').some(item => {
+    const [encoding, ...parameters] = item.trim().toLowerCase().split(';');
+    return encoding.trim() === 'gzip' && (parameters.length === 0 ||
+      (parameters.length === 1 && /^\s*q\s*=\s*(?:1(?:\.0{0,3})?|0(?:\.\d{0,3})?)\s*$/.test(parameters[0]) &&
+        Number(parameters[0].split('=')[1]) > 0));
+  });
+}
 function send(res, code, body, type = 'application/json; charset=utf-8', responseHeaders = {}) {
   if (res.destroyed) return;
   res.writeHead(code, { ...headers, ...responseHeaders, 'Content-Type': type });
@@ -202,18 +216,23 @@ export function createServer({
         }
         const [file, type] = assets.get(path);
         if (!staticFiles.has(file)) {
-          const loaded = readFile(new URL(`../public/${file}`, import.meta.url)).then(bytes => {
+          const loaded = readFile(new URL(`../public/${file}`, import.meta.url)).then(async bytes => {
             if (character && (bytes.length !== character.bytes || createHash('sha256').update(bytes).digest('hex') !== character.sha256)) throw new Error('Static integrity rejected');
-            return bytes;
+            // A single precomputed gzip variant per allowlisted text file.
+            // Images stay byte-identical; no request data enters this cache.
+            return { bytes, compressed: type.startsWith('text/') ? await compressStatic(bytes) : undefined };
           }).catch(error => { staticFiles.delete(file); throw error; });
           staticFiles.set(file, loaded);
         }
-        const bytes = await staticFiles.get(file);
+        const { bytes, compressed } = await staticFiles.get(file);
         // A matching ETag alone is not evidence that a deployment actually
         // contains this file. Verify its physical bytes before returning 304.
         const cacheHeaders = character ? { 'Cache-Control': 'public, max-age=31536000, immutable', 'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable', ETag: `"${character.sha256}"` } : {};
         const notModified = character && req.headers['if-none-match'] === cacheHeaders.ETag;
-        return send(res, notModified ? 304 : 200, notModified ? '' : bytes, type, cacheHeaders);
+        const encoded = compressed && acceptsGzip(req.headers['accept-encoding']);
+        if (compressed) cacheHeaders.Vary = 'Accept-Encoding';
+        if (encoded) cacheHeaders['Content-Encoding'] = 'gzip';
+        return send(res, notModified ? 304 : 200, notModified ? '' : encoded ? compressed : bytes, type, cacheHeaders);
       }
       rejectBody();
       send(res, 404, { error: 'Stránka nebyla nalezena.' });
