@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { analyze, hasLoanWarning, intakeAgent, loanUncertainties, reusePreparedInput, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
+import { analyze, fraudAgent, hasLoanWarning, intakeAgent, loanUncertainties, reusePreparedInput, safetyCritic, resultLevel, resultSummary } from '../analysis.js';
 import { analysisSchema, validateOutput } from './schema.js';
 import { ProviderError, ServiceError } from './errors.js';
 
@@ -34,13 +34,20 @@ export class TextAIWorker {
     }
   }
   async run(input, rules, signal) {
-    const complex = input.content.length > 1500 || rules.signals.length >= 3 || rules.risk_score >= 60;
+    // Guided answers and even the explicit loan-mode choice stay local. Build
+    // provider hints from text alone, reusing the trusted matching copy. Model
+    // routing and critic decisions use this same view, so they cannot leak the
+    // answers indirectly. The complete local rule floor/guidance stays below.
+    const providerSignals = input.loan ? fraudAgent({ type: input.type, content: input.content, matching: input.matching }) : undefined;
+    const providerRules = providerSignals ? { signals: providerSignals, risk_score: Math.min(100, providerSignals.reduce((sum, item) => sum + item.weight, 0)) } : rules;
+    const complex = input.content.length > 1500 || providerRules.signals.length >= 3 || providerRules.risk_score >= 60;
     const model = complex ? this.config.complexModel : this.config.simpleModel;
-    let assessment = await this.call({ input, rules, model, signal });
-    const reviewRequired = assessment.uncertainty === 'high' || Math.abs(assessment.risk_score - rules.risk_score) >= 40 || (complex && assessment.risk_score >= 80);
+    let assessment = await this.call({ input, rules: providerRules, model, signal });
+    const reviewRequired = assessment.uncertainty === 'high' || Math.abs(assessment.risk_score - providerRules.risk_score) >= 40 || (complex && assessment.risk_score >= 80);
+    const localReviewRequired = reviewRequired || Math.abs(assessment.risk_score - rules.risk_score) >= 40;
     let criticUsed = false;
     if (this.config.criticEnabled && reviewRequired) {
-      assessment = await this.call({ input, rules, model: this.config.complexModel, critic: assessment, signal });
+      assessment = await this.call({ input, rules: providerRules, model: this.config.complexModel, critic: assessment, signal });
       criticUsed = true;
     }
     // Conservative rule floor is explicit; no uncalibrated averaging or confidence %.
@@ -62,7 +69,7 @@ export class TextAIWorker {
         ...assessment.uncertainties,
         'AI i pravidla mohou přehlédnout podvod nebo označit pravou zprávu. Totožnost odesílatele nebyla ověřena.',
         'Skóre je vyšší z odhadu AI a pravidel. Nejde o kalibrovanou pravděpodobnost.',
-        ...(!criticUsed && reviewRequired ? ['Výsledek má zvýšenou nejistotu nebo rozpor s pravidly; druhá AI kontrola nebyla zapnuta.'] : []),
+        ...(!criticUsed && localReviewRequired ? ['Výsledek má zvýšenou nejistotu nebo rozpor s pravidly; druhá AI kontrola nebyla zapnuta.'] : []),
         ...(input.type === 'url' ? ['URL jsme nenavštívili. Obsah ani bezpečnost stránky nebyly ověřeny.'] : []),
         ...(rules.topic === 'loan' ? loanUncertainties(input) : []),
       ],

@@ -54,6 +54,12 @@ export function matchingRepresentation(original) {
   // A single request-local value avoids repeating pure folding on identical
   // neighbouring Latin-containing tokens. No content survives this call.
   let previousToken, previousFold;
+  // Loan text can alternate the same accented/confusable tokens thousands of
+  // times. Avoid repeating pure NFD/replacement work and its allocations.
+  // The bounded cache belongs only to this call; full caches fall back to the
+  // original operation, never omit a token or change the matching semantics.
+  const tokenFolds = new Map();
+  let cachedCharacters = 0;
   latin.lastIndex = 0;
   while (latin.test(normalized)) {
     // Only offsets are needed. Boolean matching avoids allocating two match
@@ -82,10 +88,17 @@ export function matchingRepresentation(original) {
     const token = normalized.slice(start, end);
     // Genuine Cyrillic/Greek-only tokens are never selected or transliterated.
     if (token !== previousToken) {
-      const folded = token.replace(confusableCharacters, char => confusables.get(char));
-      if (folded !== token) foldedConfusables = true;
       previousToken = token;
-      previousFold = folded.normalize('NFD').replace(combiningMarks, '');
+      previousFold = tokenFolds.get(token);
+      if (previousFold === undefined) {
+        const folded = token.replace(confusableCharacters, char => confusables.get(char));
+        if (folded !== token) foldedConfusables = true;
+        previousFold = folded.normalize('NFD').replace(combiningMarks, '');
+        if (tokenFolds.size < 128 && cachedCharacters + token.length + previousFold.length <= 8192) {
+          tokenFolds.set(token, previousFold);
+          cachedCharacters += token.length + previousFold.length;
+        }
+      }
     }
     // A cached confusable was already observed earlier in this same call, so
     // the cumulative foldedConfusables flag remains set when it is reused.
@@ -125,41 +138,160 @@ const rules = [
 // Loan / credit offers. These rules run only in a loan situation: the user chose
 // the loan flow, or the text itself talks about a loan. Ordinary words such as
 // "poplatek" or "doklad" are never a signal on their own. Patterns read the same
-// folded matching copy as the rules above and use only bounded repetition.
+// folded matching copy as the rules above. ASCII suffixes may be arbitrarily
+// long; evaluate their reach once, rather than backtracking from every prefix.
+function loanScan(content) {
+  const matches = new Map();
+  let asciiEnds;
+  const gapEnds = new Map();
+  return {
+    matches(pattern) {
+      if (!matches.has(pattern)) {
+        // Restart after the start, not the end, to retain overlaps. A consuming
+        // expression lets V8 skip unrelated characters efficiently, including
+        // long Unicode expansions; a surrounding lookahead prevents that.
+        // Each fragment has only fixed/bounded repetition.
+        const scanner = new RegExp(pattern.source, 'gu');
+        const found = [];
+        let match;
+        while ((match = scanner.exec(content))) {
+          found.push({ start: match.index, end: match.index + match[0].length });
+          const code = content.codePointAt(match.index);
+          scanner.lastIndex = match.index + (code > 0xffff ? 2 : 1);
+        }
+        matches.set(pattern, found);
+      }
+      return matches.get(pattern);
+    },
+    reach(end, ascii, gap) {
+      if (ascii) {
+        if (!asciiEnds) {
+          asciiEnds = new Uint32Array(content.length + 1);
+          asciiEnds[content.length] = content.length;
+          for (let i = content.length - 1; i >= 0; i--) {
+            const code = content.charCodeAt(i);
+            asciiEnds[i] = code >= 97 && code <= 122 ? asciiEnds[i + 1] : i;
+          }
+        }
+        end = asciiEnds[end];
+      }
+      const key = end * 64 + gap;
+      if (!gapEnds.has(key)) {
+        let limit = end;
+        for (let count = 0; count < gap && limit < content.length; count++) {
+          const code = content.codePointAt(limit);
+          // Exactly the original Unicode dot semantics, including astral
+          // characters and all four excluded line terminators.
+          if (code === 10 || code === 13 || code === 0x2028 || code === 0x2029) break;
+          limit += code > 0xffff ? 2 : 1;
+        }
+        gapEnds.set(key, limit);
+      }
+      return gapEnds.get(key);
+    },
+  };
+}
+const part = (pattern, ascii = false, gap = 0) => ({ pattern, ascii, gap });
+function loanPattern(...alternatives) {
+  return { test(content, scan = loanScan(content)) {
+    return alternatives.some(parts => {
+      // Work backwards: a fragment is viable iff a viable next fragment
+      // starts in [end, ASCII-run-end + bounded gap]. A reverse lookup avoids
+      // rescanning the same word for each repeated root. O(n) for the fixed
+      // rule set; no suffix or content is truncated.
+      let viable = scan.matches(parts.at(-1).pattern);
+      for (let i = parts.length - 2; i >= 0 && viable.length; i--) {
+        const current = parts[i];
+        const matches = scan.matches(current.pattern);
+        if (!matches.length) return false;
+        const nextStart = new Uint32Array(content.length + 1);
+        let cursor = viable.length - 1, next = content.length + 1;
+        for (let offset = content.length; offset >= 0; offset--) {
+          while (cursor >= 0 && viable[cursor].start === offset) { next = offset; cursor--; }
+          nextStart[offset] = next;
+        }
+        viable = matches.filter(match => nextStart[match.end] <= scan.reach(match.end, current.ascii, current.gap));
+      }
+      return viable.length > 0;
+    });
+  } };
+}
 const loanWords = /\b(?:za)?pujc(?:k|c|ek)|\bpujcovn|\bnebankovni|\bhypotek|\buver(?:u|em|y|ech|um|ov[a-z]*)?\b/u;
-const idDocument = '(?:obcansk|obcank|doklad[a-z]* totoznost|osobni(?:ho|m)? doklad|cestovni(?:ho)? pas|\\bpasu\\b|ridicsk[a-z]* prukaz|ridicak)';
+const documents = [
+  [part(/obcansk|obcank|osobni(?:ho|m)? doklad|cestovni(?:ho)? pas|\bpasu\b|ridicak/u)],
+  [part(/doklad/u, true), part(/ totoznost/u)],
+  [part(/ridicsk/u, true), part(/ prukaz/u)],
+];
+const photograph = /\bfot|kopi|sken|snim|vyfot|nafot/u;
+const approval = /schvaleni|schvalen[aeiy]|schvalime|schvalujeme/u;
+const guarantee = /(?<!ne)(?<!neni )(?:garant|zarucen)|\bjist[aeiyo]|100 ?%/u;
+const sms = /\bsms|overovac|potvrzovac|autorizacn|jednorazov/u;
+const send = /posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej/u;
 const beforePayout = /\b(?:pred|nez)\b.{0,40}(?:vyplac|vyplat|poskytnut|uvolnen|odeslan|pripsan|prevedeni|cerpan|schvalen|posleme|zasleme|dostanete|obdrzite|pripiseme)/u;
 const advancePayment = /(?<!ne)(?:zaplat|uhrad|poukaz)|poplat|zaloh|pojisten|kauc|\bplatb/u;
 const noAdvancePayment = /\b(?:nic|zadn[a-z]*)\b.{0,20}(?:plat|hrad|poplat)|nemusite.{0,20}(?:platit|hradit)|\bbez (?:poplatk|zaloh)/u;
 const loanRules = [
   { id: 'loan_advance_fee', weight: 60,
-    pattern: /aktivacni poplat|poplat[a-z]* za (?:vyrizeni|vyplac|uvoln|aktivac|schval|zprostredk|sepsani|odeslani)|vratn[a-z]* (?:zaloh|poplat|kauc|pojist)|(?<!(?:bez|zadn[a-z]{1,3}|nic) )(?:pojisteni|poplat[a-z]*|zaloh[a-z]*|kauc[a-z]*|castk[a-z]*) predem|predem (?:zaplat|uhrad|posl|poukaz|zasl)|(?<!ne)(?:zaplat|uhrad|posl|poukaz)[a-z]*.{0,30}\bpredem/u,
+    pattern: loanPattern(
+      [part(/aktivacni poplat|predem (?:zaplat|uhrad|posl|poukaz|zasl)/u)],
+      [part(/poplat/u, true), part(/ za (?:vyrizeni|vyplac|uvoln|aktivac|schval|zprostredk|sepsani|odeslani)/u)],
+      [part(/vratn/u, true), part(/ (?:zaloh|poplat|kauc|pojist)/u)],
+      [part(/(?<!(?:bez|zadn[a-z]{1,3}|nic) )pojisteni/u), part(/ predem/u)],
+      [part(/(?<!(?:bez|zadn[a-z]{1,3}|nic) )(?:poplat|zaloh|kauc|castk)/u, true), part(/ predem/u)],
+      [part(/(?<!ne)(?:zaplat|uhrad|posl|poukaz)/u, true, 30), part(/\bpredem/u)]),
     // "Before payout" and a payment must appear in the same sentence.
     ordered: content => content.split(/[.!?;\n\r\u2028\u2029]/u).some(sentence => beforePayout.test(sentence) && advancePayment.test(sentence) && !noAdvancePayment.test(sentence)),
     title: 'Platba předem před získáním půjčky', explanation: 'Tohle je varovný signál. Po zaplacení „poplatku“, „zálohy“ nebo „pojištění“ často peníze zmizí a půjčka nepřijde.' },
   { id: 'loan_bank_login', weight: 65,
-    pattern: /(?:prihlasovac|\blogin|uzivatelsk[a-z]* jmen|\bhesl).{0,40}(?:bankovnictv|\bbank)|(?:bankovnictv|\bbank[a-z]*).{0,40}(?:prihlasovac|\blogin|\bhesl)|prihlaste se.{0,40}(?:bankovnictv|\bbank(?!ovni identit))/u,
+    pattern: loanPattern(
+      [part(/prihlasovac|\blogin|\bhesl/u, false, 40), part(/bankovnictv|\bbank/u)],
+      [part(/uzivatelsk/u, true), part(/ jmen/u, false, 40), part(/bankovnictv|\bbank/u)],
+      [part(/bankovnictv/u, false, 40), part(/prihlasovac|\blogin|\bhesl/u)],
+      [part(/\bbank/u, true, 40), part(/prihlasovac|\blogin|\bhesl/u)],
+      [part(/prihlaste se/u, false, 40), part(/bankovnictv|\bbank(?!ovni identit)/u)]),
     title: 'Žádost o přihlašovací údaje do bankovnictví', explanation: 'Tohle je varovný signál. S přihlašovacími údaji může cizí člověk ovládat váš účet. Nesdělujte je nikomu, ani poskytovateli půjčky.' },
   { id: 'loan_sms_code', weight: 65,
-    pattern: /(?:posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej|vyfot)[a-z]*.{0,40}(?:(?:\bsms|overovac|potvrzovac|autorizacn|jednorazov|aktivacn)[a-z]* ?kod|\bkod[a-z]* (?:z|ze|v) sms)|(?:(?:\bsms|overovac|potvrzovac|autorizacn|jednorazov)[a-z]* ?kod|\bkod[a-z]* (?:z|ze|v) sms).{0,40}(?:posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej)/u,
+    pattern: loanPattern(
+      [part(/posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej|vyfot/u, true, 40), part(/\bsms|overovac|potvrzovac|autorizacn|jednorazov|aktivacn/u, true), part(/ ?kod/u)],
+      [part(/posl|zasl|sdel|nadikt|preposl|napis|rekn|precte|predej|vyfot/u, true, 40), part(/\bkod/u, true), part(/ (?:z|ze|v) sms/u)],
+      [part(sms, true), part(/ ?kod/u, false, 40), part(send)],
+      [part(/\bkod/u, true), part(/ (?:z|ze|v) sms/u, false, 40), part(send)]),
     title: 'Žádost o kód z SMS', explanation: 'Tohle je varovný signál. Kódem z SMS se obvykle potvrzuje platba nebo přihlášení. Kdo ho získá, může jednat vaším jménem.' },
   { id: 'loan_card_details', weight: 65,
-    pattern: /(?:\bcisl|\budaj|platnost|\bkod)[a-z]*.{0,30}(?:platebni karty|\bkart(?:y|u|e)\b)|(?:platebni karty|\bkart(?:y|u|e)\b).{0,30}(?:\bcisl|\budaj|platnost)|\bcvv\b|\bcvc\b/u,
+    pattern: loanPattern(
+      [part(/\bcvv\b|\bcvc\b/u)],
+      [part(/\bcisl|\budaj|platnost|\bkod/u, true, 30), part(/platebni karty|\bkart(?:y|u|e)\b/u)],
+      [part(/platebni karty|\bkart(?:y|u|e)\b/u, false, 30), part(/\bcisl|\budaj|platnost/u)]),
     title: 'Žádost o údaje z platební karty', explanation: 'Tohle je varovný signál. Údaje z karty umožňují platit vaším jménem. K získání půjčky by neměly být potřeba.' },
   { id: 'loan_remote_access', weight: 65,
-    pattern: /anydesk|teamviewer|rustdesk|quick ?support|airdroid|vzdalen[a-z]* (?:pristup|ploch|sprav|pripojen|ovladan)|sdilen[a-z]* obrazovk|(?:nainstal|stahn)[a-z]*.{0,60}(?:abychom|aby (?:nas|nase|vam)).{0,40}(?:pripoj|videl|ovlad|pomohl)/u,
+    pattern: loanPattern(
+      [part(/anydesk|teamviewer|rustdesk|quick ?support|airdroid/u)],
+      [part(/vzdalen/u, true), part(/ (?:pristup|ploch|sprav|pripojen|ovladan)/u)],
+      [part(/sdilen/u, true), part(/ obrazovk/u)],
+      ...[/abychom|aby (?:nas|vam)/u, /aby nase/u].map(reason =>
+        [part(/nainstal|stahn/u, true, 60), part(reason, false, 40), part(/pripoj|videl|ovlad|pomohl/u)])),
     title: 'Žádost o instalaci aplikace nebo vzdálený přístup', explanation: 'Tohle je varovný signál. Přes aplikaci pro vzdálený přístup může cizí člověk vidět a ovládat váš telefon nebo počítač, včetně bankovnictví.' },
   { id: 'loan_id_document', weight: 30,
-    pattern: new RegExp(`(?:\\bfot|kopi|sken|snim|vyfot|nafot)[a-z]*.{0,40}${idDocument}|${idDocument}[a-z]*.{0,40}(?:\\bfot|kopi|sken|snim|z obou stran|obe strany)`, 'u'),
+    pattern: loanPattern(
+      ...documents.map(document => [part(photograph, true, 40), ...document]),
+      ...documents.map(document => [...document.slice(0, -1), part(document.at(-1).pattern, true, 40), part(/\bfot|kopi|sken|snim|z obou stran|obe strany/u)])),
     title: 'Žádost o fotku nebo kopii dokladu', explanation: 'Fotka nebo kopie dokladu se dá zneužít, například ke sjednání půjčky na vaše jméno. Pošlete ji jen poskytovateli, kterého jste si sami nezávisle ověřili.' },
   { id: 'loan_guaranteed', weight: 35,
-    pattern: /(?:schvaleni|schvalen[aeiy]|schvalime|schvalujeme)[a-z]*.{0,30}(?:(?<!ne)(?<!neni )(?:garant|zarucen)|\bjist[aeiyo]|100 ?%|\bvzdy\b|\bkazd|\bvsem\b|bez vyjimky)|(?:(?<!ne)(?<!neni )(?:garant|zarucen)|\bjist[aeiyo]|100 ?%)[a-z]*.{0,30}schval|schvalime (?:kazd|vsech)/u,
+    pattern: loanPattern(
+      [part(approval, true, 30), part(/(?<!ne)(?<!neni )(?:garant|zarucen)|\bjist[aeiyo]|100 ?%|\bvzdy\b|\bkazd|\bvsem\b|bez vyjimky/u)],
+      [part(guarantee, true, 30), part(/schval/u)],
+      [part(/schvalime (?:kazd|vsech)/u)]),
     title: 'Slib jistého schválení', explanation: 'Tohle je varovný signál. Poctivý poskytovatel musí nejdřív posoudit, zda budete půjčku schopni splácet. Schválení proto nemůže slíbit předem.' },
   { id: 'loan_no_registry', weight: 30,
-    pattern: /\bbez (?:registr|nahlizeni do registr|kontroly registr|prover)|\bpro kazdeho\b|\bi (?:pro |s |se )?(?:dluznik|exekuc|zaznam[a-z]* v registr|zapis[a-z]* v registr)|bez ohledu na (?:registr|exekuc|dluh|prijem)|\bbez dolozeni prijm/u,
+    pattern: loanPattern(
+      [part(/\bbez (?:registr|nahlizeni do registr|kontroly registr|prover)|\bpro kazdeho\b|\bi (?:pro |s |se )?(?:dluznik|exekuc)|bez ohledu na (?:registr|exekuc|dluh|prijem)|\bbez dolozeni prijm/u)],
+      [part(/\bi (?:pro |s |se )?(?:zaznam|zapis)/u, true), part(/ v registr/u)]),
     title: 'Půjčka „bez registru“ nebo „pro každého“', explanation: 'Tohle je varovný signál. Poctivý poskytovatel musí posoudit, zda budete půjčku schopni splácet. Nabídka „pro každého“ tuto kontrolu obchází nebo ji jen slibuje.' },
   { id: 'loan_pressure', weight: 20,
-    pattern: /(?:nabidk|akce|sazb|urok)[a-z]*.{0,30}(?:plati|konci|vyprsi|\bjen\b|pouze).{0,20}(?:dnes|zitra|do pulnoci|\d{1,2} ?(?:hod|min))|rozhodnete se (?:hned|ihned|rychle|dnes)|\bjen pro (?:prvnich|nekolik|par)\b|omezen[a-z]* (?:pocet|nabidk)|\bposledni (?:volne|misto|den)\b|neprodlen/u,
+    pattern: loanPattern(
+      [part(/nabidk|akce|sazb|urok/u, true, 30), part(/plati|konci|vyprsi|\bjen\b|pouze/u, false, 20), part(/dnes|zitra|do pulnoci|\d{1,2} ?(?:hod|min)/u)],
+      [part(/omezen/u, true), part(/ (?:pocet|nabidk)/u)],
+      [part(/rozhodnete se (?:hned|ihned|rychle|dnes)|\bjen pro (?:prvnich|nekolik|par)\b|\bposledni (?:volne|misto|den)\b|neprodlen/u)]),
     title: 'Tlak na rychlé rozhodnutí o půjčce', explanation: 'Tohle je varovný signál. Půjčka je závazek na dlouhou dobu. Kdo vás nutí rozhodnout se hned, nedává vám čas si nabídku ověřit.' },
 ];
 const loanSensitive = ['loan_bank_login', 'loan_sms_code', 'loan_card_details', 'loan_remote_access', 'loan_id_document'];
@@ -229,7 +361,8 @@ export function fraudAgent({ content, type, matching = matchingRepresentation(co
   if (links.some(link => { try { const url = new URL(link); return url.protocol === 'http:' || url.username || url.password || isIP(url.hostname.replace(/^\[|\]$/g, '')) || url.hostname.includes('xn--'); } catch { return false; } })) signals.push({ id: 'unusual_url', weight: 25, title: 'Odkaz potřebuje zvláštní opatrnost', explanation: 'Odkaz používá nešifrovaný přenos, číselnou adresu, vložené přihlašovací údaje nebo zvláštní zápis domény. To samo podvod nedokazuje.' });
   if (!loanSituation({ type, matching, topic })) return signals;
   // Text rules and the user's own answers produce the same fixed signals once.
-  const found = new Set(type === 'text' ? loanRules.filter(rule => rule.pattern.test(matching.content) || rule.ordered?.(matching.content)).map(rule => rule.id) : []);
+  const scan = type === 'text' ? loanScan(matching.content) : undefined;
+  const found = new Set(type === 'text' ? loanRules.filter(rule => rule.pattern.test(matching.content, scan) || rule.ordered?.(matching.content)).map(rule => rule.id) : []);
   if (loan?.advance_payment === 'yes') found.add('loan_advance_fee');
   for (const answer of loan?.requests || []) if (requestAnswers.get(answer)) found.add(requestAnswers.get(answer));
   const generic = new Set(signals.map(signal => signal.id));

@@ -87,8 +87,10 @@ const loanEntry = document.querySelector('#loan-entry');
 const content = document.querySelector('#content');
 let loanMode = false;
 let loanUi;
+let submittedContent;
 const isLoan = () => loanMode;
 function setLoanMode(value) {
+  if (!value) loanUi?.reset();
   loanMode = value;
   loanUi?.show(value);
   loanEntry.hidden = value;
@@ -100,6 +102,8 @@ async function openLoan(focus) {
     await loanUi.ready();
   } catch { showError('NETWORK'); return; }
   loanUi.mount({ before: document.querySelector('#ai-consent'), onExit: () => { setLoanMode(false); content.focus(); } });
+  if (!loanMode) loanUi.reset();
+  submittedContent = undefined;
   setLoanMode(true);
   focus();
 }
@@ -207,9 +211,15 @@ form.addEventListener('submit', async event => {
   if (mode === 'ai' && !document.querySelector('#consent').checked) { showError('AI_CONSENT_REQUIRED'); return; }
   // Keep keyboard focus in place when the control that started this disappears.
   if (errorPanel.contains(document.activeElement)) submit.focus();
+  // Also cover programmatic replacement (examples/clipboard), which need not
+  // dispatch an input event. A different message cannot inherit loan answers.
+  if (submittedContent !== undefined && content.value !== submittedContent) {
+    setLoanMode(false); submittedContent = undefined;
+  }
   hideError();
   document.querySelector('#status-character').hidden = true; result.hidden = true; analysis = undefined;
   const request = analysisRequest(document.querySelector('#content').value);
+  submittedContent = request.content;
   setBusy(true);
   status.textContent = 'Prověřuji zadaný obsah… Chvíli prosím počkejte.';
   const controller = new AbortController();
@@ -258,4 +268,15 @@ retry.addEventListener('click', async () => {
   form.requestSubmit();
 });
 document.querySelector('#edit-content').addEventListener('click', () => document.querySelector('#content').focus());
-document.querySelector('#next-check').addEventListener('click', () => { content.scrollIntoView({ block: 'center' }); content.select(); });
+content.addEventListener('input', () => {
+  // Replacing a submitted message starts a new ordinary check. Retry of the
+  // same failed request keeps its answers; returning to loan mode is explicit.
+  if (submittedContent !== undefined && content.value !== submittedContent) {
+    setLoanMode(false);
+    submittedContent = undefined;
+  }
+});
+document.querySelector('#next-check').addEventListener('click', () => {
+  setLoanMode(false); submittedContent = undefined;
+  content.scrollIntoView({ block: 'center' }); content.select();
+});

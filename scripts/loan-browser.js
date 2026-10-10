@@ -101,11 +101,30 @@ try {
     await page.locator('#result').screenshot({ path: `${out}/loan-result-${width}.png` });
 
     // Back to an ordinary message: no loan fields are sent.
+    await page.locator('#next-check').click();
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'content');
+    assert.equal(await page.evaluate(() => { const field = document.querySelector('#content'); return field.selectionEnd - field.selectionStart; }), SCAM.length);
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0, 'next check clears every answer');
+    assert.ok(await page.locator('#loan-questions').isHidden());
+    await page.locator('#content').fill('Ahoj, zítra se uvidíme.');
+    await page.locator('#submit').click();
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.deepEqual(Object.keys(JSON.parse(state.bodies.at(-1))).sort(), ['ai_consent', 'content', 'type']);
+    assert.doesNotMatch(await page.locator('#signals').textContent(), /Platba předem|kód z SMS/);
+    // Leaving and reopening never restores checked answers, including keys
+    // used to navigate the native controls. The original content stays intact.
+    await entry.click();
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0);
+    await option('Ano').check(); await option('Kód z SMS').check();
     await page.locator('#content').scrollIntoViewIfNeeded();
     await page.getByRole('button', { name: 'Prověřit jinou zprávu' }).click();
     assert.ok(await page.locator('#loan-questions').isHidden());
     assert.ok(await entry.isVisible());
     assert.equal(await page.locator('#submit-label').textContent(), 'Prověřit zprávu');
+    await entry.click();
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0, 'exit/reopen clears answers');
+    assert.equal(await page.locator('#content').inputValue(), 'Ahoj, zítra se uvidíme.');
+    await page.getByRole('button', { name: 'Prověřit jinou zprávu' }).click();
     await page.locator('#content').fill('Ahoj, zítra se uvidíme.');
     await page.locator('#submit').click();
     await page.waitForFunction(count => document.querySelector('#status').textContent === 'Kontrola je dokončena.' && count, state.bodies.length);

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { analyze, intakeAgent, reusePreparedInput } from '../src/analysis.js';
 import { AnalysisPipeline, validateInput } from '../src/ai/pipeline.js';
 import { createServer } from '../src/server.js';
+import http from 'node:http';
+import { OpenAICompatibleProvider } from '../src/ai/provider.js';
 import { aiFixture, validOutput } from '../test-support/ai.js';
 
 const ids = result => result.signals.map(signal => signal.id);
@@ -230,6 +232,69 @@ test('AI mode keeps the reviewed loan conclusion, guidance and limitations', asy
   assert.ok(result.uncertainties.includes('To, že po vás platbu předem nechtějí, ještě neznamená, že je nabídka v pořádku.'));
   // The model receives the content and rule ids, never the guided-answer structure.
   assert.doesNotMatch(calls[0].messages[1].content, /loan_context|advance_payment/);
+});
+
+test('LUX-02: complete serialized provider requests, routing and critic are independent of guided answers', async t => {
+  const payloads = [];
+  let uncertainty = 'low';
+  const endpoint = http.createServer(async (req, res) => {
+    const chunks = []; for await (const chunk of req) chunks.push(chunk);
+    payloads.push(Buffer.concat(chunks).toString('utf8'));
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({
+      ...validOutput(), risk_score: 10, signals: [], uncertainty,
+    }) } }] }));
+  });
+  await new Promise(resolve => endpoint.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => { endpoint.close(resolve); endpoint.closeAllConnections(); }));
+  const provider = new OpenAICompatibleProvider({ endpoint: `http://127.0.0.1:${endpoint.address().port}/v1/chat/completions`, allowLocal: true });
+  const contexts = [{}, ...['yes', 'no', 'unsure'].map(advance_payment => ({ advance_payment })),
+    ...['id_document', 'bank_login', 'sms_code', 'card_details', 'remote_access', 'none', 'unsure'].map(value => ({ requests: [value] })),
+    { advance_payment: 'yes', requests: ['id_document', 'bank_login', 'sms_code', 'card_details', 'remote_access'] }];
+  let analyses = 0;
+  for (const content of ['Ahoj, zítra se uvidíme.', 'Půjčka: před vyplacením zaplaťte poplatek.', '  Ahoj\u200b, zítra.\r\n', 'https://example.invalid/']) {
+    const type = content.startsWith('https:') ? 'url' : 'text';
+    for (uncertainty of ['low', 'high']) {
+      let expected;
+      for (const loan_context of [undefined, ...contexts]) {
+        const { pipeline } = aiFixture(t, { provider, config: { criticEnabled: true } });
+        const first = payloads.length;
+        const result = await pipeline.analyze({ type, content, ai_consent: true,
+          ...(loan_context !== undefined && { topic: 'loan', loan_context }) });
+        analyses++;
+        const serialized = payloads.slice(first);
+        expected ||= serialized;
+        assert.deepEqual(serialized, expected, `payload/call-count leak: ${type}, ${uncertainty}, ${JSON.stringify(loan_context)}`);
+        assert.equal(JSON.parse(JSON.parse(serialized[0]).messages[1].content).untrusted_content, content);
+        if (loan_context?.advance_payment === 'yes') assert.ok(ids(result).includes('loan_advance_fee'), 'local warning retained');
+        for (const answer of loan_context?.requests || []) {
+          const id = { id_document: 'loan_id_document', bank_login: 'loan_bank_login', sms_code: 'loan_sms_code', card_details: 'loan_card_details', remote_access: 'loan_remote_access' }[answer];
+          if (id) assert.ok(ids(result).includes(id), `${id}: local warning retained`);
+        }
+      }
+    }
+  }
+  t.diagnostic(JSON.stringify({ serializedPrivacyAnalyses: analyses, actualLoopbackProviderRequests: payloads.length,
+    comparison: 'byte-identical entire HTTP bodies and identical call counts for fixed content/output across every answer variant' }));
+});
+
+test('LUX-01: unbounded word suffixes preserve loan signals, gap boundaries and Unicode dot semantics', () => {
+  for (const [content, id] of [
+    ['schvaleni' + 'schvaleni'.repeat(30) + 'garant', 'loan_guaranteed'],
+    ['garant' + 'garant'.repeat(30) + 'schvaleni', 'loan_guaranteed'],
+    ['poplat' + 'poplat'.repeat(30) + ' za vyrizeni', 'loan_advance_fee'],
+    ['posl' + 'posl'.repeat(30) + ' overovac' + 'a'.repeat(300) + ' kod', 'loan_sms_code'],
+    ['fotka doklad' + 'a'.repeat(300) + ' totoznosti', 'loan_id_document'],
+    ['doklad' + 'a'.repeat(300) + ' totoznost' + 'a'.repeat(300) + ' fotka', 'loan_id_document'],
+    ['nainstal' + 'a'.repeat(300) + ' aby nase' + '.'.repeat(40) + 'pripoj', 'loan_remote_access'],
+  ]) assert.ok(loanIds(text(content, { topic: 'loan' })).includes(id), content.slice(0, 80));
+  for (const separator of ['.', '😀']) {
+    assert.ok(loanIds(text('schvaleni' + separator.repeat(30) + 'garant', { topic: 'loan' })).includes('loan_guaranteed'));
+    assert.ok(!loanIds(text('schvaleni' + separator.repeat(31) + 'garant', { topic: 'loan' })).includes('loan_guaranteed'));
+  }
+  for (const newline of ['\n', '\r', '\u2028', '\u2029']) {
+    assert.ok(!loanIds(text('schvaleni' + newline + 'garant', { topic: 'loan' })).includes('loan_guaranteed'));
+  }
 });
 
 test('Loan rules stay bounded on long adversarial input', () => {

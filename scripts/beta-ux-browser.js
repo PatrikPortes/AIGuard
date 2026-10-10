@@ -113,9 +113,48 @@ try {
     await check(page, 'Nabídka půjčky 20 000 Kč, vyřízení do druhého dne.');
     await page.locator('#result').waitFor({ state: 'visible' });
     assert.ok(await page.locator('#loan-followup').isHidden());
+    await page.locator('input[name="advance_payment"][value="yes"]').check();
+    await page.locator('input[name="requests"][value="sms_code"]').check();
+    await page.locator('#submit').click();
+    await page.locator('#result').waitFor({ state: 'visible' });
+    // Replacing completed content without the next-check button is also a
+    // fresh ordinary check. No answer-derived warnings can follow it.
+    await page.locator('#content').fill(QUIET);
+    assert.ok(await page.locator('#loan-questions').isHidden());
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0);
+    const pending = page.waitForRequest(request => request.url().endsWith('/api/analyze'));
+    await page.locator('#submit').click();
+    const sent = JSON.parse((await pending).postData());
+    assert.deepEqual(Object.keys(sent).sort(), ['ai_consent', 'content', 'type']);
+    await page.locator('#result').waitFor({ state: 'visible' });
+    assert.doesNotMatch(await page.locator('#signals').textContent(), /Platba předem|kód z SMS/);
     await page.close();
   }
-  console.log('Beta UX browser: PASS (AI fallback note, AI result without provider/score, AI unavailable states, loan follow-up)');
+  // Retry is the same analysis; replacing failed content is a new analysis.
+  {
+    const bodies = [];
+    const { page } = await open(360, { analyze: route => {
+      bodies.push(JSON.parse(route.request().postData()));
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{"code":"AI_TIMEOUT"}' });
+    } });
+    await page.locator('#loan-entry').click();
+    await page.locator('#loan-questions').waitFor({ state: 'visible' });
+    await page.locator('input[name="advance_payment"][value="yes"]').check();
+    await page.locator('input[name="requests"][value="sms_code"]').check();
+    await check(page, 'Nabídka půjčky.');
+    await page.locator('#retry').click();
+    await page.waitForFunction(() => document.querySelector('#analysis-form').getAttribute('aria-busy') === 'false');
+    assert.equal(bodies.length, 2);
+    assert.deepEqual(bodies[1], bodies[0], 'explicit retry preserves the same current answers');
+    await page.locator('#content').fill(QUIET);
+    assert.equal(await page.locator('#loan-questions input:checked').count(), 0);
+    await page.locator('#retry').click();
+    await page.waitForFunction(() => document.querySelector('#analysis-form').getAttribute('aria-busy') === 'false');
+    assert.deepEqual(Object.keys(bodies.at(-1)).sort(), ['ai_consent', 'content', 'type']);
+    assert.equal(bodies.at(-1).content, QUIET);
+    await page.close();
+  }
+  console.log('Beta UX browser: PASS (AI fallback note, AI result without provider/score, AI unavailable states, loan follow-up, fresh content after success/error, same-request retry)');
 } finally {
   await browser.close();
   server.close();

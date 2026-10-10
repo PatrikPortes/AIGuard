@@ -69,6 +69,7 @@ export function mount({ before, onExit }) {
   before.before(block);
 }
 export function show(visible) { if (block) block.hidden = !visible; }
+export function reset() { for (const input of block?.querySelectorAll('input') || []) input.checked = false; }
 export function title() { return block.querySelector('#loan-mode-title'); }
 export function context() {
   const advance = block.querySelector('input[name="advance_payment"]:checked')?.value;
