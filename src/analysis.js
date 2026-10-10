@@ -138,19 +138,35 @@ const rules = [
 // Narrow high-harm combinations, on the existing matching copy. Overlapping
 // fixed windows inspect the whole input in O(n); no greedy/unbounded gaps,
 // truncation, normalization changes or user content retained between calls.
-const cashRequest = /\b(?:posli|poslete|posilej|posilejte|preved|prevedte|prevadej|prevadejte|odesli|odeslete|vyber|vyberte|vybrat|priprav|pripravte|predej|predejte|predat|dej|dejte|potrebuji|potrebuju|potrebujeme)\b[\s\S]{0,90}\b(?:hotovost(?:i)?|penize|penez|korun|kc)\b/u;
-const familyClaim = /\b(?:mami|mamo|tati|tato|babi|babicko|dedo|dedecku)\b|\b(?:jsem|tady je|tady)\s{1,8}(?:tvuj|tvoje|tva|vas|vase)\s{1,8}(?:syn|dcera|vnuk|vnucka)\b/u;
+const cashRequest = /\b(?:posli|poslete|posilej|posilejte|preved|prevedte|prevadej|prevadejte|odesli|odeslete|vyber|vyberte|vybrat|priprav|pripravte|pripravit|predej|predejte|predat|dej|dejte|potrebuji|potrebuju|potrebujeme|potrebuje|potreboval|potrebovala|chce|chtel|chtela|zada|zadal|zadala|pozaduje|pozadoval|pozadovala)\b[\s\S]{0,90}\b(?:hotovost(?:i)?|penize|penez|korun|kc)\b/u;
+const familyClaim = /\b(?:mami|mamo|tati|tato|babi|babicko|dedo|dedecku|vnuk(?:a|ovi|em)?|vnuck(?:a|u|y|ou|e)|pribuzn(?:y|a|eho|ou|emu|ym))\b|\b(?:jsem|tady je|tady)\s{1,8}(?:tvuj|tvoje|tva|vas|vase)\s{1,8}(?:syn|dcera|vnuk|vnucka)\b/u;
 const cashUrgency = /\b(?:ihned|hned|okamzite|rychle|urgentne|specha|nalehave|dnes)\b|\bco nejdriv(?:e)?\b|\bdo \d{1,8} (?:minut|hodin)\b/u;
-const pickupActor = String.raw`\b(?:kamarad[a-z]{0,5}|koleg[a-z]{0,5}|kuryr[a-z]{0,5}|znamy|znamemu|poslicek|taxikar[a-z]{0,4})\b`;
-const pickupAction = String.raw`\b(?:prijde|prijede|vyzved[a-z]{0,6}|prevezme|prevzit|predej|predejte|predas|predate|poslu)\b`;
+const pickupActor = String.raw`\b(?:kamarad[a-z]{0,5}|koleg[a-z]{0,5}|kuryr[a-z]{0,5}|znamy|znamemu|poslicek|taxikar[a-z]{0,4}|advokat[a-z]{0,3}|pravnik[a-z]{0,3})\b`;
+const pickupAction = String.raw`\b(?:prijde|prijede|vyzved[a-z]{0,6}|prevezme|prevzit|predej|predejte|predas|predate|poslu|posilam|posila|zastavi\s{1,8}se|se\s{1,8}zastavi)\b`;
 const thirdPartyPickup = new RegExp(`${pickupActor}[\\s\\S]{0,70}${pickupAction}|${pickupAction}[\\s\\S]{0,70}${pickupActor}`, 'u');
-const secrecyDirective = /\bnikomu\s{1,8}(?:(?:to|nic|o tom|o platbe|o prevodu)\s{1,8})?(?:nerikej(?:te)?|nesdeluj(?:te)?|neprozrazuj(?:te)?|nezminuj(?:te)?)\b|\b(?:nerikej(?:te)?|nesdeluj(?:te)?|neprozrazuj(?:te)?)\s{1,8}(?:(?:to|nic|o tom)\s{1,8})?nikomu\b/gu;
+const secrecyDirective = /\bnikomu\s{1,8}(?:(?:to|nic|o tom|o platbe|o prevodu)\s{1,8})?(?:nerikej(?:te)?|nesdeluj(?:te)?|neprozrazuj(?:te)?|nezminuj(?:te)?)\b|\b(?:nerikej(?:te)?|nesdeluj(?:te)?|neprozrazuj(?:te)?)\s{1,8}(?:(?:to|nic|o tom)\s{1,8})?nikomu\b|\b(?:nerikej(?:te)?|nerikal[a]?|nerikam)\s{1,8}(?:(?:to|nic|o tom)\s{1,8})?(?:mame|rodicum)\b|\b(?:mame|rodicum)\s{1,8}(?:to\s{1,8})?(?:nerikej(?:te)?|nerikal[a]?|nerikam)\b|\b(?:nemam|nesmim|nema|nesmi)\s{1,8}(?:(?:to|o tom)\s{1,8})?(?:rict|rikat)\s{1,8}(?:mame|rodicum)\b/gu;
 const protectedSecret = /^[\s,:-]{0,8}(?:(?:sve|svoje|svuj|zadne|zadny)\s{1,8})?(?:hesl[a-z]{0,4}|pin|kod[a-z]{0,4}|udaj[a-z]{0,4}|cislo\s{1,8}karty|prihlasovac[a-z]{0,8}|osobni[a-z]{0,4})\b/u;
 const legacySecrecy = rules.find(rule => rule.id === 'secrecy');
 const bankClaim = /\b(?:bank[ay]|bankovni (?:poradce|pracovnik)|pracovnik banky)\b/u;
-const safeAccount = String.raw`\b(?:bezpecn(?:y|eho|emu|em)|zabezpecen(?:y|eho|emu|em)|ochrann(?:y|eho|emu|em))\s{1,8}(?:bankovni\s{1,8})?(?:ucet|uctu|uctem)\b`;
-const transferInstruction = String.raw`\b(?:preved(?:te)?|prevadej(?:te)?|presun(?:te)?|posli|poslete|odesli|odeslete)\b`;
-const safeAccountTransfer = new RegExp(`${transferInstruction}[\\s\\S]{0,100}${safeAccount}|${safeAccount}[\\s\\S]{0,100}${transferInstruction}`, 'u');
+const safeAccount = String.raw`\b(?:bezpecn(?:y|eho|emu|em)|zabezpecen(?:y|eho|emu|em)|ochrann(?:y|eho|emu|em)|chranen(?:y|eho|emu|em))\s{1,8}(?:bankovni\s{1,8})?(?:ucet|uctu|uctem)\b`;
+const transferInstruction = String.raw`\b(?:preved(?:te)?|prevest|prevadej(?:te)?|presun(?:te)?|presunout|posli|poslete|odesli|odeslete)\b`;
+const safeAccountTransfer = new RegExp(`${transferInstruction}[\\s\\S]{0,100}${safeAccount}|${safeAccount}[\\s\\S]{0,100}${transferInstruction}`, 'gu');
+const accountEducationBefore = /\b(?:nikdy\s{1,8}(?:nezada|nezadame|nepozaduje|nepozadujeme|nerekne|nerikame)|(?:varuje|varujeme|upozornuje|upozornujeme)\s{1,8}(?:na|pred)\s{1,8}podvod[a-z]{0,4}|priklad\s{1,8}podvod[a-z]{0,4})[^.!?;\n]{0,60}$/u;
+const accountEducationAfter = /^[\s,;:-]{0,16}(?:jde o podvod|je podvodna vyzva|je priklad podvodu)(?:[.!]|$)/u;
+function hasAccountTransfer(window) {
+  for (const match of window.matchAll(safeAccountTransfer)) {
+    const before = window.slice(Math.max(0, match.index - 160), match.index);
+    const after = window.slice(match.index + match[0].length, match.index + match[0].length + 80);
+    // Exempt only an explicitly quoted educational example. An unrelated
+    // warning elsewhere cannot hide an actual instruction in the same input.
+    const opening = /[„"]\s{0,8}$/u.exec(before);
+    const closing = /^[\s.!]{0,8}[“"]/u.exec(after);
+    if (opening && closing && (accountEducationBefore.test(before.slice(0, opening.index))
+        || accountEducationAfter.test(after.slice(closing[0].length)))) continue;
+    return true;
+  }
+  return false;
+}
 const highHarmRules = [
   { id: 'family_cash_pickup', weight: 65, title: 'Hotovost pro údajného příbuzného přes další osobu', explanation: 'Naléhavá žádost o peníze, utajení a vyzvednutí jiným člověkem mohou znamenat vydávání se za příbuzného. Totožnost jsme neověřili.' },
   { id: 'safe_account_transfer', weight: 70, title: 'Převod na údajný bezpečný účet', explanation: 'Pokyn od údajné banky k převodu na „bezpečný účet“ je výrazný varovný signál. Totožnost odesílatele ani účet jsme neověřili.' },
@@ -166,7 +182,10 @@ function secrecyPressure(window, content, offset) {
   return false;
 }
 function highHarmWarnings(content, existing) {
-  if (!/nikomu|bezpecn|zabezpecen|ochrann|nevolej|nevolat|tajne|utaj/u.test(content)) return [];
+  // Every combination below needs a cash object or an account noun. Check
+  // this necessary condition once; guarded windows cannot invent word edges.
+  if (!/\b(?:hotovost(?:i)?|penize|penez|korun|kc|ucet|uctu|uctem)\b/u.test(content)) return [];
+  if (!/nikomu|nerikej|nerikal|nerikam|nema|nesmi|bezpecn|zabezpecen|ochrann|chranen|nevolej|nevolat|tajne|utaj/u.test(content)) return [];
   let secrecy = false, family = false, bank = false;
   // A cluster up to 400 code units is wholly inside an 800-unit window;
   // longer/distant clauses are intentionally not inferred to be one request.
@@ -179,7 +198,7 @@ function highHarmWarnings(content, existing) {
     secrecy ||= cash && concealment;
     family ||= cash && (concealment || legacySecrecy.pattern.test(window))
       && familyClaim.test(window) && cashUrgency.test(window) && thirdPartyPickup.test(window);
-    bank ||= bankClaim.test(window) && safeAccountTransfer.test(window);
+    bank ||= bankClaim.test(window) && hasAccountTransfer(window);
   }
   const signals = highHarmRules.filter(rule => rule.id === 'family_cash_pickup' ? family : bank);
   if (secrecy && !existing.some(signal => signal.id === 'secrecy')) {
