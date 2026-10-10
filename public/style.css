@@ -406,3 +406,15 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
   /* Print every situation, also closed ones, where the browser supports it. */
   .guide-item::details-content { content-visibility: visible; display: block; }
 }
+
+/* AI P0: who found what, what AI added, and safe steps when a check fails.
+   Existing tokens only; meaning never depends on colour alone. */
+.signal-group { font-size: var(--text-body); font-weight: 750; color: var(--knowledge-ink); margin: 16px 0 6px; }
+.ai-card { border-left: 6px solid var(--knowledge-accent); }
+.ai-card.is-uncertain { border-left-color: var(--concern-accent); }
+.ai-uncertainty { font-weight: 700; margin: 8px 0; }
+.ai-card.is-uncertain .ai-uncertainty { color: var(--concern-ink); }
+.error-guidance { margin-top: 16px; padding: 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.error-guidance p { margin: 0 0 8px; }
+.error-guidance ul { margin: 0 0 8px; padding-left: 1.2em; }
+.error-guidance-title { font-weight: 750; }

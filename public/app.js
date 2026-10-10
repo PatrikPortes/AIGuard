@@ -5,6 +5,7 @@ const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
 let analysis;
 let mode;
+let providerLabel = 'AI';
 let busy = false;
 const errorPanel = document.querySelector('#error-panel');
 const retry = document.querySelector('#retry');
@@ -31,10 +32,21 @@ const failures = {
   UNEXPECTED: { kind: 'retry', title: 'Nepodařilo se obsah prověřit.', message: 'Odpověď služby nebyla úplná. Zkuste to prosím znovu.' },
   SERVER: { kind: 'retry', title: 'Nepodařilo se obsah prověřit.', message: 'Služba má teď potíže. Zkuste to prosím znovu, případně později.' },
   AI_UNAVAILABLE: { kind: 'wait', title: 'Prověřování je dočasně nedostupné.', message: 'Zkuste to prosím později. Vložený obsah zůstává v poli.' },
+  AI_INVALID_CONFIG: { kind: 'wait', title: 'Prověřování je dočasně nedostupné.', message: 'Zkuste to prosím později. Vložený obsah zůstává v poli.' },
+  AI_BUDGET_UNAVAILABLE: { kind: 'wait', title: 'Prověřování je dočasně nedostupné.', message: 'Zkuste to prosím později. Vložený obsah zůstává v poli.' },
+  AI_PROVIDER_UNAVAILABLE: { kind: 'retry', title: 'Kontrola s AI se teď nepodařila.', message: 'Zkuste to prosím znovu, případně později. Vložený obsah zůstává v poli.' },
+  // The server rejected the AI answer as unreliable (schema, evidence or safety).
+  AI_INVALID_OUTPUT: { kind: 'retry', title: 'Výsledek kontroly nebyl dost spolehlivý, proto ho nezobrazujeme.', message: 'Zkuste to prosím znovu.' },
+  REJECTED_AGAIN: { kind: 'wait', title: 'Výsledek kontroly nebyl dost spolehlivý, proto ho nezobrazujeme.', message: 'Ani druhý pokus nebyl spolehlivý. Zkuste to prosím později.' },
   SESSION_START: { kind: 'session', title: 'Prověřování se nepodařilo připravit.', message: 'Zkuste to prosím znovu. Pokud se to bude opakovat, načtěte stránku později.' },
 };
 let lastFailure;
+const REJECTED = ['AI_INVALID_OUTPUT', 'AI_UNSUPPORTED_EVIDENCE', 'AI_UNSAFE_OUTPUT'];
+let rejections = 0;
+let rejectedFor;
 function failureFor(code, httpStatus) {
+  // One manual retry after a rejected AI answer; a second rejection ends it.
+  if (REJECTED.includes(code)) return ++rejections > 1 ? 'REJECTED_AGAIN' : 'AI_INVALID_OUTPUT';
   if (failures[code]) return code;
   if (httpStatus === 429) return 'RATE_LIMITED';
   return 'SERVER';
@@ -49,6 +61,7 @@ function showError(code) {
   const parts = ['#error-title', '#error-message', '#error-safety'].map(id => document.querySelector(id));
   parts.forEach(part => { part.textContent = ''; });
   retry.hidden = !['retry', 'session'].includes(failure.kind);
+  document.querySelector('#error-guidance').hidden = !['retry', 'wait'].includes(failure.kind);
   errorPanel.hidden = false;
   // Fill the alert after it is visible so screen readers announce the new text.
   const message = correctingLoanInput ? `${failure.message} Odpovědi k této nabídce zůstávají vybrané. Pro jinou zprávu zvolte „Prověřit jinou zprávu“.` : failure.message;
@@ -64,8 +77,9 @@ async function initialize() {
     if (!response.ok) throw new Error('session');
     const runtime = await response.json();
     mode = runtime.mode;
+    providerLabel = runtime.provider_label || 'AI';
     document.querySelector('#engine-notice').textContent = mode === 'ai'
-      ? runtime.ai_configured ? 'Text vyhodnotí pravidla a AI. Výsledek je orientační; odkazy neotevíráme.' : 'AI ověření zatím není dostupné. Zkuste to později.'
+      ? runtime.ai_configured ? `Text vyhodnotí naše pravidla a pomůže s ním AI od poskytovatele ${providerLabel}. Výsledek je orientační. Odkazy neotevíráme.` : 'AI ověření zatím není dostupné. Zkuste to později.'
       : 'Zatím kontrolujeme jen text a odkazy podle pevných pravidel, bez umělé inteligence. Snímky obrazovky a PDF připravujeme.';
     document.querySelector('#consent-label').textContent = `Souhlasím s odesláním vloženého textu poskytovateli ${runtime.provider_label || 'AI'}. Před odesláním odstraním nepotřebné osobní údaje.`;
     document.querySelector('#ai-consent').hidden = mode !== 'ai' || !runtime.ai_configured;
@@ -166,14 +180,41 @@ const missingVerification = 'Žádost si ověřte jinou cestou. Použijte kontak
 // F5a interim result: neutral heading, no score, no outcome derived in the browser.
 // The first recommended action comes from the backend in its own order; nothing
 // here is inferred from risk_score, risk_level or the number of signals.
-function render(loanFlow) {
+function render(loanFlow, loanAnswers) {
   if (!analysis) return;
   const [primary, ...rest] = analysis.recommended_actions;
   document.querySelector('#primary-action').textContent = primary;
   list('#actions', rest);
   document.querySelector('#actions').hidden = rest.length === 0;
   document.querySelector('#summary').textContent = analysis.summary;
-  list('#signals', analysis.signals.length ? analysis.signals.map(signal => `${signal.title}. ${signal.explanation}`) : ['Známé signály jsme nenašli. Podvod tím není vyloučen.']);
+  // AI results label who found what (existing signals[].source). Model text is
+  // only ever textContent; rules-mode results keep their single list.
+  const withAi = analysis.engine === 'rules+ai-v1';
+  const text = signal => `${signal.title}. ${signal.explanation}`;
+  const aiSignals = withAi ? analysis.signals.filter(signal => signal.source === 'ai') : [];
+  const ruleSignals = analysis.signals.filter(signal => !aiSignals.includes(signal));
+  document.querySelector('#rules-signals-label').hidden = !withAi;
+  list('#signals', ruleSignals.length ? ruleSignals.map(text)
+    : [withAi ? 'Naše pravidla nenašla známé signály.' : 'Známé signály jsme nenašli. Podvod tím není vyloučen.']);
+  document.querySelector('#ai-signals-group').hidden = !aiSignals.length;
+  list('#ai-signals', aiSignals.map(text));
+  document.querySelector('#ai-card').hidden = !withAi;
+  if (withAi) {
+    document.querySelector('#ai-uncertainty').textContent = {
+      high: 'U této zprávy si AI není jistá. Řiďte se hlavně kroky v části Co udělat teď.',
+      medium: 'AI zná jen text zprávy, ne celou situaci. Ověřte si ji nezávisle.',
+      low: 'Ani jistější posouzení AI neznamená, že je zpráva bezpečná nebo že jde o podvod.',
+    }[analysis.uncertainty] || 'Nevíme, jak jistá si AI byla. Ověřte si zprávu nezávisle.';
+    document.querySelector('#ai-card').classList.toggle('is-uncertain', analysis.uncertainty === 'high');
+    list('#ai-notes', [
+      // The provider is named in the consent before sending; the result itself
+      // names no provider or model.
+      'Text zprávy jsme s vaším souhlasem odeslali externímu AI poskytovateli. AI pomohla popsat varovné signály. Nerozhoduje za vás.',
+      ...(analysis.critic_used ? ['Výsledek prošel druhou kontrolou AI.'] : []),
+      ...(loanAnswers ? ['Odpovědi na otázky k půjčce zůstaly jen u nás a AI je nedostala.'] : []),
+      'Neověřovali jsme, kdo zprávu poslal. Odkazy jsme neotevírali.',
+    ]);
+  }
   list('#uncertainties', analysis.uncertainties?.length
     ? analysis.uncertainties.map(text => text === DISCLAIMER && analysis.signals.length
       ? 'Varovné signály nejsou důkaz podvodu. Než cokoli uděláte, ověřte si to nezávisle.' : uncertaintyCopy.get(text) || text) : [missingUncertainty]);
@@ -183,7 +224,7 @@ function render(loanFlow) {
   document.querySelector('#loan-followup').hidden = !(analysis.topic === 'loan' && !loanFlow);
   list('#technical', [
     analysis.engine === 'rules-v1' ? 'Použita pouze pravidla, bez AI.' : 'Použita pravidla a AI.',
-    ...(analysis.engine !== 'rules-v1' && analysis.uncertainty ? [`Nejistota AI: ${{ low: 'menší', medium: 'střední', high: 'vysoká' }[analysis.uncertainty] || 'neuvedena'}.`, `Druhá AI kontrola: ${analysis.critic_used ? 'ano' : 'ne'}.`] : []),
+    ...(analysis.engine !== 'rules-v1' ? [analysis.critic_used ? 'Výsledek prošel druhou kontrolou AI.' : 'Druhá kontrola AI neproběhla.'] : []),
     analysis.input_type === 'url' ? 'Vložen samotný odkaz. Stránku jsme neotevřeli.' : 'Vložen text.',
     ...(analysis.topic === 'loan' ? ['Posouzeno jako nabídka půjčky. Registr ČNB jsme neprohledávali.'] : []),
   ]);
@@ -205,8 +246,21 @@ function isAnalysis(data) {
     && ['verification_steps', 'uncertainties'].every(key => isSafetyList(data[key]));
 }
 function submitLabel() { return isLoan() ? 'Prověřit nabídku' : 'Prověřit zprávu'; }
+// Long checks (AI can take up to ~30 s) get two calm, polite updates. No
+// countdown and no repeated announcements; timers end with the check.
+let stageTimers = [];
+function stage(text) {
+  status.textContent = text;
+  document.querySelector('#processing-detail').textContent = text;
+}
 function setBusy(value) {
   busy = value;
+  stageTimers.forEach(clearTimeout);
+  stageTimers = value ? [
+    setTimeout(() => stage(mode === 'ai' ? 'Kontrola s AI chvíli trvá. Prosím počkejte.' : 'Kontrola chvíli trvá. Prosím počkejte.'), 8000),
+    setTimeout(() => stage('Ještě chvíli. Pokud to nepůjde, dáme vám vědět, co dál.'), 20000),
+  ] : [];
+  document.querySelector('#processing-detail').textContent = 'Chvíli prosím počkejte.';
   form.setAttribute('aria-busy', String(value));
   submit.setAttribute('aria-disabled', String(value));
   document.querySelector('#submit-label').textContent = value ? 'Prověřuji…' : submitLabel();
@@ -231,6 +285,8 @@ form.addEventListener('submit', async event => {
   document.querySelector('#status-character').hidden = true; result.hidden = true; analysis = undefined;
   const request = analysisRequest(document.querySelector('#content').value);
   submittedContent = request.content;
+  if (request.content !== rejectedFor) rejections = 0;
+  rejectedFor = request.content;
   setBusy(true);
   status.textContent = 'Prověřuji zadaný obsah… Chvíli prosím počkejte.';
   const controller = new AbortController();
@@ -249,7 +305,8 @@ form.addEventListener('submit', async event => {
   setBusy(false);
   if (!failure) {
     try {
-      analysis = data; render(request.topic === 'loan'); result.hidden = false;
+      rejections = 0;
+      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length)); result.hidden = false;
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;

@@ -96,7 +96,9 @@ try {
     await page.locator('#result').waitFor({ state: 'visible' });
     assert.ok(await page.locator('#engine-note').isHidden());
     await actionFirst(page, 'AI result');
-    assert.match(await page.locator('#signals').textContent(), /Neobvyklý způsob platby/);
+    // AI P0: AI-sourced signals are listed in their own labelled group, not with the rules.
+    assert.match(await page.locator('#ai-signals').textContent(), /Neobvyklý způsob platby/);
+    assert.doesNotMatch(await page.locator('#signals').textContent(), /Neobvyklý způsob platby/);
     assert.doesNotMatch(await page.locator('#result').textContent(), /OpenAI|gpt|skór|score|\d+\s*%/iu);
     await page.close();
   }
