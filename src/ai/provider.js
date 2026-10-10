@@ -17,7 +17,7 @@ export class OpenAICompatibleProvider {
       const response = await this.fetch(this.endpoint, {
         method: 'POST', redirect: 'error', signal,
         headers: { 'Content-Type': 'application/json', ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) },
-        body: JSON.stringify({ model, messages, max_completion_tokens: maxOutputTokens, stream: false,
+        body: JSON.stringify({ model, messages, max_completion_tokens: maxOutputTokens, stream: false, store: false,
           response_format: { type: 'json_schema', json_schema: { name: 'risk_analysis', strict: true, schema } } }),
       });
       if (!response.ok) {
@@ -37,7 +37,7 @@ export class OpenAICompatibleProvider {
           chunks.push(Buffer.from(value));
         }
       } finally { await reader.cancel(); }
-      const envelope = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
       const choice = envelope.choices?.[0];
       if (!choice || choice.finish_reason !== 'stop' || choice.message?.refusal || typeof choice.message?.content !== 'string') throw new ServiceError('AI_INVALID_OUTPUT');
       return JSON.parse(choice.message.content);

@@ -7,14 +7,19 @@ export const SYSTEM_INSTRUCTIONS = `Jsi opatrný český asistent pro vyhodnocen
 
 export class TextAIWorker {
   constructor({ provider, budget, config }) { this.provider = provider; this.budget = budget; this.config = config; }
-  async call({ input, rules, model, critic, signal }) {
-    const messages = [
+  get schema() { return analysisSchema; }
+  messagesFor({ input, rules, critic }) {
+    return [
       { role: 'system', content: SYSTEM_INSTRUCTIONS + (critic ? '\nDruhý kontrolní průchod: nezávisle přehodnoť riziko a rozpory, bez zvyšování jistoty.' : '') },
       { role: 'user', content: JSON.stringify({ untrusted_content: input.content, input_type: input.type,
         preliminary_rule_signals: rules.signals.map(item => item.id), ...(critic ? { untrusted_previous_assessment: critic } : {}) }) },
     ];
+  }
+  validateAssessment(output, input) { return validateOutput(output, input.content); }
+  async call({ input, rules, model, critic, signal }) {
+    const messages = this.messagesFor({ input, rules, critic });
     // Conservative byte upper bound + chat framing reserve, not chars/4.
-    const inputTokensUpperBound = Buffer.byteLength(JSON.stringify(messages), 'utf8') + Buffer.byteLength(JSON.stringify(analysisSchema), 'utf8') + 4096;
+    const inputTokensUpperBound = Buffer.byteLength(JSON.stringify(messages), 'utf8') + Buffer.byteLength(JSON.stringify(this.schema), 'utf8') + 4096;
     if (inputTokensUpperBound > this.config.maxInputTokens) throw new ServiceError('AI_INPUT_LIMIT', 400);
     const costMicroUsd = Math.ceil(inputTokensUpperBound * this.config.inputPrice + this.config.maxOutputTokens * this.config.outputPrice);
     if (!Number.isSafeInteger(costMicroUsd) || costMicroUsd <= 0) throw new ServiceError('AI_INVALID_CONFIG');
@@ -23,9 +28,9 @@ export class TextAIWorker {
       // No asynchronous gap between atomic reservation and sending this attempt.
       this.budget.reserve({ costMicroUsd });
       try {
-        const output = await this.provider.complete({ messages, schema: analysisSchema, model, maxOutputTokens: this.config.maxOutputTokens, signal });
+        const output = await this.provider.complete({ messages, schema: this.schema, model, maxOutputTokens: this.config.maxOutputTokens, signal });
         if (signal.aborted) throw new ServiceError('AI_TIMEOUT');
-        return validateOutput(output, input.content);
+        return this.validateAssessment(output, input);
       } catch (error) {
         if (signal.aborted) throw new ServiceError('AI_TIMEOUT');
         if (!(error instanceof ProviderError) || !error.retryable || attempt >= this.config.retries) throw error;
@@ -33,13 +38,16 @@ export class TextAIWorker {
       }
     }
   }
-  async run(input, rules, signal) {
+  rulesForProvider(input, rules) {
     // Guided answers and even the explicit loan-mode choice stay local. Build
     // provider hints from text alone, reusing the trusted matching copy. Model
     // routing and critic decisions use this same view, so they cannot leak the
     // answers indirectly. The complete local rule floor/guidance stays below.
     const providerSignals = input.loan ? fraudAgent({ type: input.type, content: input.content, matching: input.matching }) : undefined;
-    const providerRules = providerSignals ? { signals: providerSignals, risk_score: Math.min(100, providerSignals.reduce((sum, item) => sum + item.weight, 0)) } : rules;
+    return providerSignals ? { signals: providerSignals, risk_score: Math.min(100, providerSignals.reduce((sum, item) => sum + item.weight, 0)) } : rules;
+  }
+  async run(input, rules, signal) {
+    const providerRules = this.rulesForProvider(input, rules);
     const complex = input.content.length > 1500 || providerRules.signals.length >= 3 || providerRules.risk_score >= 60;
     const model = complex ? this.config.complexModel : this.config.simpleModel;
     let assessment = await this.call({ input, rules: providerRules, model, signal });
@@ -85,10 +93,11 @@ export function validateInput(input, maxContentBytes = 16000) {
 }
 
 export class AnalysisPipeline {
-  constructor({ mode = 'rules', worker, queue, timeoutMs = 20000, maxContentBytes = 16000, unavailableCode, providerLabel = 'OpenAI' } = {}) {
+  constructor({ mode = 'rules', worker, queue, timeoutMs = 20000, maxContentBytes = 16000, unavailableCode, providerLabel = 'OpenAI', fallbackToRules = false } = {}) {
     this.mode = mode; this.worker = worker; this.queue = queue;
     this.providerLabel = providerLabel; this.closed = false;
     this.timeoutMs = timeoutMs; this.maxContentBytes = maxContentBytes; this.unavailableCode = unavailableCode;
+    this.fallbackToRules = fallbackToRules;
   }
   validate(input) {
     return validateInput(input, this.maxContentBytes);
@@ -101,13 +110,34 @@ export class AnalysisPipeline {
     const rules = analyze(intake);
     if (this.mode === 'rules') return rules;
     if (input.ai_consent !== true) throw new ServiceError('AI_CONSENT_REQUIRED', 400);
-    if (this.unavailableCode || !this.worker || !this.queue) throw new ServiceError(this.unavailableCode || 'AI_UNAVAILABLE');
+    if (signal?.aborted) throw new ServiceError('AI_TIMEOUT');
+    if (this.fallbackToRules && intake.type !== 'text') return this.rulesFallback(rules, 'AI_TEXT_ONLY');
+    if (this.unavailableCode || !this.worker || !this.queue) {
+      if (this.fallbackToRules) return this.rulesFallback(rules, this.unavailableCode || 'AI_UNAVAILABLE');
+      throw new ServiceError(this.unavailableCode || 'AI_UNAVAILABLE');
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
     try { return await this.queue.submit(jobSignal => this.worker.run(intake, rules, jobSignal), { signal: combined }); }
+    catch (error) {
+      // Caller cancellation never becomes a successful response. An internal
+      // AI failure can return existing rules without weakening any ingress gate.
+      if (!this.fallbackToRules || signal?.aborted) throw error;
+      return this.rulesFallback(rules, error instanceof ServiceError ? error.code : 'AI_PROVIDER_UNAVAILABLE');
+    }
     finally { clearTimeout(timer); }
   }
-  status() { return { mode: this.mode, ai_configured: Boolean(this.worker && !this.unavailableCode), engine: this.mode === 'rules' ? 'rules-v1' : 'rules+ai-v1', timeout_ms: this.timeoutMs, provider_label: this.mode === 'ai' ? this.providerLabel : null }; }
+  rulesFallback(rules, code) {
+    const reason = {
+      AI_TIMEOUT: 'timeout', AI_OVERLOADED: 'overloaded', AI_CAPACITY_EXHAUSTED: 'budget_exhausted',
+      AI_BUDGET_UNAVAILABLE: 'budget_unavailable', AI_INVALID_CONFIG: 'not_configured',
+      AI_INVALID_OUTPUT: 'invalid_response', AI_UNSUPPORTED_EVIDENCE: 'invalid_response', AI_UNSAFE_OUTPUT: 'invalid_response',
+      AI_INPUT_LIMIT: 'input_limit', AI_TEXT_ONLY: 'text_only',
+    }[code] || 'provider_unavailable';
+    return { ...rules, ai_status: 'not_performed', ai_fallback_reason: reason,
+      uncertainties: [...rules.uncertainties, 'AI kontrola nebyla dokončena. Tento výsledek používá pouze pravidla; nejde o potvrzení bezpečnosti.'] };
+  }
+  status() { return { mode: this.mode, ai_configured: Boolean(this.worker && !this.unavailableCode), engine: this.mode === 'rules' ? 'rules-v1' : 'rules+ai-v1', timeout_ms: this.timeoutMs, provider_label: this.mode === 'ai' ? this.providerLabel : null, ...(this.fallbackToRules ? { rules_fallback: true } : {}) }; }
   close() { if (this.closed) return; this.closed = true; this.queue?.close(); this.worker?.budget?.close?.(); }
 }
