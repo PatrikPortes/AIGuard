@@ -152,6 +152,12 @@ export class AnalysisPipeline {
     return { ...rules, ai_status: 'not_performed', ai_fallback_reason: reason,
       uncertainties: [...rules.uncertainties, 'AI kontrola nebyla dokončena. Tento výsledek používá pouze pravidla; nejde o potvrzení bezpečnosti.'] };
   }
-  status() { return { mode: this.mode, ai_configured: Boolean(this.worker && !this.unavailableCode), engine: this.mode === 'rules' ? 'rules-v1' : 'rules+ai-v1', timeout_ms: this.timeoutMs, provider_label: this.mode === 'ai' && !this.isAIUnconfigured() ? this.providerLabel : null, ...(this.fallbackToRules ? { rules_fallback: true } : {}) }; }
+  status() {
+    const aiConfigured = Boolean(this.worker && !this.unavailableCode);
+    // The frontend treats false ai_configured + true rules_fallback as an
+    // executable consent-free path. Operational startup failures do not have
+    // that path; never promise it or broaden the consent exception to match.
+    return { mode: this.mode, ai_configured: aiConfigured, engine: this.mode === 'rules' ? 'rules-v1' : 'rules+ai-v1', timeout_ms: this.timeoutMs, provider_label: this.mode === 'ai' && !this.isAIUnconfigured() ? this.providerLabel : null, ...(this.fallbackToRules && (aiConfigured || this.isAIUnconfigured()) ? { rules_fallback: true } : {}) };
+  }
   close() { if (this.closed) return; this.closed = true; this.queue?.close(); this.worker?.budget?.close?.(); }
 }

@@ -135,6 +135,60 @@ const rules = [
   { id: 'authority', weight: 15, pattern: /bank[ay]|polici[ei]|kuryr|zasilk|financni urad/u, title: 'Odkaz na instituci nebo doručení', explanation: 'Jméno známé organizace samo o sobě nepotvrzuje totožnost odesílatele.' },
 ];
 
+// Narrow high-harm combinations, on the existing matching copy. Overlapping
+// fixed windows inspect the whole input in O(n); no greedy/unbounded gaps,
+// truncation, normalization changes or user content retained between calls.
+const cashRequest = /\b(?:posli|poslete|posilej|posilejte|preved|prevedte|prevadej|prevadejte|odesli|odeslete|vyber|vyberte|vybrat|priprav|pripravte|predej|predejte|predat|dej|dejte|potrebuji|potrebuju|potrebujeme)\b[\s\S]{0,90}\b(?:hotovost(?:i)?|penize|penez|korun|kc)\b/u;
+const familyClaim = /\b(?:mami|mamo|tati|tato|babi|babicko|dedo|dedecku)\b|\b(?:jsem|tady je|tady)\s{1,8}(?:tvuj|tvoje|tva|vas|vase)\s{1,8}(?:syn|dcera|vnuk|vnucka)\b/u;
+const cashUrgency = /\b(?:ihned|hned|okamzite|rychle|urgentne|specha|nalehave|dnes)\b|\bco nejdriv(?:e)?\b|\bdo \d{1,8} (?:minut|hodin)\b/u;
+const pickupActor = String.raw`\b(?:kamarad[a-z]{0,5}|koleg[a-z]{0,5}|kuryr[a-z]{0,5}|znamy|znamemu|poslicek|taxikar[a-z]{0,4})\b`;
+const pickupAction = String.raw`\b(?:prijde|prijede|vyzved[a-z]{0,6}|prevezme|prevzit|predej|predejte|predas|predate|poslu)\b`;
+const thirdPartyPickup = new RegExp(`${pickupActor}[\\s\\S]{0,70}${pickupAction}|${pickupAction}[\\s\\S]{0,70}${pickupActor}`, 'u');
+const secrecyDirective = /\bnikomu\s{1,8}(?:(?:to|nic|o tom|o platbe|o prevodu)\s{1,8})?(?:nerikej(?:te)?|nesdeluj(?:te)?|neprozrazuj(?:te)?|nezminuj(?:te)?)\b|\b(?:nerikej(?:te)?|nesdeluj(?:te)?|neprozrazuj(?:te)?)\s{1,8}(?:(?:to|nic|o tom)\s{1,8})?nikomu\b/gu;
+const protectedSecret = /^[\s,:-]{0,8}(?:(?:sve|svoje|svuj|zadne|zadny)\s{1,8})?(?:hesl[a-z]{0,4}|pin|kod[a-z]{0,4}|udaj[a-z]{0,4}|cislo\s{1,8}karty|prihlasovac[a-z]{0,8}|osobni[a-z]{0,4})\b/u;
+const legacySecrecy = rules.find(rule => rule.id === 'secrecy');
+const bankClaim = /\b(?:bank[ay]|bankovni (?:poradce|pracovnik)|pracovnik banky)\b/u;
+const safeAccount = String.raw`\b(?:bezpecn(?:y|eho|emu|em)|zabezpecen(?:y|eho|emu|em)|ochrann(?:y|eho|emu|em))\s{1,8}(?:bankovni\s{1,8})?(?:ucet|uctu|uctem)\b`;
+const transferInstruction = String.raw`\b(?:preved(?:te)?|prevadej(?:te)?|presun(?:te)?|posli|poslete|odesli|odeslete)\b`;
+const safeAccountTransfer = new RegExp(`${transferInstruction}[\\s\\S]{0,100}${safeAccount}|${safeAccount}[\\s\\S]{0,100}${transferInstruction}`, 'u');
+const highHarmRules = [
+  { id: 'family_cash_pickup', weight: 65, title: 'Hotovost pro údajného příbuzného přes další osobu', explanation: 'Naléhavá žádost o peníze, utajení a vyzvednutí jiným člověkem mohou znamenat vydávání se za příbuzného. Totožnost jsme neověřili.' },
+  { id: 'safe_account_transfer', weight: 70, title: 'Převod na údajný bezpečný účet', explanation: 'Pokyn od údajné banky k převodu na „bezpečný účet“ je výrazný varovný signál. Totožnost odesílatele ani účet jsme neověřili.' },
+];
+function secrecyPressure(window, content, offset) {
+  for (const match of window.matchAll(secrecyDirective)) {
+    // Ordinary advice to protect passwords/codes is not pressure to conceal a
+    // payment. Only the explicit object immediately after this directive is
+    // exempt; another concealment directive in the same input is still checked.
+    const end = offset + match.index + match[0].length;
+    if (!protectedSecret.test(content.slice(end, end + 64))) return true;
+  }
+  return false;
+}
+function highHarmWarnings(content, existing) {
+  if (!/nikomu|bezpecn|zabezpecen|ochrann|nevolej|nevolat|tajne|utaj/u.test(content)) return [];
+  let secrecy = false, family = false, bank = false;
+  // A cluster up to 400 code units is wholly inside an 800-unit window;
+  // longer/distant clauses are intentionally not inferred to be one request.
+  for (let start = 0; start < content.length; start += 400) {
+    const begin = Math.max(0, start - 1), end = Math.min(content.length, start + 801);
+    // Guard clipped word edges: a window must not invent word boundaries.
+    const window = (begin ? 'x' : ' ') + content.slice(begin, end) + (end < content.length ? 'x' : ' ');
+    const concealment = secrecyPressure(window, content, begin - 1);
+    const cash = cashRequest.test(window);
+    secrecy ||= cash && concealment;
+    family ||= cash && (concealment || legacySecrecy.pattern.test(window))
+      && familyClaim.test(window) && cashUrgency.test(window) && thirdPartyPickup.test(window);
+    bank ||= bankClaim.test(window) && safeAccountTransfer.test(window);
+  }
+  const signals = highHarmRules.filter(rule => rule.id === 'family_cash_pickup' ? family : bank);
+  if (secrecy && !existing.some(signal => signal.id === 'secrecy')) {
+    const { pattern, ...signal } = legacySecrecy;
+    signals.push(signal);
+  }
+  return signals;
+}
+
 // Loan / credit offers. These rules run only in a loan situation: the user chose
 // the loan flow, or the text itself talks about a loan. Ordinary words such as
 // "poplatek" or "doklad" are never a signal on their own. Patterns read the same
@@ -365,6 +419,7 @@ function loanSituation({ type, matching, topic }) {
 
 export function fraudAgent({ content, type, matching = matchingRepresentation(content), topic, loan }) {
   const signals = type === 'text' ? rules.filter(rule => rule.pattern.test(matching.content) || rule.ordered?.(matching.content)).map(({ pattern, ordered, ...rule }) => rule) : [];
+  if (type === 'text') signals.push(...highHarmWarnings(matching.content, signals));
   if (matching.hiddenCharacters || matching.foldedConfusables) signals.push({ id: 'unusual_characters', weight: 5, title: 'Neobvyklý zápis znaků', explanation: 'Text obsahuje neviditelné nebo podobně vypadající znaky. Mohou mít běžný jazykový důvod, ale také skrývat rizikové výrazy.' });
   const links = type === 'url' ? [content] : (content.match(/https?:\/\/[^\s<>"']+/giu) || []);
   if (links.length) signals.push({ id: 'link', weight: 10, title: 'Obsahuje internetový odkaz', explanation: 'Cíl odkazu nebyl otevřen ani ověřen. Odkaz sám o sobě není důkaz podvodu.' });
@@ -459,6 +514,10 @@ export function analyze(input) {
     summary: resultSummary(score, intake.type, signals.length, topic, hasLoanWarning(signals)),
     signals: signals.map(({ weight, ...signal }) => signal),
     recommended_actions: topic ? loanActions(new Set(signals.map(signal => signal.id)))
+      : signals.some(signal => signal.id === 'safe_account_transfer')
+        ? ['Peníze nepřevádějte. Banku kontaktujte přes svou známou oficiální aplikaci nebo číslo na své kartě, ne přes kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.']
+      : signals.some(signal => signal.id === 'family_cash_pickup')
+        ? ['Hotovost nepředávejte ani peníze neposílejte. Příbuznému zavolejte na číslo, které už znáte z dřívějška.', 'Požadavek proberte s někým, komu důvěřujete. Nespoléhejte na kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.']
       : ['Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.'],
     verification_steps: topic ? [...loanVerification] : verificationAgent(),
     uncertainties: [
