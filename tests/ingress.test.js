@@ -78,7 +78,11 @@ test('Production guard odmítne AI, secrets, budget, vypnuté Secure i neurčit�
   const env = Object.fromEntries((await readFile(new URL('../deploy/env/app.env.example', import.meta.url), 'utf8'))
     .split('\n').filter(line => line && !line.startsWith('#')).map(line => line.split('=')));
   env.GUARD_TRUSTED_PROXY_IP = '10.1.2.3';
+  assert.equal(env.GUARD_PUBLIC_ORIGIN, 'https://verimtomu.fyi');
   assert.doesNotThrow(() => assertRulesProduction(env));
+  assert.throws(() => assertRulesProduction({ ...env,
+    GUARD_PUBLIC_ORIGIN: '[https://verimtomu.fyi](https://verimtomu.fyi)',
+  }), /configuration rejected/);
   for (const [key, value] of Object.entries({ AI_MODE: 'ai', GUARD_LLM_API_KEY: 'synthetic-test-key', AI_DAILY_REQUEST_LIMIT: '1',
     AI_DAILY_BUDGET_MICRO_USD: '1', AI_TOTAL_BUDGET_MICRO_USD: '1', AI_CRITIC_ENABLED: 'true', AI_MAX_RETRIES: '1',
     GUARD_COOKIE_SECURE: 'false', GUARD_TRUSTED_PROXY_IP: '127.0.0.1', GUARD_CLIENT_IP_MODE: 'socket',

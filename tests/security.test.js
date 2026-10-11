@@ -105,6 +105,12 @@ test('Produkční origin a platná Secure session jsou povinné, útok nerozhýb
   const session = await request('GET', '/api/session');
   assert.match(session.cookie, /HttpOnly; SameSite=Strict;.*; Secure/);
   const cookie = session.cookie.split(';')[0];
+  await t.test('Markdown v Origin je odmítnut i s platnou Secure session', async () => {
+    assert.equal((await request('POST', '/api/analyze', {
+      Cookie: cookie, Origin: '[https://verimtomu.fyi](https://verimtomu.fyi)',
+    })).status, 403);
+    assert.equal(calls, 0);
+  });
   assert.equal((await request('POST', '/api/analyze', { Cookie: cookie, Origin: 'https://evil.invalid' })).status, 403);
   assert.equal((await request('POST', '/api/analyze', { Cookie: cookie, Origin: 'https://verimtomu.fyi', Host: 'evil.invalid' })).status, 403);
   assert.equal(calls, 0);
