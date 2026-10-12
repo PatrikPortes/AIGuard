@@ -4,15 +4,25 @@ let loanReady = !dedicatedLoan;
 const form = document.querySelector('#analysis-form');
 const senderInput = document.querySelector('#sender');
 const result = document.querySelector('#result');
-const messageEntry = dedicatedLoan ? null : document.querySelector('.analysis-section');
+const analysisEntry = document.querySelector('.analysis-section');
 const skipLink = document.querySelector('.skip-link');
-function showMessageResult(show) {
-  if (!messageEntry) return;
-  messageEntry.hidden = show;
+document.addEventListener('loan-cost-view', event => {
+  analysisEntry.hidden = event.detail.show;
+  result.hidden = true;
+  if (skipLink) {
+    skipLink.href = event.detail.show ? '#cost-result' : '#cost-form';
+    skipLink.textContent = event.detail.show ? 'Přejít k výsledku výpočtu' : 'Přejít ke kalkulačce půjčky';
+  }
+});
+function showAnalysisResult(show) {
+  if (!analysisEntry) return;
+  analysisEntry.hidden = show;
+  const costResult = document.querySelector('#cost-result');
+  if (costResult) costResult.hidden = true;
   result.hidden = !show;
   if (skipLink) {
-    skipLink.href = show ? '#result' : '#analysis-form';
-    skipLink.textContent = show ? 'Přejít ke zjištěním' : 'Přejít k ověření zprávy';
+    skipLink.href = show ? '#result' : (dedicatedLoan ? '#cost-form' : '#analysis-form');
+    skipLink.textContent = show ? 'Přejít ke zjištěním' : (dedicatedLoan ? 'Přejít ke kalkulačce půjčky' : 'Přejít k ověření zprávy');
   }
 }
 
@@ -350,14 +360,14 @@ form.addEventListener('submit', async event => {
   if (!failure) {
     try {
       rejections = 0;
-      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); result.hidden = false; showMessageResult(true);
+      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); result.hidden = false; showAnalysisResult(true);
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;
       result.scrollIntoView({ block: 'start' });
       result.focus({ preventScroll: true });
     } catch {
-      analysis = undefined; result.hidden = true; showMessageResult(false); failure = 'UNEXPECTED';
+      analysis = undefined; result.hidden = true; showAnalysisResult(false); failure = 'UNEXPECTED';
     }
   }
   if (failure) {
@@ -394,7 +404,7 @@ content.addEventListener('input', () => {
   }
 });
 document.querySelector('#next-check').addEventListener('click', () => {
-  showMessageResult(false);
+  showAnalysisResult(false);
   status.textContent = '';
   document.querySelector('#status-character').hidden = true;
   hideError();

@@ -24,6 +24,10 @@ export function compare(a,b){
 }
 if(typeof document!=='undefined'){
  const form=document.querySelector('#cost-form');const result=document.querySelector('#cost-result');const error=document.querySelector('#cost-error');const toggle=document.querySelector('#compare-offer');const second=document.querySelector('#offer-b');
+ result.classList.add('panel','loan-cost');
+ const entry=document.querySelector('.analysis-section');
+ entry.before(result);
+ const view=show=>document.dispatchEvent(new CustomEvent('loan-cost-view',{detail:{show}}));
  const czk=cents=>new Intl.NumberFormat('cs-CZ',{style:'currency',currency:'CZK',maximumFractionDigits:2}).format(cents/100);
  const field=(prefix,key)=>document.querySelector('#'+prefix+'-'+key);
  function read(prefix){
@@ -45,6 +49,6 @@ if(typeof document!=='undefined'){
  toggle.addEventListener('change',()=>{second.hidden=!toggle.checked;second.disabled=!toggle.checked;clear();});
  form.addEventListener('input',clear);form.addEventListener('change',clear);
  form.addEventListener('submit',event=>{event.preventDefault();clear();try{const a=read('a'),b=toggle.checked?read('b'):null;add(result,'h2','Kolik podle zadaných údajů zaplatíte');show(a,b?'Nabídka A':'Vaše nabídka');if(b){show(b,'Nabídka B');const c=compare(a,b);if(!c.comparable)add(result,'p','Vyplacené částky se liší. Celkové platby proto neporovnáváme jako levnější a dražší nabídku. Pro přímé srovnání zadejte stejnou vyplacenou částku.');else{add(result,'p',c.difference===0?'Obě nabídky mají stejnou celkovou platbu.':`Nabídka ${c.difference>0?'A':'B'} má o ${czk(Math.abs(c.difference))} nižší celkovou platbu při stejné vyplacené částce.`);if(c.months!==0)add(result,'p','Doba splácení se liší. Nižší celková platba může znamenat vyšší měsíční zatížení; porovnejte také splátky a délku závazku.');}}
- add(result,'p','Součet platí pro uvedené pevné měsíční splátky a řádné splácení. Nezahrnuje nezadané platby, sankce, změny sazeb ani předčasné splacení. Nižší náklady nepotvrzují důvěryhodnost poskytovatele ani vhodnost půjčky pro vás. RPSN přebíráme z nabídky; nepočítáme ji ani neověřujeme.');result.hidden=false;result.focus();}catch(e){result.replaceChildren();error.textContent=e.message;error.hidden=false;}});
+ add(result,'p','Součet platí pro uvedené pevné měsíční splátky a řádné splácení. Nezahrnuje nezadané platby, sankce, změny sazeb ani předčasné splacení. Nižší náklady nepotvrzují důvěryhodnost poskytovatele ani vhodnost půjčky pro vás. RPSN přebíráme z nabídky; nepočítáme ji ani neověřujeme.');const edit=add(result,'button','Upravit údaje a přepočítat');edit.type='button';edit.className='secondary-action';edit.addEventListener('click',()=>{view(false);clear();field('a','amount').focus();form.scrollIntoView({block:'start'});});result.hidden=false;view(true);result.scrollIntoView({block:'start'});result.focus({preventScroll:true});}catch(e){result.replaceChildren();error.textContent=e.message;error.hidden=false;}});
  document.querySelector('#cost-submit').disabled=false;
 }
