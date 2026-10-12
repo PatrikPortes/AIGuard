@@ -1,3 +1,4 @@
+import { validatedSender, senderSignals, phishingCombination, PHISHING_ACTION } from './sender.js';
 import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 
@@ -150,7 +151,9 @@ function orderedPhrase(content, prefix, suffix) {
 
 const rules = [
   { id: 'urgency', weight: 20, pattern: /ihned|okamzit|urgent|posledni (sance|vyzva)|do \d{1,8} (minut|hodin)/u, ordered: content => orderedPhrase(content, /dnes/u, /zapla|posl/u), title: 'Tlak na rychlé rozhodnutí', explanation: 'Spěch může bránit tomu, abyste si požadavek v klidu ověřili.' },
-  { id: 'money', weight: 25, pattern: /preved|prevod|zaplat|uhrad|platb|uctu|faktur/u, ordered: content => orderedPhrase(content, /posli/u, /peniz|penez|korun|kc/u), title: 'Požadavek nebo zmínka o platbě', explanation: 'Platby jsou běžné i v pravé komunikaci. Nečekaný požadavek ale ověřte zvlášť.' },
+  { id: 'link_request', weight: 10, pattern: /\b(?:kliknete|klikni|otevrete|otevri|navstivte|prihlaste se)[^.!?;\n]{0,70}\b(?:odkaz|zde|strank)/u, title: 'Výzva k otevření odkazu', explanation: 'Požadavek vede k otevření odkazu nebo přihlášení přes zprávu. Ověřte si jej přímo v oficiální službě.' },
+  { id: 'account_threat', weight: 25, pattern: /\b(?:ucet|uctu|profil|strank)[^.!?;\n]{0,100}(?:zablok|blokov|pozastav|deaktiv|zrus)|(?:zablok|blokov|pozastav|deaktiv|zrus)[^.!?;\n]{0,100}\b(?:ucet|uctu|profil|strank)/u, title: 'Hrozba omezení účtu', explanation: 'Zpráva hrozí zablokováním nebo omezením účtu či stránky. Takové tvrzení ověřte přímo ve službě, ne přes odkaz ze zprávy.' },
+  { id: 'money', weight: 25, pattern: /\b(?:zaplat[a-z]*|uhrad[a-z]*|platb[a-z]*|faktur[a-z]*)\b/u, ordered: content => orderedPhrase(content, /posli/u, /peniz|penez|korun|kc/u) || orderedPhrase(content, /preved|prevod/u, /peniz|penez|korun|\bkc\b|\bucet\b|\buctu\b/u), title: 'Požadavek nebo zmínka o platbě', explanation: 'Platby jsou běžné i v pravé komunikaci. Nečekaný požadavek ale ověřte zvlášť.' },
   { id: 'new_number', weight: 35, pattern: /nove cislo|novy telefon|rozbit.{0,80}telefon|ztrati[lva]{1,3}.{0,80}telefon/u, title: 'Změna telefonu nebo čísla', explanation: 'Někdo může předstírat blízkou osobu. Zavolejte jí na číslo, které už znáte.' },
   { id: 'credentials', weight: 65, pattern: /(posl|sdel|zadej|vypln|potvrd).{0,70}(hesl|pin\b|kod|kart)|prihlaste.{0,50}(odkaz|zde)/u, title: 'Žádost o heslo, kód nebo údaje karty', explanation: 'Předání těchto údajů může umožnit přístup k vašemu účtu nebo penězům.' },
   { id: 'secrecy', weight: 25, pattern: /nikomu nerikej|nevolej|nevolat|tajne|utaj/u, title: 'Omezení nezávislého ověření', explanation: 'Požadavek na utajení nebo zákaz volání může být pokus obejít vaše běžné ověřování.' },
@@ -436,8 +439,9 @@ export function intakeAgent(input) {
     try { url = new URL(content.trim()); } catch { throw new Error('Vložte úplnou URL začínající https:// nebo http://.'); }
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Podporujeme jen HTTP(S) URL bez přihlašovacích údajů.');
   }
+  const sender = validatedSender(input.sender);
   const loan = loanContext(input);
-  const intake = Object.freeze({ type: input.type, content, matching: Object.freeze(matchingRepresentation(content)), ...(loan && { topic: 'loan', loan }) });
+  const intake = Object.freeze({ type: input.type, content, sender, matching: Object.freeze(matchingRepresentation(content)), ...(loan && { topic: 'loan', loan }) });
   preparedInputs.add(intake);
   return intake;
 }
@@ -447,7 +451,7 @@ export function intakeAgent(input) {
 export function reusePreparedInput(input, prepared) {
   if (!preparedInputs.has(prepared) || input?.type !== prepared.type || input?.content !== prepared.content) return input;
   let loan;
-  try { loan = loanContext(input); } catch { return input; }
+  try { if (validatedSender(input.sender) !== prepared.sender) return input; loan = loanContext(input); } catch { return input; }
   return JSON.stringify(loan) === JSON.stringify(prepared.loan) ? prepared : input;
 }
 
@@ -459,13 +463,14 @@ function loanSituation({ type, matching, topic }) {
   return topic === 'loan' || (type === 'text' && loanWords.test(matching.content));
 }
 
-export function fraudAgent({ content, type, matching = matchingRepresentation(content), topic, loan }) {
+export function fraudAgent({ content, type, matching = matchingRepresentation(content), topic, loan, sender }) {
   const signals = type === 'text' ? rules.filter(rule => rule.pattern.test(matching.content) || rule.ordered?.(matching.content)).map(({ pattern, ordered, ...rule }) => rule) : [];
   if (type === 'text') signals.push(...highHarmWarnings(matching.content, signals));
   if (matching.hiddenCharacters || matching.foldedConfusables) signals.push({ id: 'unusual_characters', weight: 5, title: 'Neobvyklý zápis znaků', explanation: 'Text obsahuje neviditelné nebo podobně vypadající znaky. Mohou mít běžný jazykový důvod, ale také skrývat rizikové výrazy.' });
   const links = type === 'url' ? [content] : (content.match(/https?:\/\/[^\s<>"']+/giu) || []);
   if (links.length) signals.push({ id: 'link', weight: 10, title: 'Obsahuje internetový odkaz', explanation: 'Cíl odkazu nebyl otevřen ani ověřen. Odkaz sám o sobě není důkaz podvodu.' });
   if (links.some(link => { try { const url = new URL(link); return url.protocol === 'http:' || url.username || url.password || isIP(url.hostname.replace(/^\[|\]$/g, '')) || url.hostname.includes('xn--'); } catch { return false; } })) signals.push({ id: 'unusual_url', weight: 25, title: 'Odkaz potřebuje zvláštní opatrnost', explanation: 'Odkaz používá nešifrovaný přenos, číselnou adresu, vložené přihlašovací údaje nebo zvláštní zápis domény. To samo podvod nedokazuje.' });
+  signals.push(...senderSignals(sender, matching.content, signals));
   if (!loanSituation({ type, matching, topic })) return signals;
   // Text rules and the user's own answers produce the same fixed signals once.
   const scan = type === 'text' ? loanScan(matching.content) : undefined;
@@ -555,7 +560,9 @@ export function analyze(input) {
     ...(topic && { topic }),
     summary: resultSummary(score, intake.type, signals.length, topic, hasLoanWarning(signals)),
     signals: signals.map(({ weight, ...signal }) => signal),
-    recommended_actions: topic ? loanActions(new Set(signals.map(signal => signal.id)))
+    recommended_actions: !topic && phishingCombination(signals)
+      ? [PHISHING_ACTION, 'Nesdělujte hesla, PIN ani ověřovací kódy. Totožnost odesílatele jsme neověřili.']
+      : topic ? loanActions(new Set(signals.map(signal => signal.id)))
       : signals.some(signal => signal.id === 'safe_account_transfer')
         ? ['Peníze nepřevádějte. Banku kontaktujte přes svou známou oficiální aplikaci nebo číslo na své kartě, ne přes kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.']
       : signals.some(signal => signal.id === 'family_cash_pickup')
@@ -569,6 +576,7 @@ export function analyze(input) {
     uncertainties: [
       'Tato veřejná zkušební verze používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
       'Neověřili jsme totožnost odesílatele, pravdivost tvrzení ani obsah odkazovaných stránek.',
+      ...(intake.sender ? ['Zadaného odesílatele posuzujeme jen orientačně. Název ani známá doména nepotvrzují pravost; podpisy e-mailu, vlastnictví domény ani totožnost neověřujeme.'] : []),
       ...(intake.type === 'url' ? ['URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.'] : []),
       ...(topic ? loanUncertainties(intake) : []),
     ],

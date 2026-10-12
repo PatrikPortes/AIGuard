@@ -2,6 +2,7 @@ import { characterAssets } from './character-assets.js';
 const dedicatedLoan = document.body.dataset.flow === 'loan';
 let loanReady = !dedicatedLoan;
 const form = document.querySelector('#analysis-form');
+const senderInput = document.querySelector('#sender');
 const result = document.querySelector('#result');
 const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
@@ -157,6 +158,7 @@ document.querySelectorAll('[data-example]').forEach(button => button.addEventLis
   // Choosing another example is explicit new-analysis intent, even while
   // correcting a rejected loan input. Its answers must not follow the example.
   setLoanMode(false); submittedContent = undefined;
+  if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
   document.querySelector('#content').value = examples[button.dataset.example];
   document.querySelector('#content').focus();
 }));
@@ -175,7 +177,7 @@ function classifyInput(value) {
 }
 function analysisRequest(content) {
   // Consent is never claimed for a provider the user was not asked about.
-  const request = { type: classifyInput(content), content, ai_consent: aiAvailable && document.querySelector('#consent').checked };
+  const request = { type: classifyInput(content), content, ...(senderInput?.value.trim() && !isLoan() ? { sender: senderInput.value.trim() } : {}), ai_consent: aiAvailable && document.querySelector('#consent').checked };
   return isLoan() ? { ...request, topic: 'loan', loan_context: loanUi.context() } : request;
 }
 function list(id, items) {
@@ -201,6 +203,7 @@ function render(loanFlow, loanAnswers, aiConsent) {
   if (!analysis) return;
   const [primary, ...rest] = analysis.recommended_actions;
   document.querySelector('#primary-action').textContent = primary;
+  document.querySelector('.result-now').classList.toggle('is-phishing-warning', primary === 'Na odkaz ve zprávě neklikejte. Přihlaste se přímo přes oficiální web nebo aplikaci služby.');
   list('#actions', rest);
   document.querySelector('#actions').hidden = rest.length === 0;
   document.querySelector('#summary').textContent = analysis.summary === 'Obsah obsahuje více výrazných rizikových signálů. Požadavek si nezávisle ověřte.'
@@ -380,7 +383,10 @@ content.addEventListener('input', () => {
 });
 document.querySelector('#next-check').addEventListener('click', () => {
   setLoanMode(false); submittedContent = undefined;
+  if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
   content.scrollIntoView({ block: 'center' }); content.select();
 });
 
 
+
+senderInput?.addEventListener('input', () => { analysis = undefined; result.hidden = true; submittedContent = undefined; rejections = 0; hideError(); });

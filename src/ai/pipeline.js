@@ -43,7 +43,7 @@ export class TextAIWorker {
     // provider hints from text alone, reusing the trusted matching copy. Model
     // routing and critic decisions use this same view, so they cannot leak the
     // answers indirectly. The complete local rule floor/guidance stays below.
-    const providerSignals = input.loan ? fraudAgent({ type: input.type, content: input.content, matching: input.matching }) : undefined;
+    const providerSignals = input.loan || input.sender ? fraudAgent({ type: input.type, content: input.content, matching: input.matching }) : undefined;
     return providerSignals ? { signals: providerSignals, risk_score: Math.min(100, providerSignals.reduce((sum, item) => sum + item.weight, 0)) } : rules;
   }
   async run(input, rules, signal) {
