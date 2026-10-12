@@ -1,0 +1,35 @@
+services:
+  admin:
+    build: .
+    platform: linux/amd64
+    image: verimtomu-admin:stage1
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 192m
+    cpus: 0.25
+    pids_limit: 64
+    env_file: .env
+    environment:
+      PORT: "3100"
+      HOST: 0.0.0.0
+      ADMIN_DB_PATH: /data/admin.sqlite
+    volumes:
+      - admin-data:/data
+      # Add ONLY an analytics-token file mount after a read-only token is prepared.
+      # - /opt/verimtomu/admin-secrets/cloudflare-token:/run/secrets/cloudflare-token:ro
+    tmpfs: [/tmp:rw,noexec,nosuid,nodev,size=8m]
+    logging:
+      driver: local
+      options: {max-size: 5m, max-file: "2"}
+    networks:
+      admin:
+        ipv4_address: 172.30.42.2
+networks:
+  admin:
+    driver: bridge
+    ipam:
+      config: [{subnet: 172.30.42.0/24}]
+volumes:
+  admin-data:
