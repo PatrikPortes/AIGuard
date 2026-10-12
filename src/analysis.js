@@ -6,10 +6,14 @@ const nonAscii = /[^\x00-\x7f]/u;
 const invisibleCharacter = /[\p{Default_Ignorable_Code_Point}\p{Cf}]/u;
 const invisibleCharacters = /[\p{Default_Ignorable_Code_Point}\p{Cf}]/gu;
 const latinCharacters = /\p{Script=Latin}/gu;
-const asciiLatinCharacters = /[a-z]/gu;
-const outsideAsciiArabic = /[^\x00-\x7f\u0600-\u06ff]/u;
+// These bounded classes contain only BMP characters. Code-unit matching has
+// identical membership: every surrogate is outside the domain and triggers
+// the generic Unicode path. Avoid Unicode-mode scans of Arabic expansions.
+const outsideSimpleLatinArabic = /[^\x00-\x7f\u00c0-\u024f\u0600-\u06ff]/;
+const simpleLatinCharacters = /[a-z\u00c0-\u024f]/g;
+const simpleNormalizationCharacters = /[A-Z\u00c0-\u024f\u0600-\u0605\u061c\u06dd]/g;
+const simpleArabicInvisible = /^[\u0600-\u0605\u061c\u06dd]$/u;
 const outsideArabicWithoutLatin = /[^\x00-\x40\x5b-\x60\x7b-\x7f\p{Script=Arabic}]/u;
-const arabicInvisibleCharacters = /[\u0600-\u0605\u061c\u06dd]/gu;
 const tokenCharacter = /[\p{L}\p{M}]/u;
 // NFKC expansion frequently walks the same Arabic block. Derive its exact
 // letter/mark membership from the original predicate once, without retaining
@@ -42,9 +46,28 @@ export function matchingRepresentation(original) {
   // ignorable/format characters are enumerated and verified against Unicode
   // properties by regression tests. Use simple bounded character classes
   // instead of scanning the expanded text with complex Unicode properties.
-  const asciiArabic = !outsideAsciiArabic.test(nfkc);
-  const normalized = nfkc.replace(asciiArabic ? arabicInvisibleCharacters : invisibleCharacters, '').toLowerCase();
-  const latin = asciiArabic ? asciiLatinCharacters : latinCharacters;
+  // Latin accents appended to large Arabic expansions need the same bounded
+  // scans as ASCII. This range has no ignorables or non-Latin letters; ×/÷
+  // are filtered by the unchanged token predicate. Recheck after lowercase:
+  // some Latin case mappings leave this range, and must use the generic path.
+  const simpleDomain = !outsideSimpleLatinArabic.test(nfkc);
+  let normalized, latin;
+  if (simpleDomain) {
+    // Arabic has no case mapping. Fuse removal and Latin lowercase so a large
+    // Arabic expansion needs no whole-string lowercase copy or second domain
+    // scan. Track mappings such as İ/Ⱥ which leave the bounded domain.
+    let remainsSimple = true;
+    normalized = nfkc.replace(simpleNormalizationCharacters, char => {
+      if (simpleArabicInvisible.test(char)) return '';
+      const lower = char.toLowerCase();
+      if (outsideSimpleLatinArabic.test(lower)) remainsSimple = false;
+      return lower;
+    });
+    latin = remainsSimple ? simpleLatinCharacters : latinCharacters;
+  } else {
+    normalized = nfkc.replace(invisibleCharacters, '').toLowerCase();
+    latin = latinCharacters;
+  }
   // NFKC may expand a small input into thousands of non-Latin words. Find
   // Latin characters first, then fold each containing token exactly once.
   // Every character is scanned at most a constant number of times; no
@@ -537,13 +560,18 @@ export function analyze(input) {
         ? ['Peníze nepřevádějte. Banku kontaktujte přes svou známou oficiální aplikaci nebo číslo na své kartě, ne přes kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.']
       : signals.some(signal => signal.id === 'family_cash_pickup')
         ? ['Hotovost nepředávejte ani peníze neposílejte. Příbuznému zavolejte na číslo, které už znáte z dřívějška.', 'Požadavek proberte s někým, komu důvěřujete. Nespoléhejte na kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.']
+      : signals.some(signal => signal.id === 'new_number') && signals.some(signal => signal.id === 'money')
+        ? ['Peníze zatím neposílejte. Blízkému zavolejte na jeho původní číslo, které už znáte.', 'Nepřebírejte kontakt z této zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.']
+      : signals.some(signal => signal.id === 'credentials')
+        ? ['Heslo, PIN ani ověřovací kód nesdělujte. Požadavek ověřte přes známý kontakt nebo oficiální aplikaci.', 'Nepoužívejte kontakt ani odkaz ze zprávy.']
       : ['Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.'],
     verification_steps: topic ? [...loanVerification] : verificationAgent(),
     uncertainties: [
-      'Tento prototyp používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
+      'Tato veřejná zkušební verze používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
       'Neověřili jsme totožnost odesílatele, pravdivost tvrzení ani obsah odkazovaných stránek.',
       ...(intake.type === 'url' ? ['URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.'] : []),
       ...(topic ? loanUncertainties(intake) : []),
     ],
   });
 }
+

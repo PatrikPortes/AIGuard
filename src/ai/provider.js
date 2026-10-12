@@ -3,10 +3,11 @@ import { ProviderError, ServiceError } from './errors.js';
 // Server-only provider contract: complete({messages,schema,model,maxOutputTokens,signal}).
 // A different protocol implements this method; business logic never imports its SDK.
 export class OpenAICompatibleProvider {
-  constructor({ endpoint, apiKey, allowLocal = false, fetchImpl = fetch }) {
+  constructor({ endpoint, apiKey, allowLocal = false, internalProxy = false, fetchImpl = fetch }) {
     const url = new URL(endpoint);
+    const proxy = internalProxy && url.href === 'http://172.30.41.3:8080/v1/chat/completions';
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-    if (url.username || url.password || url.hash || url.search || !(url.protocol === 'https:' || (allowLocal && local && url.protocol === 'http:'))) throw new ServiceError('AI_INVALID_CONFIG');
+    if (url.username || url.password || url.hash || url.search || !(url.protocol === 'https:' || (allowLocal && local && url.protocol === 'http:') || proxy)) throw new ServiceError('AI_INVALID_CONFIG');
     if (!local && !apiKey) throw new ServiceError('AI_INVALID_CONFIG');
     this.endpoint = url.href;
     this.apiKey = apiKey;
@@ -48,3 +49,4 @@ export class OpenAICompatibleProvider {
     }
   }
 }
+

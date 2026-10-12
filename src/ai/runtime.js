@@ -43,7 +43,7 @@ export function createRuntime(env = process.env) {
     // Admin endpoint only; no redirects or client-selected URLs.
     const provider = new OpenAICompatibleProvider({
       endpoint: env.AI_ENDPOINT || 'https://api.openai.com/v1/chat/completions',
-      apiKey: env.GUARD_LLM_API_KEY || env.OPENAI_API_KEY, allowLocal: flag(env, 'AI_ALLOW_LOCAL'),
+      apiKey: env.GUARD_LLM_API_KEY || env.OPENAI_API_KEY, allowLocal: flag(env, 'AI_ALLOW_LOCAL'), internalProxy: flag(env, 'AI_INTERNAL_PROXY'),
     });
     const limits = {
       dailyRequests: number(env, 'AI_DAILY_REQUEST_LIMIT', 0, 0, 1000000),
@@ -58,9 +58,10 @@ export function createRuntime(env = process.env) {
     budget = new SqliteBudgetStore({ path, ...limits });
     chmodSync(path, 0o600);
     const Worker = beta ? ObservationAIWorker : TextAIWorker;
-    return new AnalysisPipeline({ mode, queue, timeoutMs, fallbackToRules: beta, providerLabel: new URL(provider.endpoint).hostname === 'api.openai.com' ? 'OpenAI' : new URL(provider.endpoint).hostname, worker: new Worker({ provider, budget, config }) });
+    return new AnalysisPipeline({ mode, queue, timeoutMs, fallbackToRules: beta, providerLabel: flag(env, 'AI_INTERNAL_PROXY') || new URL(provider.endpoint).hostname === 'api.openai.com' ? 'OpenAI' : new URL(provider.endpoint).hostname, worker: new Worker({ provider, budget, config }) });
   } catch (error) {
     budget?.close();
     return new AnalysisPipeline({ mode: 'ai', fallbackToRules: beta, unavailableCode: error instanceof ServiceError ? error.code : 'AI_INVALID_CONFIG' });
   }
 }
+

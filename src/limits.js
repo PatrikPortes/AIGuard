@@ -45,8 +45,8 @@ export class ClientAdmission {
 }
 
 export class AnonymousSessions {
-  constructor({ secret = randomBytes(32), secure = false } = {}) {
-    this.secret = secret; this.secure = secure; this.name = secure ? '__Host-guard_session' : 'guard_session';
+  constructor({ secret = randomBytes(32), secure = false, lifetimeMs=3600000 } = {}) {
+    this.lifetimeMs=lifetimeMs; this.secret = secret; this.secure = secure; this.name = secure ? '__Host-guard_session' : 'guard_session';
   }
   sign(id) { return createHmac('sha256', this.secret).update(id).digest('base64url'); }
   validId(req) {
@@ -67,9 +67,10 @@ export class AnonymousSessions {
     const valid = this.validId(req);
     if (valid) return valid;
     const id = randomUUID();
-    const payload = `${id}.${Date.now() + 3600000}`;
-    res.setHeader('Set-Cookie', `${this.name}=${payload}.${this.sign(payload)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600${this.secure ? '; Secure' : ''}`);
+    const payload = `${id}.${Date.now() + this.lifetimeMs}`;
+    res.setHeader('Set-Cookie', `${this.name}=${payload}.${this.sign(payload)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(this.lifetimeMs/1000)}${this.secure ? '; Secure' : ''}`);
     return id;
   }
   hashIp(ip) { return createHmac('sha256', this.secret).update(`ip:${ip}`).digest('hex'); }
 }
+

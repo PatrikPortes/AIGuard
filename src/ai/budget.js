@@ -21,7 +21,7 @@ export class SqliteBudgetStore {
     let transaction = false;
     try {
       this.db.exec('BEGIN IMMEDIATE'); transaction = true;
-      const day = new Date(this.clock()).toISOString().slice(0, 10);
+      const day = new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(this.clock()));
       const daily = this.db.prepare('SELECT attempts,reserved FROM ai_daily WHERE day=?').get(day) || { attempts: 0, reserved: 0 };
       const total = this.db.prepare('SELECT reserved FROM ai_total WHERE id=1').get();
       if (!total || ![daily.attempts, daily.reserved, total.reserved].every(value => integer(value, 0))) throw new ServiceError('AI_BUDGET_UNAVAILABLE');
@@ -37,3 +37,4 @@ export class SqliteBudgetStore {
   }
   close() { this.db.close(); }
 }
+

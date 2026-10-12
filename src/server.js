@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { readFileSync } from 'node:fs';
+import { VisitorQuota } from './visitor-quota.js';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createRuntime } from './ai/runtime.js';
@@ -13,7 +15,14 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/loan-cost.js', ['loan-cost.js', 'text/javascript; charset=utf-8']],
+  ['/loan-cost.css', ['loan-cost.css', 'text/css; charset=utf-8']],
+  ['/assets/brand/share-v2.jpg', ['assets/brand/share-v2.jpg', 'image/jpeg']],
   ['/', ['index.html', 'text/html; charset=utf-8']],
+  ['/overit-zpravu', ['message.html', 'text/html; charset=utf-8']],
+  ['/proverit-pujcku', ['loan.html', 'text/html; charset=utf-8']],
+  ['/assets/brand/logo.png', ['assets/brand/logo.png', 'image/png']],
+  ['/assets/brand/favicon.png', ['assets/brand/favicon.png', 'image/png']],
   ['/privacy', ['privacy.html', 'text/html; charset=utf-8']],
   ['/uz-se-to-stalo', ['uz-se-to-stalo.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
@@ -88,7 +97,7 @@ function serviceError(res, error) {
 }
 export function createServer({
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
-  pipeline = createRuntime(), sessions = new AnonymousSessions(),
+  visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
   clientIpMode = 'socket', trustedProxyIp,
   publicOrigin, globalApiRateLimit = 600, maxActiveRequests = 64,
@@ -108,6 +117,13 @@ export function createServer({
   const analyses = new AdmissionGate(maxConcurrentAnalyses);
   const clientBodies = new ClientAdmission(maxBodyRequestsPerClient);
   const sessionBodies = new ClientAdmission(1);
+  // Reserve request capacity outside body reads. Parent IPv6 allocations may
+  // contain many /64s; bound their simultaneous slow bodies independently.
+  const bodyRequests = new AdmissionGate(Math.max(1, Math.floor(maxActiveRequests / 2)));
+  const prefix56Bodies = new ClientAdmission(8);
+  const prefix48Bodies = new ClientAdmission(16);
+  const prefix56Limiter = new WindowLimiter({ limit: 100, windowMs, clock: limiterClock });
+  const prefix48Limiter = new WindowLimiter({ limit: 200, windowMs, clock: limiterClock });
   const clientAnalyses = new ClientAdmission(maxAnalysesPerClient);
   const sessionAnalyses = new ClientAdmission(1);
   // One bounded cache of the exact approved files; avoids repeated 2 MB reads
@@ -152,6 +168,8 @@ export function createServer({
         const clientIp = resolveClientIp(req);
         checkBrowserRequest(req, publicOrigin);
         const clientKey = sessions.hashIp(clientIdentity(clientIp));
+        const cooldown = visitorQuota?.burst(clientIdentity(clientIp));
+        if (cooldown) { rejectBody(); return send(res,429,{code:cooldown.code,error:'Dočasné omezení opakovaných požadavků.'},undefined,{'Retry-After':String(cooldown.retryAfter)}); }
         ipLimiter.check(clientKey);
         if (publicOrigin && !sessions.validId(req)) throw new ServiceError('SESSION_REQUIRED', 403);
         const sessionId = sessions.get(req, res);
@@ -161,10 +179,19 @@ export function createServer({
         releaseBody = () => bodyReleases.forEach(fn => fn());
         bodyReleases.push(clientBodies.enter(clientKey));
         bodyReleases.push(sessionBodies.enter(sessionId));
+        if (clientIdentity(clientIp).startsWith('ipv6:')) {
+          bodyReleases.push(prefix56Bodies.enter(sessions.hashIp(clientIdentity(clientIp, 56))));
+          bodyReleases.push(prefix48Bodies.enter(sessions.hashIp(clientIdentity(clientIp, 48))));
+        }
+        bodyReleases.push(bodyRequests.enter());
         const input = await readJson(req, { timeoutMs: bodyTimeoutMs, signal: controller.signal });
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
         const preparedInput = pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
+        if (clientIdentity(clientIp).startsWith('ipv6:')) {
+          prefix56Limiter.check(sessions.hashIp(clientIdentity(clientIp, 56)));
+          prefix48Limiter.check(sessions.hashIp(clientIdentity(clientIp, 48)));
+        }
         if (requireBotCheck) {
           if (!botVerifier) throw new ServiceError('BOT_CHECK_REQUIRED');
           // Verifier receives token/IP only, never message content. No unlimited wait.
@@ -191,7 +218,8 @@ export function createServer({
           if (analysisSignal.aborted) return reject(new ServiceError('AI_TIMEOUT'));
           analysisSignal.addEventListener('abort', () => reject(new ServiceError('AI_TIMEOUT')), { once: true });
         });
-        const work = Promise.resolve().then(() => pipeline.analyze(input, { signal: analysisSignal, preparedInput }));
+        const work = Promise.resolve().then(() => pipeline.analyze(input, { signal: analysisSignal, preparedInput,
+          reserveVisitor: visitorQuota ? () => { const denied=visitorQuota.reserve(sessionId,clientIdentity(clientIp)); if(denied)throw new ServiceError('AI_VISITOR_LIMIT',429); } : undefined }));
         // A worker ignoring cancellation must continue occupying its slot until
         // it actually stops. Timeout must not open unlimited replacement slots.
         const workerRelease = releaseAnalysis; releaseAnalysis = undefined;
@@ -261,17 +289,19 @@ export function createServer({
     force.unref();
     return new Promise(resolve => server.close(() => { clearTimeout(force); resolve(); }));
   };
-  server.on('close', () => pipeline.close());
+  server.on('close', () => { visitorQuota?.close(); pipeline.close(); });
   return server;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3000);
   const host = process.env.HOST || '127.0.0.1';
   const pipeline = createRuntime();
-  const server = createServer({ pipeline,
+  const secret = process.env.GUARD_SESSION_SECRET_FILE ? readFileSync(process.env.GUARD_SESSION_SECRET_FILE) : undefined;
+  const visitorQuota = process.env.AI_MODE === 'ai' ? new VisitorQuota({path:process.env.AI_VISITOR_DB,secret}) : undefined;
+  const server = createServer({ pipeline, visitorQuota,
     rateLimit: Number(process.env.GUARD_IP_RATE_LIMIT ?? 20),
     sessionRateLimit: Number(process.env.GUARD_SESSION_RATE_LIMIT ?? 10),
-    sessions: new AnonymousSessions({ secure: process.env.GUARD_COOKIE_SECURE === 'true' }),
+    sessions: new AnonymousSessions({ secret, lifetimeMs:86400000, secure: process.env.GUARD_COOKIE_SECURE === 'true' }),
     requireBotCheck: process.env.GUARD_REQUIRE_BOT_CHECK !== undefined && process.env.GUARD_REQUIRE_BOT_CHECK !== 'false',
     clientIpMode: process.env.GUARD_CLIENT_IP_MODE ?? 'socket',
     trustedProxyIp: process.env.GUARD_TRUSTED_PROXY_IP,
@@ -294,3 +324,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   };
   process.once('SIGTERM', stop); process.once('SIGINT', stop);
 }
+
+
+

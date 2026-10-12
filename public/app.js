@@ -1,4 +1,6 @@
 import { characterAssets } from './character-assets.js';
+const dedicatedLoan = document.body.dataset.flow === 'loan';
+let loanReady = !dedicatedLoan;
 const form = document.querySelector('#analysis-form');
 const result = document.querySelector('#result');
 const status = document.querySelector('#status');
@@ -20,6 +22,7 @@ const NO_RESULT = 'Výsledek teď nemáme. Neznamená to, že je zpráva bezpeč
 // input = fix the content, wait = retrying now will not help, retry = may retry now,
 // session = renew the anonymous session first, then retry.
 const failures = {
+  CLIENT_COOLDOWN: {kind:'wait',title:'Odesílání je na 15 minut omezené.',message:'Z této sítě přišlo mnoho požadavků v krátké době. Zkuste to později.'},
   INVALID_INPUT: { kind: 'input', title: 'Tento obsah teď neumíme prověřit.', message: 'Vložte text zprávy do 10 000 znaků nebo samotný odkaz začínající https:// či http://.' },
   AI_INPUT_LIMIT: { kind: 'input', title: 'Obsah je příliš dlouhý.', message: 'Zkraťte ho prosím a zkuste to znovu.' },
   BODY_TOO_LARGE: { kind: 'input', title: 'Obsah je příliš dlouhý.', message: 'Zkraťte ho prosím a zkuste to znovu.' },
@@ -86,17 +89,17 @@ async function initialize() {
     mode = runtime.mode;
     providerLabel = runtime.provider_label || 'AI';
     aiAvailable = mode === 'ai' && runtime.ai_configured === true;
-    rulesFallback = mode === 'ai' && !aiAvailable && runtime.rules_fallback === true;
+    rulesFallback = mode === 'ai' && runtime.rules_fallback === true;
     document.querySelector('#engine-notice').textContent = mode === 'ai'
-      ? aiAvailable ? `Text vyhodnotí naše pravidla a pomůže s ním AI od poskytovatele ${providerLabel}. Výsledek je orientační. Odkazy neotevíráme.`
+      ? aiAvailable ? `Text prověří naše pravidla. Pokud zaškrtnete souhlas, pomůže s kontrolou textu také AI od ${providerLabel}. Bez souhlasu použijeme jen pravidla. Výsledek je orientační; odkazy neotevíráme.`
         : rulesFallback ? 'Kontrola s AI teď není k dispozici. Zprávu prověříme jen podle našich pravidel a text poskytovateli AI neposíláme. Výsledek je orientační. Odkazy neotevíráme.'
         : 'AI ověření zatím není dostupné. Zkuste to později.'
       : 'Zatím kontrolujeme jen text a odkazy podle pevných pravidel, bez umělé inteligence. Snímky obrazovky a PDF připravujeme.';
-    document.querySelector('#consent-label').textContent = `Souhlasím s odesláním vloženého textu poskytovateli ${runtime.provider_label || 'AI'}. Před odesláním odstraním nepotřebné osobní údaje.`;
+    document.querySelector('#consent-label').textContent = `Chci přidat kontrolu s AI a souhlasím s odesláním vloženého textu poskytovateli ${runtime.provider_label || 'AI'}. Před odesláním odstraním nepotřebné osobní údaje.`;
     // Consent is asked only for a provider that can actually be contacted.
     document.querySelector('#ai-consent').hidden = !aiAvailable;
     // An older backend without rules_fallback keeps the safe disabled state.
-    submit.disabled = mode === 'ai' && !aiAvailable && !rulesFallback;
+    submit.disabled = !loanReady || (mode === 'ai' && !aiAvailable && !rulesFallback);
     return true;
   } catch {
     mode = undefined; submit.disabled = true; showError('SESSION_START');
@@ -119,6 +122,9 @@ let submittedContent;
 let correctingLoanInput = false;
 const isLoan = () => loanMode;
 function setLoanMode(value) {
+  const reset = !value;
+  if (dedicatedLoan && reset) value = true;
+  if (dedicatedLoan && reset) loanUi?.reset();
   if (!value) {
     loanUi?.reset();
     if (correctingLoanInput) hideError();
@@ -126,7 +132,7 @@ function setLoanMode(value) {
   }
   loanMode = value;
   loanUi?.show(value);
-  loanEntry.hidden = value;
+  loanEntry.hidden = true;
   if (!busy) document.querySelector('#submit-label').textContent = submitLabel();
 }
 async function openLoan(focus) {
@@ -134,22 +140,19 @@ async function openLoan(focus) {
     loanUi ||= await import('/loan.js');
     await loanUi.ready();
   } catch { showError('NETWORK'); return; }
-  loanUi.mount({ before: document.querySelector('#ai-consent'), onExit: () => { setLoanMode(false); content.focus(); } });
+  loanUi.mount({ before: document.querySelector('#ai-consent'), onExit: () => { location.assign('/overit-zpravu'); } });
   if (!loanMode) loanUi.reset();
   submittedContent = undefined;
   correctingLoanInput = false;
   setLoanMode(true);
   focus();
 }
-loanEntry.addEventListener('click', () => openLoan(() => content.focus()));
-document.querySelector('#loan-followup-open').addEventListener('click', () => openLoan(() => {
-  const title = loanUi.title();
-  title.scrollIntoView({ block: 'start' });
-  title.focus({ preventScroll: true });
-}));
-// Shown only when this module runs; without it nothing can be sent.
-loanEntry.hidden = false;
-if (location.hash === '#pujcka') openLoan(() => {});
+loanEntry.addEventListener('click', () => location.assign('/proverit-pujcku'));
+document.querySelector('#loan-followup-open').addEventListener('click', () => location.assign('/proverit-pujcku'));
+loanEntry.hidden = true;
+if (dedicatedLoan) {
+  openLoan(() => { loanReady = true; submit.disabled = !mode || (mode === 'ai' && !aiAvailable && !rulesFallback); });
+}
 document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => {
   // Choosing another example is explicit new-analysis intent, even while
   // correcting a rejected loan input. Its answers must not follow the example.
@@ -240,7 +243,7 @@ function render(loanFlow, loanAnswers, aiConsent) {
   if (fallback) document.querySelector('#engine-note').textContent = `${{
     not_configured: 'Kontrola s AI teď není k dispozici.', budget_unavailable: 'Kontrola s AI teď není k dispozici.',
     timeout: 'Kontrola s AI nestihla doběhnout včas.', overloaded: 'Kontrola s AI byla právě přetížená.',
-    budget_exhausted: 'Kapacita kontroly s AI je teď vyčerpaná.', input_limit: 'Zpráva je pro kontrolu s AI příliš dlouhá.',
+    visitor_limit:'Vyčerpali jste limit AI kontrol. Další můžete zkusit po uplynutí 24 hodin od předchozích kontrol.', declined:'Zvolili jste kontrolu bez AI.', budget_exhausted: 'Kapacita kontroly s AI je teď vyčerpaná.', input_limit: 'Zpráva je pro kontrolu s AI příliš dlouhá.',
     invalid_response: 'Odpověď AI nebyla dost spolehlivá, proto ji nepoužíváme.', text_only: 'U samotného odkazu kontrolu s AI neděláme.',
   }[analysis.ai_fallback_reason] || 'Kontrola s AI se tentokrát nepodařila.'} Tento výsledek vychází jen z našich pevných pravidel. ${aiConsent
     ? 'Text zprávy mohl být s vaším souhlasem odeslán poskytovateli AI.' : 'Text jsme poskytovateli AI neposílali.'}`;
@@ -255,6 +258,7 @@ function render(loanFlow, loanAnswers, aiConsent) {
 }
 document.querySelector('#to-verification').addEventListener('click', () => {
   const target = document.querySelector('#verification-title');
+  target.closest('details').open = true;
   target.closest('section').scrollIntoView({ block: 'start' });
   target.focus({ preventScroll: true });
 });
@@ -294,9 +298,9 @@ function setBusy(value) {
 }
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  if (busy || recovering || submit.disabled) return;
+  if (busy || recovering || submit.disabled || !loanReady) return;
   if (!mode) { showError('SESSION_START'); return; }
-  if (aiAvailable && !document.querySelector('#consent').checked) { showError('AI_CONSENT_REQUIRED'); return; }
+  if (aiAvailable && !rulesFallback && !document.querySelector('#consent').checked) { showError('AI_CONSENT_REQUIRED'); return; }
   // Keep keyboard focus in place when the control that started this disappears.
   if (errorPanel.contains(document.activeElement)) submit.focus();
   // Also cover programmatic replacement (examples/clipboard), which need not
@@ -377,3 +381,5 @@ document.querySelector('#next-check').addEventListener('click', () => {
   setLoanMode(false); submittedContent = undefined;
   content.scrollIntoView({ block: 'center' }); content.select();
 });
+
+

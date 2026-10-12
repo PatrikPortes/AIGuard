@@ -110,7 +110,7 @@ export class AnalysisPipeline {
     return this.mode === 'ai' && !this.worker
       && (this.unavailableCode == null || this.unavailableCode === 'AI_INVALID_CONFIG');
   }
-  async analyze(input, { signal, preparedInput } = {}) {
+  async analyze(input, { signal, preparedInput, reserveVisitor } = {}) {
     // Byte limits are rechecked even when trusted preparation is reused.
     // Consent and other request metadata are read from the raw input below.
     const intake = this.validate(reusePreparedInput(input, preparedInput));
@@ -123,7 +123,7 @@ export class AnalysisPipeline {
       // or provider can run for this request, with or without AI consent.
       return this.rulesFallback(rules, 'AI_INVALID_CONFIG');
     }
-    if (input.ai_consent !== true) throw new ServiceError('AI_CONSENT_REQUIRED', 400);
+    if (input.ai_consent !== true) { if (this.fallbackToRules) return this.rulesFallback(rules, 'AI_DECLINED'); throw new ServiceError('AI_CONSENT_REQUIRED', 400); }
     if (signal?.aborted) throw new ServiceError('AI_TIMEOUT');
     if (this.fallbackToRules && intake.type !== 'text') return this.rulesFallback(rules, 'AI_TEXT_ONLY');
     if (this.unavailableCode || !this.worker || !this.queue) {
@@ -133,7 +133,7 @@ export class AnalysisPipeline {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
-    try { return await this.queue.submit(jobSignal => this.worker.run(intake, rules, jobSignal), { signal: combined }); }
+    try { return await this.queue.submit(jobSignal => { reserveVisitor?.(); return this.worker.run(intake, rules, jobSignal); }, { signal: combined }); }
     catch (error) {
       // Caller cancellation never becomes a successful response. An internal
       // AI failure can return existing rules without weakening any ingress gate.
@@ -147,7 +147,7 @@ export class AnalysisPipeline {
       AI_TIMEOUT: 'timeout', AI_OVERLOADED: 'overloaded', AI_CAPACITY_EXHAUSTED: 'budget_exhausted',
       AI_BUDGET_UNAVAILABLE: 'budget_unavailable', AI_INVALID_CONFIG: 'not_configured',
       AI_INVALID_OUTPUT: 'invalid_response', AI_UNSUPPORTED_EVIDENCE: 'invalid_response', AI_UNSAFE_OUTPUT: 'invalid_response',
-      AI_INPUT_LIMIT: 'input_limit', AI_TEXT_ONLY: 'text_only',
+      AI_VISITOR_LIMIT:'visitor_limit', AI_DECLINED:'declined', AI_INPUT_LIMIT: 'input_limit', AI_TEXT_ONLY: 'text_only',
     }[code] || 'provider_unavailable';
     return { ...rules, ai_status: 'not_performed', ai_fallback_reason: reason,
       uncertainties: [...rules.uncertainties, 'AI kontrola nebyla dokončena. Tento výsledek používá pouze pravidla; nejde o potvrzení bezpečnosti.'] };
@@ -161,3 +161,4 @@ export class AnalysisPipeline {
   }
   close() { if (this.closed) return; this.closed = true; this.queue?.close(); this.worker?.budget?.close?.(); }
 }
+

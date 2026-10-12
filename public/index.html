@@ -6,12 +6,19 @@
 <meta name="description" content="Věřím tomu? Vložte podezřelou zprávu nebo odkaz. Ukážeme vám rizikové signály a pomůžeme vám rozhodnout, co udělat dál.">
 <title>Věřím tomu? — Radši ověřit než litovat.</title>
 <link rel="stylesheet" href="/style.css">
-<script src="/app.js" type="module"></script>
+
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Věřím tomu? — Radši ověřit než litovat.">
+<meta property="og:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta property="og:image:alt" content="Věřka a Robo — Věřím tomu? Radši ověřit než litovat.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
 </head>
 <body>
-<a class="skip-link" href="#analysis-form">Přejít k ověření zprávy</a>
+<a class="skip-link" href="#choose-check">Přejít k výběru kontroly</a>
 <header class="site-header">
-  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></a>
+  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true"><span class="brand-text"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></span></a>
   <nav aria-label="Hlavní navigace">
     <a class="nav-secondary" href="#how-it-works">Jak to funguje</a>
     <a class="nav-secondary" href="/privacy">Soukromí</a>
@@ -19,63 +26,26 @@
   </nav>
 </header>
 <main>
-<section class="hero" aria-labelledby="hero-title">
-  <div class="hero-tool">
-    <h1 id="hero-title">Přišla vám podezřelá zpráva?</h1>
-    <p class="hero-lead">Vložte ji sem. Pomůžu vám rozhodnout, co udělat dál.</p>
-    <div class="tool-card">
-      <noscript><p class="notice">Pro ověření je potřeba JavaScript. Obsah se bez něj neodesílá. Nezadávejte zde citlivé údaje.</p></noscript>
-      <form id="analysis-form" method="post" action="/api/analyze">
-        <label for="content">Obsah k ověření</label>
-        <textarea id="content" rows="4" maxlength="10000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte zkopírovanou zprávu nebo odkaz…" aria-describedby="content-help"></textarea>
-        <p class="hint" id="content-help">Zpráva, e-mail, SMS nebo odkaz, nejvýše 10 000 znaků. Nepotřebné osobní údaje smažte.</p>
-        <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
-        <button id="submit" type="submit" disabled><span id="submit-label">Prověřit zprávu</span> <span aria-hidden="true">→</span></button>
-        <button type="button" id="loan-entry" class="loan-entry" hidden><span class="example-icon violet" aria-hidden="true">Kč</span> Prověřit nabídku půjčky</button>
-        <div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div>
-        <div id="error-panel" class="error-panel" hidden><img id="error-character" class="character-avatar" src="/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p id="error-speaker" class="speaker">Robo · systémová informace</p><div id="error" role="alert"><p id="error-title" class="error-title"></p><p id="error-message"></p><p id="error-safety"></p></div><div id="error-guidance" class="error-guidance" hidden><p class="error-guidance-title">Co můžete udělat hned</p><p>Toto jsou obecné bezpečné kroky, nikoli výsledek kontroly vaší zprávy.</p><ul><li>Dokud si věc neověříte, nic neplaťte a nesdělujte hesla, PIN ani kódy.</li><li>Ozvěte se přes kontakt, který už znáte, ne přes údaje ze zprávy.</li><li>Na odkazy ve zprávě neklikejte.</li></ul><p><a href="/uz-se-to-stalo">Už jste něco zaplatili nebo sdělili? Co udělat teď</a></p></div><div class="error-actions"><button type="button" id="retry" class="secondary-action" hidden>Zkusit znovu</button><button type="button" id="edit-content" class="secondary-action">Upravit zprávu</button></div></div></div>
-      </form>
-      <div id="processing" class="system-bubble" hidden><img class="character-avatar" src="/assets/characters/optimized/robo-analyzing.1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p class="speaker">Robo · kontrola obsahu</p><p class="processing-title">Prověřuji zadaný obsah…</p><p id="processing-detail">Chvíli prosím počkejte.</p><div class="progress-track" aria-hidden="true"><span></span></div></div></div>
-      <p class="safety-line">Na odkazy ve zprávě neklikejte. Stačí je zkopírovat.</p>
-      <details class="copy-help">
-        <summary>Jak zprávu zkopírovat?</summary>
-        <ol>
-          <li>Podržte prst na zprávě a zvolte <strong>Kopírovat</strong>.</li>
-          <li>U odkazu podržte prst na odkazu a zvolte <strong>Kopírovat odkaz</strong>. Odkaz neotvírejte.</li>
-          <li>Vraťte se sem, podržte prst v poli pro zprávu a zvolte <strong>Vložit</strong>.</li>
-        </ol>
-      </details>
-      <p class="notice" id="engine-notice">Zjišťujeme dostupnost analýzy. Screenshoty a PDF připravujeme.</p>
-    </div>
+<section class="welcome" aria-labelledby="welcome-title">
+  <div class="welcome-copy">
+    <p class="welcome-eyebrow">Věrka a Robo vám pomohou se zorientovat</p>
+    <h1 id="welcome-title">Vítejte.<br>Radši ověřit<br>než litovat.</h1>
+    <p class="welcome-intro">Přišla vám zpráva, které úplně nevěříte? Společně se podíváme na varovné signály a ukážeme vám, jak si požadavek bezpečně ověřit.</p>
+    <p class="welcome-team">Já jsem Věrka, vaše průvodkyně. Robo kontroluje text pomocí pravidel a s vaším souhlasem také s pomocí AI. Rozhodnutí zůstává na vás.</p>
+    <a class="welcome-action" href="#choose-check">Vybrat, co chci prověřit <span aria-hidden="true">↓</span></a>
+    <p class="welcome-note">Bez registrace · Pravidla s volitelnou pomocí AI</p>
   </div>
-  <aside class="hero-guides" aria-label="Věrka a Robo">
-    <div class="speech-bubble"><p class="speaker">Věrka · vaše průvodkyně</p><p>Ukážu vám, čeho si všimnout.</p></div>
-    <div class="hero-duo">
-      <img class="hero-verka" src="/assets/characters/optimized/verka-welcome.3b7831ccbbcf825dd0fe21982570ed75843405d16b865635d5dded574e0f1ded.webp" width="384" height="351" alt="Věrka, vaše průvodkyně, vás s úsměvem vítá" decoding="async">
-      <img class="hero-robo" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="Robo, pomocník, který zpracovává kontrolu, mává na pozdrav" decoding="async">
-    </div>
-  </aside>
+  <div class="welcome-characters">
+    <img src="/assets/characters/optimized/verkarob.01ffcd184ab472461c50aaf5925a377b76a762784b5556897789ffa7a6cd29b3.webp" width="840" height="768" alt="Věrka a Robo stojí zády k sobě. Věrka ukazuje na rozsvícenou žárovku a Robo přemýšlí." fetchpriority="high" decoding="async">
+  </div>
 </section>
-<section id="result" class="panel result" hidden aria-labelledby="result-title" tabindex="-1">
-<div class="result-lead">
-  <div class="result-heading"><img class="character-avatar" src="/assets/characters/optimized/verka-explaining.eeec7a93a44e09d692f946ae7af8993af79e73e976156140bea37e3999018021.webp" width="384" height="351" alt="" aria-hidden="true" loading="lazy" decoding="async"><h2 id="result-title">Co jsme zjistili</h2></div>
-  <section class="result-now" aria-labelledby="actions-title">
-    <h3 id="actions-title">Co udělat teď</h3>
-    <p id="primary-action" class="primary-action"></p>
-    <button type="button" id="to-verification" class="result-route">Jak to bezpečně ověřit</button>
-    <ul id="actions" class="secondary-actions"></ul>
-  </section>
-  <p id="summary" class="result-takeaway"></p>
-  <p id="engine-note" class="hint" hidden></p>
-</div>
-<section class="result-card" aria-labelledby="signals-title"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3 id="signals-title">Co si zaslouží pozornost</h3></div><h4 id="rules-signals-label" class="signal-group" hidden>Našla naše pravidla</h4><ul id="signals"></ul><div id="ai-signals-group" hidden><h4 class="signal-group">Doplnila AI</h4><ul id="ai-signals"></ul></div></section>
-<section id="loan-followup" class="result-card loan-followup" aria-labelledby="loan-followup-title" hidden><h3 id="loan-followup-title">Jde o nabídku půjčky?</h3><p>Odpovězte na dvě krátké otázky a výsledek upřesníme. Nemusíte odpovídat.</p><button type="button" id="loan-followup-open" class="secondary-action">Odpovědět na otázky</button></section>
-<section id="ai-card" class="result-card ai-card" aria-labelledby="ai-card-title" hidden><h3 id="ai-card-title">Co k tomu přidala AI</h3><p id="ai-uncertainty" class="ai-uncertainty"></p><ul id="ai-notes"></ul></section>
-<section class="result-card unknowns-card" aria-labelledby="unknowns-title"><h3 id="unknowns-title">Co nevíme</h3><ul id="uncertainties"></ul></section>
-<section class="result-card verification-card" aria-labelledby="verification-title"><p class="speaker">Věrka · nezávislé ověření</p><h3 id="verification-title" tabindex="-1">Jak to bezpečně ověřit</h3><ol id="verification"></ol></section>
-<details class="technical-details"><summary>Chci vědět víc</summary><p>Nejprve hledáme známé signály pomocí pravidel. V AI režimu je doplňuje serverový model. Neznáme skutečný kontext zprávy ani totožnost odesílatele.</p><ul id="technical"></ul></details>
-<button type="button" id="next-check" class="secondary-action">Prověřit další zprávu</button>
-</section>
+<section id="choose-check" class="check-choice" aria-labelledby="choice-title" tabindex="-1">
+<h2 id="choice-title">S čím vám můžeme pomoci?</h2>
+<p class="section-lead">Vyberte, co chcete prověřit. Údaje vyplníte až v dalším kroku.</p>
+<div class="choice-grid">
+<a class="choice-card" href="/overit-zpravu"><span class="choice-icon" aria-hidden="true">✉</span><h3>Prověřit zprávu</h3><p>Přišla vám zvláštní SMS, e-mail nebo zpráva? Někdo vás nutí kliknout na odkaz, poslat peníze nebo sdělit heslo?</p><p class="choice-explanation">Vložte text nebo odkaz. Upozorníme vás na rizikové signály a ukážeme bezpečné další kroky.</p><span class="choice-link">Chci prověřit zprávu <span aria-hidden="true">→</span></span></a>
+<a class="choice-card choice-loan" href="/proverit-pujcku"><span class="choice-icon" aria-hidden="true">Kč</span><h3>Prověřit nabídku půjčky</h3><p>Nabízí vám někdo půjčku a chce nejdřív poplatek? Požaduje doklady, přístup k účtu nebo ověřovací kód?</p><p class="choice-explanation">Vložte nabídku a odpovězte na dvě nepovinné otázky. Pomůžeme vám rozpoznat varovné signály.</p><span class="choice-link">Chci prověřit nabídku <span aria-hidden="true">→</span></span></a>
+</div></section>
 <section id="uz-se-to-stalo" class="happened-band" aria-labelledby="happened-title" tabindex="-1">
   <h2 id="happened-title">Už se to stalo?</h2>
   <p>Klikli jste na odkaz, zaplatili nebo někomu sdělili kód?</p>
@@ -83,7 +53,7 @@
 </section>
 <section class="situations" aria-labelledby="situations-title">
   <h2 id="situations-title">Typické situace</h2>
-  <p class="section-lead">Takové zprávy lidé dostávají nejčastěji. Podobnou zprávu můžete vložit do pole nahoře.</p>
+  <p class="section-lead">Takové zprávy lidé dostávají nejčastěji. Podobnou zprávu můžete prověřit na stránce pro ověření zpráv.</p>
   <ul class="situation-list">
     <li><strong>„Mami, mám nové číslo“</strong><span>Někdo píše z neznámého čísla a vydává se za blízkého člověka.</span></li>
     <li><strong>Píše vám banka</strong><span>Zpráva tvrdí, že je s vaším účtem problém a máte rychle něco udělat.</span></li>
@@ -93,22 +63,16 @@
     <li><strong>Půjčka „pro každého“</strong><span>Nabídka slibuje jisté schválení, ale nejdřív chce poplatek nebo vaše údaje.</span></li>
     <li><strong>Nová známost chce peníze</strong><span>Člověk, kterého znáte jen z internetu, žádá o pomoc s penězi.</span></li>
   </ul>
-  <div class="examples">
-    <p>Vyzkoušejte si to na příkladu:</p>
-    <div class="example-buttons">
-      <button type="button" data-example="family"><span class="example-icon violet" aria-hidden="true">💬</span> Žádost o peníze</button>
-      <button type="button" data-example="bank"><span class="example-icon rose" aria-hidden="true">✉</span> Zpráva od banky</button>
-      <button type="button" data-example="normal"><span class="example-icon mint" aria-hidden="true">Aa</span> Běžná zpráva</button>
-    </div>
-  </div>
+
 </section>
 <section id="how-it-works" class="how-it-works" aria-labelledby="how-title">
   <h2 id="how-title">Jak to funguje</h2>
   <ol class="steps">
     <li><span class="step-number" aria-hidden="true">1</span><h3>Vložíte zprávu</h3><p>Text zprávy nebo odkaz, který vás znepokojil.</p></li>
-    <li><span class="step-number" aria-hidden="true">2</span><h3>Ukážu, čeho si všímám</h3><p>Vysvětlím rizikové signály a také to, co nevíme.</p></li>
+    <li><span class="step-number" aria-hidden="true">2</span><h3>Ukážu, čeho si všímám</h3><p>Zprávu prověří naše pravidla. S vaším souhlasem nám s rozpoznáním varovných signálů pomůže AI od OpenAI. Vysvětlíme také, co nevíme.</p></li>
     <li><span class="step-number" aria-hidden="true">3</span><h3>Pomůžu vám to ověřit jinou cestou</h3><p>Přes kontakt nebo aplikaci, které už znáte.</p></li>
   </ol>
+  <p class="notice">AI je volitelná. Na jednoho anonymního návštěvníka připadnou nejvýše 3 AI kontroly za 24 hodin. Po vyčerpání limitu nebo při nedostupnosti AI pokračuje kontrola pomocí pravidel. Odkazy neotevíráme a totožnost odesílatele neověřujeme.</p>
   <p class="closing-note">Rozhodnutí je vždy na vás.</p>
 </section>
 <section class="capabilities" aria-labelledby="capabilities-title">
@@ -142,8 +106,10 @@
 </section>
 </main>
 <footer>
-  <span><strong>Věřím tomu?</strong> · Vývojový prototyp</span>
+  <span><strong>Věřím tomu?</strong> · Veřejná zkušební verze</span>
   <nav aria-label="Odkazy v patičce"><a href="#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí a limity</a></nav>
 </footer>
 </body>
 </html>
+
+

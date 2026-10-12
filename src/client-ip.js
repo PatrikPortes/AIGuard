@@ -15,7 +15,8 @@ export function normalizeIp(value) {
 
 // A routable IPv6 /64 is one rate identity, not 2^64 independently free clients.
 // Keep the actual address for ingress verification; only quota keys aggregate.
-export function clientIdentity(value) {
+export function clientIdentity(value, prefixBits = 64) {
+  if (![48, 56, 64].includes(prefixBits)) throw new Error('Invalid IPv6 prefix length');
   const ip = normalizeIp(value);
   if (!ip) throw new ServiceError('INGRESS_REQUIRED', 403);
   if (isIP(ip) === 4) return `ipv4:${ip}`;
@@ -23,7 +24,10 @@ export function clientIdentity(value) {
   const first = left ? left.split(':') : [];
   const last = right ? right.split(':') : [];
   const words = ip.includes('::') ? [...first, ...Array(8 - first.length - last.length).fill('0'), ...last] : first;
-  return `ipv6:${words.slice(0, 4).map(word => word.padStart(4, '0')).join(':')}/64`;
+  const padded = words.map(word => word.padStart(4, '0'));
+  const prefix = padded.slice(0, prefixBits === 48 ? 3 : 4);
+  if (prefixBits === 56) prefix[3] = prefix[3].slice(0, 2) + '00';
+  return `ipv6:${prefix.join(':')}/${prefixBits}`;
 }
 
 export function clientIpResolver({ mode = 'socket', trustedProxyIp } = {}) {
@@ -48,3 +52,4 @@ export function clientIpResolver({ mode = 'socket', trustedProxyIp } = {}) {
     return ip;
   };
 }
+

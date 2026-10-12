@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Věřím tomu? Vložte podezřelou zprávu nebo odkaz. Ukážeme vám rizikové signály a pomůžeme vám rozhodnout, co udělat dál.">
+<title>Prověřit nabídku půjčky · Věřím tomu?</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" type="module"></script>
+<script src="/loan-cost.js" type="module"></script>
+<link rel="stylesheet" href="/loan-cost.css">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Věřím tomu? — Radši ověřit než litovat.">
+<meta property="og:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta property="og:image:alt" content="Věřka a Robo — Věřím tomu? Radši ověřit než litovat.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+</head>
+<body data-flow="loan">
+<a class="skip-link" href="#cost-form">Přejít ke kalkulačce půjčky</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true"><span class="brand-text"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></span></a>
+  <nav aria-label="Hlavní navigace">
+    <a class="nav-secondary" href="/#how-it-works">Jak to funguje</a>
+    <a class="nav-secondary" href="/privacy">Soukromí</a>
+    <a class="nav-happened" href="/uz-se-to-stalo">Už se to stalo?</a>
+  </nav>
+</header>
+<main><nav class="flow-navigation" aria-label="Výběr kontroly"><a href="/">← Zpět na úvod</a><a href="/overit-zpravu">Prověřit zprávu</a></nav><section class="hero analysis-section" aria-labelledby="hero-title">
+  <div class="hero-tool">
+    <h1 id="hero-title">Prověřit nabídku půjčky</h1>
+    <p class="hero-lead">Nejdřív si můžete spočítat náklady. Samostatně pak prověříme text nabídky a upozorníme na varovné signály.</p>
+<section class="loan-cost" aria-labelledby="cost-title"><h2 id="cost-title">Kolik za půjčku zaplatíte?</h2><p>Zadejte údaje z nabídky nebo splátkového kalendáře. Spočítáme součet plateb a náklady nad částku, kterou dostanete. Můžete porovnat i druhou nabídku.</p><p class="hint">Výpočet je pro pevné měsíční splátky. Číselné údaje z této kalkulačky se neposílají na server ani do AI. Pokud některé povinné náklady neznáte, nedoplňujte je odhadem ani nulou.</p><noscript><p>Pro výpočet zapněte JavaScript.</p></noscript><form id="cost-form" novalidate><fieldset id="offer-a" class="cost-offer"><legend>Vaše nabídka · A</legend><div class="cost-fields"><div><label for="a-amount">Částka, kterou skutečně dostanete (Kč)</label><input id="a-amount" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-amount-help" required><small id="a-amount-help">Například 50 000. Pokud vám poplatek strhnou před vyplacením, zadejte skutečně vyplacenou částku.</small></div><div><label for="a-count">Doba splácení (měsíce)</label><input id="a-count" type="text" inputmode="numeric" autocomplete="off" aria-describedby="a-count-help" required><small id="a-count-help">Počet měsíčních splátek, včetně poslední. Například 24.</small></div><div><label for="a-payment">Běžná měsíční splátka (Kč)</label><input id="a-payment" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-payment-help" required><small id="a-payment-help">Celá splátka z nabídky, včetně poplatků či pojištění, které jsou už její součástí.</small></div><div><label for="a-rpsn">RPSN z nabídky (%) — nepovinné</label><input id="a-rpsn" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-rpsn-help"><small id="a-rpsn-help">Například 12,5. RPSN neověřujeme a nepoužíváme místo skutečných plateb.</small></div><div><label for="a-last">Odlišná poslední splátka (Kč) — nepovinné</label><input id="a-last" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-last-help"><small id="a-last-help">Pokud je stejná jako ostatní, nechte prázdné. Jinak ji zadejte; poslední běžnou splátku nahradí.</small></div><div><label for="a-fee">Měsíční povinné poplatky mimo splátku (Kč)</label><input id="a-fee" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-fee-help" required><small id="a-fee-help">Jen další platby nezahrnuté ve splátce. Pokud žádné nejsou, zadejte 0.</small></div><div><label for="a-insurance">Měsíční povinné pojištění mimo splátku (Kč)</label><input id="a-insurance" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-insurance-help" required><small id="a-insurance-help">Jen pokud se platí zvlášť každý měsíc. Pokud není povinné nebo už je ve splátce, zadejte 0.</small></div><div><label for="a-upfront">Další jednorázové povinné platby (Kč)</label><input id="a-upfront" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-upfront-help" required><small id="a-upfront-help">Součet plateb z vlastních peněz mimo splátky. Nezahrnujte poplatek už stržený z vyplacené částky. Pokud nejsou, zadejte 0.</small></div></div><label class="cost-check"><input id="a-complete" type="checkbox">Znám všechny plánované povinné platby a uvedl/a jsem je bez dvojího započtení. Splátky jsou měsíční a během této doby se nemění.</label></fieldset><label class="cost-check"><input type="checkbox" id="compare-offer">Chci porovnat druhou nabídku</label><fieldset id="offer-b" class="cost-offer" hidden disabled><legend>Druhá nabídka · B</legend><div class="cost-fields"><div><label for="b-amount">Částka, kterou skutečně dostanete (Kč)</label><input id="b-amount" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-amount-help" required><small id="b-amount-help">Například 50 000. Pokud vám poplatek strhnou před vyplacením, zadejte skutečně vyplacenou částku.</small></div><div><label for="b-count">Doba splácení (měsíce)</label><input id="b-count" type="text" inputmode="numeric" autocomplete="off" aria-describedby="b-count-help" required><small id="b-count-help">Počet měsíčních splátek, včetně poslední. Například 24.</small></div><div><label for="b-payment">Běžná měsíční splátka (Kč)</label><input id="b-payment" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-payment-help" required><small id="b-payment-help">Celá splátka z nabídky, včetně poplatků či pojištění, které jsou už její součástí.</small></div><div><label for="b-rpsn">RPSN z nabídky (%) — nepovinné</label><input id="b-rpsn" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-rpsn-help"><small id="b-rpsn-help">Například 12,5. RPSN neověřujeme a nepoužíváme místo skutečných plateb.</small></div><div><label for="b-last">Odlišná poslední splátka (Kč) — nepovinné</label><input id="b-last" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-last-help"><small id="b-last-help">Pokud je stejná jako ostatní, nechte prázdné. Jinak ji zadejte; poslední běžnou splátku nahradí.</small></div><div><label for="b-fee">Měsíční povinné poplatky mimo splátku (Kč)</label><input id="b-fee" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-fee-help" required><small id="b-fee-help">Jen další platby nezahrnuté ve splátce. Pokud žádné nejsou, zadejte 0.</small></div><div><label for="b-insurance">Měsíční povinné pojištění mimo splátku (Kč)</label><input id="b-insurance" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-insurance-help" required><small id="b-insurance-help">Jen pokud se platí zvlášť každý měsíc. Pokud není povinné nebo už je ve splátce, zadejte 0.</small></div><div><label for="b-upfront">Další jednorázové povinné platby (Kč)</label><input id="b-upfront" type="text" inputmode="decimal" autocomplete="off" aria-describedby="b-upfront-help" required><small id="b-upfront-help">Součet plateb z vlastních peněz mimo splátky. Nezahrnujte poplatek už stržený z vyplacené částky. Pokud nejsou, zadejte 0.</small></div></div><label class="cost-check"><input id="b-complete" type="checkbox">Znám všechny plánované povinné platby a uvedl/a jsem je bez dvojího započtení. Splátky jsou měsíční a během této doby se nemění.</label></fieldset><p id="cost-error" class="cost-error" role="alert" hidden></p><button type="submit" id="cost-submit" disabled>Spočítat náklady</button></form><section id="cost-result" tabindex="-1" aria-live="polite" hidden></section><p class="hint">RPSN zahrnuje i další náklady, nejen úrok. <a href="https://www.cnb.cz/cs/casto-kladene-dotazy/Co-je-ukazatel-RPSN">Jak RPSN vysvětluje ČNB</a>. Kalkulačka nepotvrzuje oprávnění poskytovatele ani neposuzuje, zda půjčku zvládnete splácet.</p></section><h2>Varovné signály v nabídce</h2><p>Vložte text komunikace a případně odpovězte na dvě nepovinné otázky. Poskytovatele v registrech automaticky neověřujeme.</p>
+    <div class="tool-card">
+      <noscript><p class="notice">Pro ověření je potřeba JavaScript. Obsah se bez něj neodesílá. Nezadávejte zde citlivé údaje.</p></noscript>
+      <form id="analysis-form" method="post" action="/api/analyze">
+        <label for="content">Text nabídky půjčky</label>
+        <textarea id="content" rows="4" maxlength="10000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte text nabídky půjčky…" aria-describedby="content-help"></textarea>
+        <p class="hint" id="content-help">Text nabídky nebo odkaz, nejvýše 10 000 znaků. Nepotřebné osobní údaje smažte.</p>
+        <p class="hint">Pravidla můžete použít bez AI. Pokud zvolíte pomoc AI, text odešleme OpenAI. Limit je 3 AI kontroly za 24 hodin na anonymního návštěvníka. Odkazy neotevíráme.</p>
+        <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
+        <button id="submit" type="submit" disabled><span id="submit-label">Prověřit zprávu</span> <span aria-hidden="true">→</span></button>
+        <button type="button" id="loan-entry" class="loan-entry" hidden><span class="example-icon violet" aria-hidden="true">Kč</span> Prověřit nabídku půjčky</button>
+        <div class="operation-status"><img id="status-character" class="character-avatar" src="/assets/characters/optimized/robo-success.bbba1df70ac193f107eef8909ec6323f445bce02e768a9e26541cf9c4b1d296c.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async" hidden><p id="status" role="status" aria-live="polite"></p></div>
+        <div id="error-panel" class="error-panel" hidden><img id="error-character" class="character-avatar" src="/assets/characters/optimized/robo-error.1d3969dcc39a89f7529f5fc13c8a3db410c0c4e616b1e3343f2b93ee1eb3f065.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p id="error-speaker" class="speaker">Robo · systémová informace</p><div id="error" role="alert"><p id="error-title" class="error-title"></p><p id="error-message"></p><p id="error-safety"></p></div><div id="error-guidance" class="error-guidance" hidden><p class="error-guidance-title">Co můžete udělat hned</p><p>Toto jsou obecné bezpečné kroky, nikoli výsledek kontroly vaší zprávy.</p><ul><li>Dokud si věc neověříte, nic neplaťte a nesdělujte hesla, PIN ani kódy.</li><li>Ozvěte se přes kontakt, který už znáte, ne přes údaje ze zprávy.</li><li>Na odkazy ve zprávě neklikejte.</li></ul><p><a href="/uz-se-to-stalo">Už jste něco zaplatili nebo sdělili? Co udělat teď</a></p></div><div class="error-actions"><button type="button" id="retry" class="secondary-action" hidden>Zkusit znovu</button><button type="button" id="edit-content" class="secondary-action">Upravit nabídku</button></div></div></div>
+      </form>
+      <div id="processing" class="system-bubble" hidden><img class="character-avatar" src="/assets/characters/optimized/robo-analyzing.1c20d719ef4b97c671bbe2d0e64d63840c9d4852ce8948ae8c57604d21076840.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><div><p class="speaker">Robo · kontrola obsahu</p><p class="processing-title">Prověřuji zadaný obsah…</p><p id="processing-detail">Chvíli prosím počkejte.</p><div class="progress-track" aria-hidden="true"><span></span></div></div></div>
+      <p class="safety-line">Na odkazy ve zprávě neklikejte. Stačí je zkopírovat.</p>
+      <details class="copy-help">
+        <summary>Jak zprávu zkopírovat?</summary>
+        <ol>
+          <li>Podržte prst na zprávě a zvolte <strong>Kopírovat</strong>.</li>
+          <li>U odkazu podržte prst na odkazu a zvolte <strong>Kopírovat odkaz</strong>. Odkaz neotvírejte.</li>
+          <li>Vraťte se sem, podržte prst v poli pro zprávu a zvolte <strong>Vložit</strong>.</li>
+        </ol>
+      </details>
+      <p class="notice" id="engine-notice">Zjišťujeme dostupnost kontroly.</p>
+    </div>
+  </div>
+</section>
+<section id="result" class="panel result" hidden aria-labelledby="result-title" tabindex="-1">
+<div class="result-lead">
+  <div class="result-heading"><img class="character-avatar" src="/assets/characters/optimized/verka-explaining.eeec7a93a44e09d692f946ae7af8993af79e73e976156140bea37e3999018021.webp" width="384" height="351" alt="" aria-hidden="true" loading="lazy" decoding="async"><h2 id="result-title">Co jsme zjistili</h2></div>
+  <section class="result-now" aria-labelledby="actions-title">
+    <h3 id="actions-title">Co udělat teď</h3>
+    <p id="primary-action" class="primary-action"></p>
+    <button type="button" id="to-verification" class="result-route">Jak to bezpečně ověřit</button>
+  
+  </section>
+  <p id="summary" class="result-takeaway"></p>
+  <p id="engine-note" class="hint" hidden></p>
+</div>
+<section class="result-card" aria-labelledby="signals-title"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3 id="signals-title">Co si zaslouží pozornost</h3></div><h4 id="rules-signals-label" class="signal-group" hidden>Našla naše pravidla</h4><ul id="signals"></ul><div id="ai-signals-group" hidden><h4 class="signal-group">Doplnila AI</h4><ul id="ai-signals"></ul></div></section>
+<section id="loan-followup" class="result-card loan-followup" aria-labelledby="loan-followup-title" hidden><h3 id="loan-followup-title">Jde o nabídku půjčky?</h3><p>Odpovězte na dvě krátké otázky a výsledek upřesníme. Nemusíte odpovídat.</p><button type="button" id="loan-followup-open" class="secondary-action">Odpovědět na otázky</button></section>
+<section id="ai-card" class="result-card ai-card" aria-labelledby="ai-card-title" hidden><h3 id="ai-card-title">Co k tomu přidala AI</h3><p id="ai-uncertainty" class="ai-uncertainty"></p><ul id="ai-notes"></ul></section>
+<p class="hint">Varovné signály nejsou důkaz podvodu. Ani jejich nepřítomnost nepotvrzuje bezpečnost zprávy.</p>
+<details class="technical-details"><summary>Další kroky a limity kontroly</summary>
+<section class="result-card verification-card" aria-labelledby="verification-title"><h3 id="verification-title" tabindex="-1">Jak to bezpečně ověřit</h3><ol id="verification"></ol><ul id="actions" class="secondary-actions"></ul></section>
+<section class="result-card unknowns-card" aria-labelledby="unknowns-title"><h3 id="unknowns-title">Co kontrola nedokáže</h3><ul id="uncertainties"></ul></section>
+<ul id="technical"></ul>
+</details>
+<button type="button" id="next-check" class="secondary-action">Prověřit další nabídku</button>
+</section>
+</main><footer>
+  <span><strong>Věřím tomu?</strong> · Veřejná zkušební verze</span>
+  <nav aria-label="Odkazy v patičce"><a href="/#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí a limity</a></nav>
+</footer>
+</body>
+</html>
+
+
