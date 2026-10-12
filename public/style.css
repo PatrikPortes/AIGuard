@@ -472,3 +472,5 @@ body[data-flow="loan"] .hint{font-size:1rem;line-height:1.65;color:#3a4664}
     width: 104px; margin-top: -44px;
   }
 }
+
+.result-heading h1 { margin: 0; min-width: 0; font-size: var(--text-result); line-height: 1.3; }

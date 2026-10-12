@@ -4,6 +4,18 @@ let loanReady = !dedicatedLoan;
 const form = document.querySelector('#analysis-form');
 const senderInput = document.querySelector('#sender');
 const result = document.querySelector('#result');
+const messageEntry = dedicatedLoan ? null : document.querySelector('.analysis-section');
+const skipLink = document.querySelector('.skip-link');
+function showMessageResult(show) {
+  if (!messageEntry) return;
+  messageEntry.hidden = show;
+  result.hidden = !show;
+  if (skipLink) {
+    skipLink.href = show ? '#result' : '#analysis-form';
+    skipLink.textContent = show ? 'Přejít ke zjištěním' : 'Přejít k ověření zprávy';
+  }
+}
+
 const status = document.querySelector('#status');
 const submit = document.querySelector('#submit');
 let analysis;
@@ -338,14 +350,14 @@ form.addEventListener('submit', async event => {
   if (!failure) {
     try {
       rejections = 0;
-      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); result.hidden = false;
+      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); result.hidden = false; showMessageResult(true);
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;
       result.scrollIntoView({ block: 'start' });
       result.focus({ preventScroll: true });
     } catch {
-      analysis = undefined; result.hidden = true; failure = 'UNEXPECTED';
+      analysis = undefined; result.hidden = true; showMessageResult(false); failure = 'UNEXPECTED';
     }
   }
   if (failure) {
@@ -382,6 +394,10 @@ content.addEventListener('input', () => {
   }
 });
 document.querySelector('#next-check').addEventListener('click', () => {
+  showMessageResult(false);
+  status.textContent = '';
+  document.querySelector('#status-character').hidden = true;
+  hideError();
   setLoanMode(false); submittedContent = undefined;
   if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
   content.scrollIntoView({ block: 'center' }); content.select();
