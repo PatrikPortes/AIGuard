@@ -1,3 +1,4 @@
+import { characterAssets } from './character-assets.js';
 export function money(value, {positive=false}={}) {
   const s=String(value).trim().replace(/[\s\u00a0\u202f]/g,'');
   if(!/^\d{1,9}(?:[.,]\d{1,2})?$/.test(s))throw Error('Zadejte částku v Kč, nejvýše se dvěma desetinnými místy.');
@@ -41,14 +42,18 @@ if(typeof document!=='undefined'){
   return calculate(values);
  }
  function add(parent,tag,text){const el=document.createElement(tag);el.textContent=text;parent.append(el);return el;}
- function show(offer,label){const section=document.createElement('section');section.className='cost-summary';add(section,'h3',label);const list=document.createElement('dl');section.append(list);
+ function guideHeading(parent,tag,text,asset){
+  const heading=document.createElement('div');heading.className='character-heading';
+  const image=document.createElement('img');image.className='character-avatar';image.src=characterAssets[asset];image.alt='';image.setAttribute('aria-hidden','true');image.width=asset.startsWith('verka')?384:320;image.height=asset.startsWith('verka')?351:384;image.decoding='async';heading.append(image);add(heading,tag,text);parent.append(heading);
+ }
+ function show(offer,label){const section=document.createElement('section');section.className='cost-summary';guideHeading(section,'h3',label,'robo-default');const list=document.createElement('dl');section.append(list);
   for(const [label,value]of [['Dostanete',czk(offer.amount)],['Celkem zaplatíte',czk(offer.total)],['Náklady nad vyplacenou částku',czk(offer.overpayment)],['Běžná měsíční platba',czk(offer.monthly)],['Poslední měsíční platba',czk(offer.finalMonthly)],['Doba splácení',offer.count+' měsíců'],['Splátky celkem',czk(offer.installments)],['Další povinné platby celkem',czk(offer.extras)],['RPSN uvedená v nabídce',offer.rpsn===null?'Nezadána':offer.rpsn.toLocaleString('cs-CZ')+' %']]){add(list,'dt',label);add(list,'dd',value);}
   result.append(section);
  }
  function clear(){result.hidden=true;result.replaceChildren();error.hidden=true;}
  toggle.addEventListener('change',()=>{second.hidden=!toggle.checked;second.disabled=!toggle.checked;clear();});
  form.addEventListener('input',clear);form.addEventListener('change',clear);
- form.addEventListener('submit',event=>{event.preventDefault();clear();try{const a=read('a'),b=toggle.checked?read('b'):null;add(result,'h2','Kolik podle zadaných údajů zaplatíte');show(a,b?'Nabídka A':'Vaše nabídka');if(b){show(b,'Nabídka B');const c=compare(a,b);if(!c.comparable)add(result,'p','Vyplacené částky se liší. Celkové platby proto neporovnáváme jako levnější a dražší nabídku. Pro přímé srovnání zadejte stejnou vyplacenou částku.');else{add(result,'p',c.difference===0?'Obě nabídky mají stejnou celkovou platbu.':`Nabídka ${c.difference>0?'A':'B'} má o ${czk(Math.abs(c.difference))} nižší celkovou platbu při stejné vyplacené částce.`);if(c.months!==0)add(result,'p','Doba splácení se liší. Nižší celková platba může znamenat vyšší měsíční zatížení; porovnejte také splátky a délku závazku.');}}
+ form.addEventListener('submit',event=>{event.preventDefault();clear();try{const a=read('a'),b=toggle.checked?read('b'):null;guideHeading(result,'h1','Kolik podle zadaných údajů zaplatíte','verka-explaining');show(a,b?'Nabídka A':'Vaše nabídka');if(b){show(b,'Nabídka B');guideHeading(result,'h2','Porovnání nabídek','verka-thinking');const c=compare(a,b);if(!c.comparable)add(result,'p','Vyplacené částky se liší. Celkové platby proto neporovnáváme jako levnější a dražší nabídku. Pro přímé srovnání zadejte stejnou vyplacenou částku.');else{add(result,'p',c.difference===0?'Obě nabídky mají stejnou celkovou platbu.':`Nabídka ${c.difference>0?'A':'B'} má o ${czk(Math.abs(c.difference))} nižší celkovou platbu při stejné vyplacené částce.`);if(c.months!==0)add(result,'p','Doba splácení se liší. Nižší celková platba může znamenat vyšší měsíční zatížení; porovnejte také splátky a délku závazku.');}}
  add(result,'p','Součet platí pro uvedené pevné měsíční splátky a řádné splácení. Nezahrnuje nezadané platby, sankce, změny sazeb ani předčasné splacení. Nižší náklady nepotvrzují důvěryhodnost poskytovatele ani vhodnost půjčky pro vás. RPSN přebíráme z nabídky; nepočítáme ji ani neověřujeme.');const edit=add(result,'button','Upravit údaje a přepočítat');edit.type='button';edit.className='secondary-action';edit.addEventListener('click',()=>{view(false);clear();field('a','amount').focus();form.scrollIntoView({block:'start'});});result.hidden=false;view(true);result.scrollIntoView({block:'start'});result.focus({preventScroll:true});}catch(e){result.replaceChildren();error.textContent=e.message;error.hidden=false;}});
  document.querySelector('#cost-submit').disabled=false;
 }
