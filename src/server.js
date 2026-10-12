@@ -15,6 +15,9 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/404.html', ['404.html', 'text/html; charset=utf-8']],
+  ['/favicon.ico', ['favicon.ico', 'image/x-icon']],
+  ['/assets/brand/apple-touch-icon.png', ['assets/brand/apple-touch-icon.png', 'image/png']],
   ['/loan-cost.js', ['loan-cost.js', 'text/javascript; charset=utf-8']],
   ['/loan-cost.css', ['loan-cost.css', 'text/css; charset=utf-8']],
   ['/assets/brand/share-v2.jpg', ['assets/brand/share-v2.jpg', 'image/jpeg']],
@@ -260,7 +263,14 @@ export function createServer({
         const encoded = compressed && acceptsGzip(req.headers['accept-encoding']);
         if (compressed) cacheHeaders.Vary = 'Accept-Encoding';
         if (encoded) cacheHeaders['Content-Encoding'] = 'gzip';
-        return send(res, notModified ? 304 : 200, notModified ? '' : encoded ? compressed : bytes, type, cacheHeaders);
+        return send(res, notModified ? 304 : path === '/404.html' ? 404 : 200, notModified ? '' : encoded ? compressed : bytes, type, cacheHeaders);
+      }
+      if (req.method === 'GET' && path !== '/api' && !path.startsWith('/api/')
+          && !path.startsWith('/assets/') && !/\.[a-zA-Z0-9]{1,8}$/.test(path)
+          && (req.headers['sec-fetch-dest'] === 'document' || /(?:^|,)\s*text\/html(?:[;,]|$)/i.test(req.headers.accept || ''))) {
+        if (!staticFiles.has('404.html')) staticFiles.set('404.html', readFile(new URL('../public/404.html', import.meta.url)).then(bytes => ({ bytes })).catch(error => { staticFiles.delete('404.html'); throw error; }));
+        const { bytes } = await staticFiles.get('404.html');
+        return send(res, 404, bytes, 'text/html; charset=utf-8');
       }
       rejectBody();
       send(res, 404, { error: 'Stránka nebyla nalezena.' });

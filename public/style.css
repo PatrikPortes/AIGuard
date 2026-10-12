@@ -446,3 +446,8 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
 
 .brand{flex-direction:row;align-items:center;justify-content:flex-start;gap:14px}.brand-logo{display:block;width:64px;height:64px;object-fit:contain;flex-shrink:0}.brand-text{display:flex;flex-direction:column;justify-content:center;min-width:0}
 @media(max-width:760px){.brand-logo{width:48px;height:48px}.brand{gap:10px}.welcome-copy{display:contents}.welcome-eyebrow{grid-row:1}.welcome h1{grid-row:2}.welcome-intro{grid-row:3;margin:0}.welcome-characters{grid-row:4}.welcome-team{grid-row:5;margin:0}.welcome-action{grid-row:6;margin:0}.welcome-note{grid-row:7;margin:0}}
+
+/* UX audit: narrow phone headers must wrap before navigation overflows. */
+@media(max-width:600px){.site-header{flex-wrap:wrap;padding:20px 16px;gap:14px}.site-header>.brand{min-width:0;max-width:100%}.site-header nav{width:100%;justify-content:flex-end;flex-wrap:wrap;gap:12px}.site-header .nav-happened{box-sizing:border-box;max-width:100%;white-space:normal;min-height:48px}.site-header .brand-logo{width:40px;height:40px}.site-header .wordmark{font-size:clamp(1.55rem,7vw,1.9rem)}.site-header .tagline{font-size:1rem}main{padding-left:16px;padding-right:16px}}
+body[data-flow="loan"] .hint{font-size:1rem;line-height:1.65;color:#3a4664}
+.not-found{max-width:760px;margin:32px auto;padding:32px}.not-found .character-avatar{width:120px;height:auto}.not-found-actions{display:flex;flex-wrap:wrap;gap:12px}.not-found-actions a{min-height:48px;padding:12px 18px;border:2px solid var(--brand-action);border-radius:14px;display:inline-flex;align-items:center;text-decoration:none;font-weight:700}

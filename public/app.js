@@ -203,7 +203,8 @@ function render(loanFlow, loanAnswers, aiConsent) {
   document.querySelector('#primary-action').textContent = primary;
   list('#actions', rest);
   document.querySelector('#actions').hidden = rest.length === 0;
-  document.querySelector('#summary').textContent = analysis.summary;
+  document.querySelector('#summary').textContent = analysis.summary === 'Obsah obsahuje více výrazných rizikových signálů. Požadavek si nezávisle ověřte.'
+    ? 'Našli jsme několik výrazných varovných signálů. Požadavek si nezávisle ověřte.' : analysis.summary;
   // AI results label who found what (existing signals[].source). Model text is
   // only ever textContent; rules-mode results keep their single list.
   const withAi = analysis.engine === 'rules+ai-v1';
