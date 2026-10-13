@@ -62,3 +62,15 @@ Doplněno pět cílených bezpečnostních testů včetně okamžitého zrušen�
 Citace začínající/končící uvnitř anonymizační značky se podle specifikace nadále zobrazuje anonymizovaná. Její offsety ale patří odeslanému textu, nikoli originálu. Původní spojování je mohlo chybně použít jako potvrzení překrývajícího se pravidlového nálezu v originálu. Browser nyní takový nález označí `unmapped`; spojování ho neslučuje podle offsetů s originálem. Nález zůstává viditelný jako samostatné doplnění AI a lze deduplikovat pouze stejnou anonymizovanou citaci. Toto lokální označení se neodesílá na server.
 
 Nový cílený test nejprve reprodukoval chybný `rules+ai` a po opravě potvrzuje zachování `rules` u původního nálezu a viditelné anonymizované AI citace. Po opravě prošlo 23 testů core/pipeline včetně nového testu. Před ní prošlo všech 35 cílených testů aktuálního PR; sada má nově 36 testů. Produkce zůstává beze změny.
+
+## Doplnění: opravy po nezávislém review (release rules-only)
+
+- **PDF.js v Gitu.** Obecné pravidlo `build/` v `.gitignore` vyřadilo `public/vendor/pdfjs/legacy/build/pdf.mjs` a `pdf.worker.mjs`; čistý checkout vracel 503 a PDF nefungovalo. Adresář je nyní výslovně zahrnut, soubory odpovídají `pdfjs-dist@6.4.299` (npm integrity i SHA-256 v `manifest.json`) a `.gitattributes` drží jejich přesné bajty.
+- **Volba AI jen při nakonfigurované AI.** Souhlas a náhled pro AI jsou ve výchozím stavu skryté a zobrazí se jen při `configured:true` z `/api/contract-status`; souhlas se jinak neuplatní.
+- **CSP.** `/proverit-smlouvu` má vždy jen `worker-src 'self'` navíc; originy Turnstile se přidávají pouze při plně nakonfigurovaném AI runtime. Ostatní trasy beze změny.
+- **CPU brána 20 ms** měří čas hlavního vlákna (`process.threadCpuUsage`, kritérium CR03) po zahřátí a vyžaduje všech pět měření pod nezměněnými 20 ms; pravidla alokují méně, výstup je beze změny (korpus + 4 000 fuzz dokumentů).
+- **Docker validace** kopíruje `ai-proxy.cjs` jen do validační fáze, aby test relay běžel i v obrazu; do produkční fáze se nedostane.
+
+### E1 — build brána
+
+Simulace přesné Docker brány (`AI_MODE=rules node --test --test-concurrency=1`, `claude-review-check`, `npm run check`) dává na základu `455f545` i na této větvi **identickou sadu 20 selhání** a selhání `claude-review-check` (CR-08). Tato větev žádnou novou regresi nepřidává. Selhání pocházejí ze změn produkce (`e94af36 Recover production sources from 2026-10-12` a navazujících), u nichž nebyly aktualizovány bezpečnostní testy a reference. Jejich oprava vyžaduje rozhodnutí vlastníka o bezpečnostních kritériích (souhlas, immutable CR03 reference, schválené assety, M9), proto není součástí tohoto release a produkční build zůstává blokován.
