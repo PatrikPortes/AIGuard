@@ -74,3 +74,12 @@ Nový cílený test nejprve reprodukoval chybný `rules+ai` a po opravě potvrzu
 ### E1 — build brána
 
 Simulace přesné Docker brány (`AI_MODE=rules node --test --test-concurrency=1`, `claude-review-check`, `npm run check`) dává na základu `455f545` i na této větvi **identickou sadu 20 selhání** a selhání `claude-review-check` (CR-08). Tato větev žádnou novou regresi nepřidává. Selhání pocházejí ze změn produkce (`e94af36 Recover production sources from 2026-10-12` a navazujících), u nichž nebyly aktualizovány bezpečnostní testy a reference. Jejich oprava vyžaduje rozhodnutí vlastníka o bezpečnostních kritériích (souhlas, immutable CR03 reference, schválené assety, M9), proto není součástí tohoto release a produkční build zůstává blokován.
+
+### E1 — vyřešeno (schváleno vlastníkem 2026-10-13)
+
+- `2606db4` údržba brány: souhlas ověřuje invariant „bez `ai_consent === true` 0 volání poskytovatele, 0 odeslání, 0 rezervací rozpočtu, 0 jobů fronty“ (rules-only 200 je povolena); CR03 reference s novým textem a zrcadlenou politikou akcí (detekce beze změny); explicitní manifest 17 assetů s limity; rozpočet podle půlnoci Europe/Prague; `admin/src/usage.js` jen ve validační fázi Dockeru; CR-08 na všech stránkách; M9 HTML s povoleným logem ze stejné domény. Žádný test nebyl odstraněn ani přeskočen, žádný limit snížen.
+- `fa89c62` výsledek s provedenou AI už netvrdí „nikoli AI model“.
+- `de72f40` odeslání formuláře smlouvy je bez JavaScriptu zakázané (CR-08).
+- `47a67af` `/uz-se-to-stalo` bez výjimky pro Cloudflare beacon: `script-src 'self'`, žádné zdroje třetích stran; nefunkční odkaz `#how-it-works` odstraněn. `/` a `/privacy` beze změny.
+
+Brána odpovídající Dockerfile (`node --test`, `claude-review-check`, `npm run check`) prochází z čistého checkoutu.
