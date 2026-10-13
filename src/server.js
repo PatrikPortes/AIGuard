@@ -16,6 +16,8 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/robots.txt', ['robots.txt', 'text/plain; charset=utf-8']],
+  ['/sitemap.xml', ['sitemap.xml', 'application/xml; charset=utf-8']],
   ['/404.html', ['404.html', 'text/html; charset=utf-8']],
   ['/favicon.ico', ['favicon.ico', 'image/x-icon']],
   ['/assets/brand/apple-touch-icon.png', ['assets/brand/apple-touch-icon.png', 'image/png']],
@@ -260,6 +262,12 @@ export function createServer({
         // A matching ETag alone is not evidence that a deployment actually
         // contains this file. Verify its physical bytes before returning 304.
         const cacheHeaders = character ? { 'Cache-Control': 'public, max-age=31536000, immutable', 'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable', ETag: `"${character.sha256}"` } : {};
+        // RUM may load only on these public informational pages. Form pages,
+        // APIs and all other assets keep the original same-origin policy.
+        if (['/', '/privacy', '/uz-se-to-stalo'].includes(path)) {
+          cacheHeaders['Content-Security-Policy'] = headers['Content-Security-Policy'].replace(
+            "script-src 'self'", "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js");
+        }
         const notModified = character && req.headers['if-none-match'] === cacheHeaders.ETag;
         const encoded = compressed && acceptsGzip(req.headers['accept-encoding']);
         if (compressed) cacheHeaders.Vary = 'Accept-Encoding';
