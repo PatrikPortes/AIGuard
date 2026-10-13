@@ -207,9 +207,18 @@ test('Beta: explicit retry is capped at one and atomically reserved each time', 
   assertRules(await capped.pipeline.analyze(input), analyze(input), 'budget_exhausted');
   assert.equal(capped.budget.db.prepare('SELECT attempts FROM ai_daily').get().attempts, 1);
 });
-test('Beta: no consent and malformed/oversized input remain errors before any AI call', async t => {
-  const { pipeline, calls } = fixture(t);
-  for (const [value, code] of [[{ type: 'text', content: input.content }, 'AI_CONSENT_REQUIRED'],
+test('Beta: no consent is rules-only with zero AI operations; malformed/oversized input remain errors before any AI call', async t => {
+  const { pipeline, calls, budget } = fixture(t);
+  for (const consent of [undefined, false, 'true', 1]) {
+    const value = { type: 'text', content: input.content, ...(consent !== undefined && { ai_consent: consent }) };
+    const queue = pipeline.queue, submit = queue.submit; let jobs = 0;
+    queue.submit = (...args) => { jobs++; return submit.apply(queue, args); };
+    assertRules(await pipeline.analyze(value), analyze(value), 'declined');
+    queue.submit = submit;
+    assert.equal(jobs, 0); assert.equal(calls.length, 0);
+    assert.equal(budget.db.prepare('SELECT count(*) AS n FROM ai_daily').get().n, 0);
+  }
+  for (const [value, code] of [
     [{ ...input, content: '' }, 'INVALID_INPUT'], [{ ...input, content: 'x'.repeat(10001) }, 'INVALID_INPUT'],
     [{ ...input, content: '漢'.repeat(6000) }, 'AI_INPUT_LIMIT']]) {
     await assert.rejects(pipeline.analyze(value), error => error.code === code);
@@ -344,7 +353,9 @@ test('Beta: HTTP Origin/session/consent/rate/security controls still precede AI'
   assert.equal(session.status, 200);
   const cookie = session.headers['set-cookie'][0].split(';')[0];
   assert.equal((await post(input, { Cookie: cookie, Origin: 'https://evil.invalid' })).status, 403);
-  assert.equal((await post({ ...input, ai_consent: false }, { Cookie: cookie })).status, 400);
+  // Approved: no consent → rules-only 200 with zero provider calls (asserted by calls.length below).
+  assert.equal((await post({ ...input, ai_consent: false }, { Cookie: cookie })).status, 200);
+  assert.equal(calls.length, 0);
   const response = await post(input, { Cookie: cookie }); assert.equal(response.status, 200);
   assert.match(response.headers['cache-control'], /no-store/);
   assert.match(response.headers['content-security-policy'], /connect-src 'self'/);

@@ -42,10 +42,14 @@ test('M9: exact GET serves the physical HTML with unchanged static security head
   const privacy = await fetch(base + '/privacy');
   assert.equal(privacy.status, 200);
   await privacy.text();
-  for (const header of ['content-security-policy', 'x-content-type-options', 'referrer-policy', 'x-frame-options', 'cache-control', 'permissions-policy']) {
+  for (const header of ['x-content-type-options', 'referrer-policy', 'x-frame-options', 'cache-control', 'permissions-policy']) {
     assert.ok(response.headers.get(header), header);
     assert.equal(response.headers.get(header), privacy.headers.get(header), header);
   }
+  // M9 keeps the strict base static policy: identical to a plain static asset,
+  // without the informational-page analytics exception (owner decision 2026-10-13).
+  const baseline = await fetch(base + '/style.css'); await baseline.arrayBuffer();
+  assert.equal(response.headers.get('content-security-policy'), baseline.headers.get('content-security-policy'));
   assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.equal(response.headers.get('set-cookie'), null);
   assert.deepEqual(calls, []);
@@ -54,15 +58,47 @@ test('M9: exact GET serves the physical HTML with unchanged static security head
 test('M9: content needs no scripts, forms, input, external resources or character assets', async t => {
   const { base } = await fixture(t);
   const html = await (await fetch(base + route)).text();
-  assert.doesNotMatch(html, /<\s*(?:script|form|input|textarea|select|iframe|object|embed|img|picture|svg|audio|video|base)\b/iu);
+  // Maintenance 2026-10-13: the page gained the shared site header and SEO head
+  // metadata. The invariant is unchanged: nothing on this page can run code,
+  // collect or submit input, embed content or load a third-party resource.
+  const [head, body] = html.split(/<\/head>/iu);
+  assert.ok(body, 'document has a head and a body');
+  assert.doesNotMatch(html, /<\s*(?:script|form|input|textarea|select|iframe|object|embed|picture|svg|audio|video|base)\b/iu);
+  // Exactly one image: the decorative same-origin brand logo, hidden from assistive tech.
+  const images = [...html.matchAll(/<\s*img\b[^>]*>/giu)].map(match => match[0]);
+  assert.deepEqual(images, ['<img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true">']);
   assert.doesNotMatch(html, /\son[a-z]+\s*=/iu);
-  assert.doesNotMatch(html, /\b(?:https?:|javascript:|data:|srcdoc\s*=|srcset\s*=|url\s*\(|@import|http-equiv\s*=)/iu);
+  assert.doesNotMatch(html, /\b(?:javascript:|data:|srcdoc\s*=|srcset\s*=|url\s*\(|@import|http-equiv\s*=)/iu);
+  // Absolute URLs only as non-loading same-origin metadata in <head>; never in the body.
+  assert.doesNotMatch(body, /\bhttps?:/iu);
+  for (const [url] of head.matchAll(/\bhttps?:[^"'\s>]*/giu)) assert.match(url, /^https:\/\/verimtomu\.fyi\//u, url);
+  for (const tag of head.match(/<[^>]*\bhttps?:[^>]*>/giu) || []) assert.match(tag, /^<(?:meta\s+(?:property|name)="(?:og:image|og:url|twitter:image)"|link rel="canonical")/u, tag);
   assert.doesNotMatch(html, /assets\/characters|character-assets/iu);
   const targets = [...html.matchAll(/\b(?:href|src|action|poster|background)\s*=\s*(["'])(.*?)\1/giu)].map(match => match[2]);
   assert.ok(targets.length > 0);
-  assert.ok(targets.every(target => ['/', '/style.css', 'tel:158'].includes(target)), JSON.stringify(targets));
+  const approvedTargets = ['/', '/style.css', 'tel:158', '/privacy', '/uz-se-to-stalo',
+    '/favicon.ico', '/assets/brand/favicon.png', '/assets/brand/apple-touch-icon.png', '/assets/brand/logo.png',
+    'https://verimtomu.fyi/uz-se-to-stalo'];
+  assert.ok(targets.every(target => approvedTargets.includes(target)), JSON.stringify(targets));
   assert.equal([...html.matchAll(/href=["']tel:158["']/gu)].length, 1);
   assert.match(html, /href="tel:158" aria-label="158 – zavolat Policii ČR">158<\/a>/u);
+});
+
+test('M9: CSP permits no third-party JavaScript, resource, frame or connection; script-src is only self', async t => {
+  const { base } = await fixture(t);
+  const response = await fetch(base + route); await response.text();
+  const csp = response.headers.get('content-security-policy');
+  const directives = new Map(csp.split(';').map(part => part.trim().split(/\s+/u)).filter(([name]) => name).map(([name, ...sources]) => [name, sources]));
+  assert.deepEqual(directives.get('script-src'), ["'self'"]);
+  for (const [name, sources] of directives) {
+    for (const source of sources) {
+      assert.doesNotMatch(source, /^(?:https?:|wss?:|\*|data:|blob:|'unsafe-|'strict-dynamic'|'nonce-|'sha(?:256|384|512)-)/iu, `${name} ${source}`);
+    }
+  }
+  for (const name of ['default-src', 'script-src', 'connect-src', 'img-src', 'style-src']) assert.ok(directives.has(name), name);
+  assert.deepEqual(directives.get('object-src'), ["'none'"]);
+  assert.deepEqual(directives.get('frame-ancestors'), ["'none'"]);
+  assert.equal(directives.has('frame-src'), false);
 });
 
 test('M9: safety copy scopes 158, reduces remote recovery and keeps the two identity scenarios distinct', async t => {

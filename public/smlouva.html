@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prověřit smlouvu · Věřím tomu?</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/contract.js" type="module"></script>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Prověřit smlouvu · Věřím tomu?">
+<meta property="og:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta property="og:image:alt" content="Věrka a Robo — Věřím tomu? Radši ověřit než litovat.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta name="description" content="Najděte ve smlouvě místa, která stojí za otázku před podpisem. Text a PDF zpracujeme místně; AI je volitelná. Nejde o právní posouzení.">
+<meta property="og:description" content="Najděte ve smlouvě místa, která stojí za otázku před podpisem. Text a PDF zpracujeme místně; AI je volitelná. Nejde o právní posouzení.">
+<meta property="og:url" content="https://verimtomu.fyi/proverit-smlouvu">
+<meta property="og:site_name" content="Věřím tomu?">
+<link rel="canonical" href="https://verimtomu.fyi/proverit-smlouvu">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/contract.css">
+</head>
+<body data-flow="message">
+<a class="skip-link" href="#contract-form">Přejít k prověření smlouvy</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true"><span class="brand-text"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></span></a>
+  <nav aria-label="Hlavní navigace">
+    <a class="nav-secondary" href="/#how-it-works">Jak to funguje</a>
+    <a class="nav-secondary" href="/privacy">Soukromí</a>
+    <a class="nav-happened" href="/uz-se-to-stalo">Už se to stalo?</a>
+  </nav>
+</header>
+<main><nav class="flow-navigation" aria-label="Výběr kontroly"><a href="/">← Zpět na úvod</a><a href="/overit-zpravu">Prověřit zprávu</a><a href="/proverit-web">Prověřit web</a><a href="/proverit-pujcku">Prověřit půjčku</a></nav>
+<section class="panel contract-entry" id="contract-entry"><div class="contract-card-heading"><img id="contract-verka" width="96" height="96" alt="Věrka, vaše průvodkyně"><h1>Prověřit smlouvu</h1></div><p>Pomůžu vám najít místa, na která se vyplatí zeptat, než smlouvu podepíšete. Nejde o právní posouzení.</p>
+<form id="contract-form"><fieldset><legend>Typ smlouvy</legend><div id="contract-types" class="contract-type-options"></div></fieldset>
+<label for="contract-text">Text smlouvy</label><textarea id="contract-text" maxlength="40000" required aria-describedby="contract-limit"></textarea><p class="contract-help" id="contract-limit">Nejvýše 40 000 znaků, zhruba 15 stran. Nepotřebné osobní údaje můžete smazat. Bez AI text nikam neodesíláme.</p><p id="contract-count" aria-live="polite"></p>
+<label for="contract-file">Nebo vyberte PDF s textovou vrstvou</label><input id="contract-file" type="file" accept=".pdf,application/pdf" aria-describedby="contract-pdf-help"><p class="contract-help" id="contract-pdf-help">Soubor zůstane ve vašem prohlížeči. Nejvýše 10 MB a 40 stran. Skeny, šifrované PDF, DOCX ani fotografie zatím nečteme.</p><button type="button" id="contract-cancel-pdf" hidden>Zrušit čtení PDF</button>
+<div id="contract-ai-option" hidden><label class="contract-consent"><input type="checkbox" id="contract-ai">Chci přidat kontrolu s AI</label><p class="contract-help">S AI po kontrole náhledu odešleme pouze vybraný text poskytovateli OpenAI. Neukládáme ho. Proti zneužití použijeme Cloudflare Turnstile. Nejvýše dvě AI kontroly na návštěvníka za 24 hodin, celkem dvacet denně.</p></div>
+<div id="contract-redaction" hidden><label class="contract-consent"><input type="checkbox" id="contract-anonymize" checked>Automaticky skrýt osobní údaje před AI</label><p class="contract-help">Automatické skrytí není dokonalé. Zkontrolujte zejména jména a adresy. Další údaje označte v původním textu a použijte následující tlačítko.</p><button id="contract-redact-selected" type="button">Skrýt označený úsek</button><button id="contract-clear-redactions" type="button">Zrušit ruční skrytí</button><button id="contract-preview-button" type="button">Připravit náhled pro AI</button><p class="contract-preview-title">Přesný text, který odešleme:</p><div id="contract-preview" class="contract-preview" tabindex="0"></div><label class="contract-consent"><input id="contract-preview-approved" type="checkbox">Náhled jsem zkontroloval/a a souhlasím s odesláním tohoto textu do AI</label><div id="contract-turnstile"></div></div>
+<p id="contract-error" class="contract-error" role="alert" hidden></p><button type="submit" disabled>Prověřit smlouvu</button></form><noscript>Pro místní zpracování textu a PDF zapněte JavaScript.</noscript></section>
+<div id="contract-status" class="contract-status" role="status" aria-live="polite" hidden><img id="contract-robo" alt="Robo prověřuje" width="90" height="90"><span id="contract-status-text"></span><button id="contract-cancel" type="button">Zrušit kontrolu</button></div>
+<section id="contract-result" class="panel contract-result" tabindex="-1" hidden><div class="contract-card-heading"><img id="contract-result-verka" alt="Věrka vysvětluje výsledek" width="96" height="96"><h2>Co udělat teď</h2></div><p id="contract-action" class="primary-action"></p><p id="contract-summary"></p><p id="contract-mode"></p><p id="contract-type-warning"></p><div id="contract-findings"></div><h2>Otázky před podpisem</h2><ol id="contract-questions"></ol><div class="contract-actions"><button id="contract-copy" type="button">Zkopírovat otázky</button><button id="contract-print" type="button">Vytisknout</button><button id="contract-again" type="button">Prověřit další smlouvu</button></div><p id="contract-copy-status" role="status"></p><h2>Co kontrola dokáže a co ne</h2><p>Jistota rozpoznání říká, jak jisté je, že jde o ustanovení daného typu. Neříká, zda je ustanovení platné nebo protiprávní. Nejde o právní posouzení.</p><ul id="contract-categories"></ul><p>Nekontrolujeme platnost smlouvy, totožnost druhé strany, ceny na trhu ani přílohy, které nebyly vloženy. Nenašli jsme nic dalšího neznamená, že je smlouva v pořádku.</p><h2>Kde získat pomoc</h2><nav class="contract-help-links" aria-label="Odborná pomoc"><a href="https://coi.gov.cz/">ČOI</a><a href="https://www.dtest.cz/poradna">dTest – poradna</a><a href="https://www.obcanskeporadny.cz/">Občanské poradny</a><a href="https://finarbitr.gov.cz/">Finanční arbitr</a><a href="https://eru.gov.cz/">ERÚ – energie</a><a href="https://ctu.gov.cz/">ČTÚ – telekomunikace</a><a href="https://www.cak.cz/">Česká advokátní komora</a><a href="/proverit-pujcku">Prověřit půjčku</a></nav></section></main>
+<footer>
+  <span><strong>Věřím tomu?</strong> · Veřejná zkušební verze</span>
+  <nav aria-label="Odkazy v patičce"><a href="/#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí a limity</a></nav>
+</footer>
+</body>
+</html>

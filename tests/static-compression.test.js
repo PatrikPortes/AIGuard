@@ -55,7 +55,11 @@ test('LUX-03: gzip negotiation respects explicit tokens, quality and identity fa
 
 test('LUX-03: APIs, character bytes, forbidden routes and rejected requests never become compressed', async t => {
   const get = await fixture(t);
-  for (const path of ['/api/session', '/api/health', '/favicon.ico', '/.env', '/.git/config', '/docs/security/SECURITY_RELEASE_GATE.md',
+  // /favicon.ico is now an approved binary icon: served, never compressed, no-store.
+  const favicon = await get('/favicon.ico', 'gzip');
+  assert.equal(favicon.status, 200); assert.equal(favicon.headers['content-type'], 'image/x-icon');
+  assert.equal(favicon.headers['content-encoding'], undefined); assert.equal(favicon.headers['cache-control'], 'no-store');
+  for (const path of ['/api/session', '/api/health', '/.env', '/.git/config', '/docs/security/SECURITY_RELEASE_GATE.md',
     '/assets/unapproved.webp', '/assets/characters/optimized/../unapproved.webp', '/%2e%2e/.env']) {
     const response = await get(path, 'gzip');
     assert.equal(response.headers['content-encoding'], undefined, path);

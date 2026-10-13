@@ -10,7 +10,10 @@ function temp(t) { const dir = mkdtempSync(join(tmpdir(), 'guard-budget-')); t.a
 const limits = { dailyRequests: 5, dailyBudgetMicroUsd: 50, totalBudgetMicroUsd: 70 };
 test('Rezervace přežije restart, půlnoc obnoví jen denní budget', t => {
   const path = temp(t);
-  let now = Date.UTC(2026, 9, 7, 23, 59);
+  // The daily budget resets at midnight Europe/Prague (CEST = UTC+2 on 2026-10-07),
+  // i.e. 22:00 UTC. Start one minute before that local midnight.
+  let now = Date.UTC(2026, 9, 7, 21, 59);
+  assert.equal(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now), '23:59');
   let store = new SqliteBudgetStore({ path, ...limits, clock: () => now });
   for (let i = 0; i < 5; i++) store.reserve({ costMicroUsd: 10 });
   assert.throws(() => store.reserve({ costMicroUsd: 1 }), error => error.code === 'AI_CAPACITY_EXHAUSTED');

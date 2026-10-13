@@ -2,8 +2,10 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHmac } from 'node:crypto';
 // Persistent rolling 24-hour quota; no message text or raw IP is stored.
 export class VisitorQuota {
-  constructor({path, secret, clock=Date.now}) {
+  constructor({path, secret, clock=Date.now,sessionLimit=3,ipLimit=12}) {
     if(!secret || secret.length<32) throw new Error('Quota secret missing');
+    if(!Number.isSafeInteger(sessionLimit)||sessionLimit<1||!Number.isSafeInteger(ipLimit)||ipLimit<1)throw new Error("Invalid quota limits");
+    this.sessionLimit=sessionLimit;this.ipLimit=ipLimit;
     this.clock=clock;this.secret=secret;this.db=new DatabaseSync(path);
     this.db.exec(`PRAGMA busy_timeout=1000;
       CREATE TABLE IF NOT EXISTS visitor_calls(identity TEXT NOT NULL, at INTEGER NOT NULL);
@@ -34,7 +36,7 @@ export class VisitorQuota {
       for(const [i,key]of keys.entries()){
         const row=this.db.prepare('SELECT COUNT(*) AS n,MIN(at) AS first FROM visitor_calls WHERE identity=?').get(key);
         // Supplementary network ceiling leaves room for households sharing an IP.
-        if(row.n>=(i===0?3:12)){this.db.exec('COMMIT');return {code:'AI_VISITOR_LIMIT',retryAfter:Math.max(1,Math.ceil((row.first+86400000-now)/1000))};}
+        if(row.n>=(i===0?this.sessionLimit:this.ipLimit)){this.db.exec('COMMIT');return {code:'AI_VISITOR_LIMIT',retryAfter:Math.max(1,Math.ceil((row.first+86400000-now)/1000))};}
       }
       for(const key of keys)this.db.prepare('INSERT INTO visitor_calls VALUES(?,?)').run(key,now);
       this.db.exec('COMMIT');return null;

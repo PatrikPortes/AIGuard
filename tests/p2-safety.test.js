@@ -111,15 +111,20 @@ test('P2/B3: rules mode and labelled unavailable fallback never reassure on zero
     }
   }
 });
-test('P2/B3: configured failure still requires consent and retains local warnings without leaking provider errors', async t => {
-  let calls = 0;
-  const pipeline = new AnalysisPipeline({ mode: 'ai', fallbackToRules: true, queue: new BoundedQueue({}),
+test('P2/B3: configured failure never runs AI without consent and retains local warnings without leaking provider errors', async t => {
+  let calls = 0, jobs = 0;
+  const queue = new BoundedQueue({}), submit = queue.submit.bind(queue);
+  queue.submit = (...args) => { jobs++; return submit(...args); };
+  const pipeline = new AnalysisPipeline({ mode: 'ai', fallbackToRules: true, queue,
     worker: { async run() { calls++; throw new ServiceError('AI_TIMEOUT'); } } });
   t.after(() => pipeline.close());
   for (const content of [P2, B3]) {
-    const before = calls;
-    await assert.rejects(pipeline.analyze(input(content)), { code: 'AI_CONSENT_REQUIRED' });
-    assert.equal(calls, before);
+    const before = calls, queued = jobs;
+    // Approved: without consent → labelled rules-only result, no queue job, no worker/provider call.
+    const declined = await pipeline.analyze(input(content));
+    assert.equal(declined.engine, 'rules-v1'); assert.equal(declined.ai_status, 'not_performed'); assert.equal(declined.ai_fallback_reason, 'declined');
+    assert.deepEqual(declined.signals, analyze(input(content)).signals);
+    assert.equal(calls, before); assert.equal(jobs, queued);
     const result = await pipeline.analyze({ ...input(content), ai_consent: true });
     assert.deepEqual(result.signals, analyze(input(content)).signals);
     assert.equal(result.ai_fallback_reason, 'timeout'); assert.equal(result.ai_status, 'not_performed');

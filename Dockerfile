@@ -9,6 +9,11 @@ COPY public ./public
 COPY scripts ./scripts
 COPY tests ./tests
 COPY test-support ./test-support
+# Validation-only: the private relay is tested here but never copied to the production stage.
+COPY ai-proxy.cjs ./
+# Validation-only: the admin usage reader is the consumer of the app usage snapshot
+# (tests/usage-stats.test.js). It is never copied to the production stage.
+COPY admin/src/usage.js ./admin/src/usage.js
 COPY deploy/env/app.env.example deploy/env/deployment.env.example ./deploy/env/
 COPY deploy/scripts ./deploy/scripts
 RUN --network=none AI_MODE=rules node --test --test-concurrency=1 && node scripts/claude-review-check.js && npm run check

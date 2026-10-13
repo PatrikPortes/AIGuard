@@ -1,0 +1,4 @@
+# Synthetic PDF fixtures must retain exact bytes and byte offsets.
+test-support/contract/*.pdf binary
+# Vendored PDF.js must keep exact upstream bytes (SHA-256 pinned in manifest.json).
+public/vendor/pdfjs/** -text -diff

@@ -1,4 +1,6 @@
-import {readCoiSnapshot,validateRegistryInput,lookupAres}from'./eshop-sources.js';
+import {createContractRuntime}from'./ai/contract-pipeline.js';
+import{validateContractInput}from'../public/contract-core.js';
+import {readCoiSnapshot,validateRegistryInput,lookupAres,aresRelayFromEnv}from'./eshop-sources.js';
 import http from 'node:http';
 import {createUsageStats,countOnFinish}from'./usage-stats.js';
 import { readFileSync } from 'node:fs';
@@ -17,6 +19,15 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/proverit-smlouvu', ['smlouva.html', 'text/html; charset=utf-8']],
+  ['/contract.js', ['contract.js', 'text/javascript; charset=utf-8']],
+  ['/contract.css', ['contract.css', 'text/css; charset=utf-8']],
+  ['/contract-core.js', ['contract-core.js', 'text/javascript; charset=utf-8']],
+  ['/contract-privacy.js', ['contract-privacy.js', 'text/javascript; charset=utf-8']],
+  ['/contract-verify.js', ['contract-verify.js', 'text/javascript; charset=utf-8']],
+  ['/contract-pdf.js', ['contract-pdf.js', 'text/javascript; charset=utf-8']],
+  ['/contract-legal-catalog.json', ['contract-legal-catalog.json', 'application/json; charset=utf-8']],
+
   ['/eshop-checker.js', ['eshop-checker.js', 'text/javascript; charset=utf-8']],
   ['/eshop-coi.json', ['coi-snapshot.json', 'application/json; charset=utf-8']],
   ['/proverit-web', ['web.html', 'text/html; charset=utf-8']],
@@ -58,6 +69,9 @@ const assets = new Map([
   ["/assets/characters/verka/verka-welcome.png", ["assets/characters/verka/verka-welcome.png", 'image/png']],
   ["/assets/characters/verkarob.png", ["assets/characters/verkarob.png", 'image/png']],
 ]);
+const pdfFiles=JSON.parse(readFileSync(new URL('../public/vendor/pdfjs/manifest.json',import.meta.url),'utf8')).files;
+for(const file of pdfFiles){const type=file.path.endsWith('.mjs')?'text/javascript; charset=utf-8':'application/octet-stream';assets.set('/vendor/pdfjs/'+file.path,['vendor/pdfjs/'+file.path,type]);}
+const pdfAssets=new Map(pdfFiles.map(f=>['/vendor/pdfjs/'+f.path,f]));
 const characterFiles = new Map(characterAssetFiles.map(asset => [asset.url, asset]));
 const characterAliases = new Map(characterAssetFiles.map(asset => [`/${asset.source}`, asset.url]));
 for (const asset of characterAssetFiles) assets.set(asset.url, [asset.url.slice(1), 'image/webp']);
@@ -108,6 +122,7 @@ function serviceError(res, error) {
   send(res, status, { code, error: messages[code] || 'AI ověření je dočasně nedostupné. Zkuste to později. Výsledek nebyl vytvořen.' });
 }
 export function createServer({
+  contractPipeline=createContractRuntime(), registryRelay=aresRelayFromEnv(),
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
   usageStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
@@ -163,13 +178,14 @@ export function createServer({
       releaseRequest = requests.enter();
       checkRequestHeaders(req);
       const path = requestPath(req.url);
-      const allowedMethod = ['/api/analyze','/api/eshop-operator'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session'].includes(path) ? 'GET' : null;
+      const allowedMethod = ['/api/analyze','/api/eshop-operator','/api/analyze-contract'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session','/api/contract-status'].includes(path) ? 'GET' : null;
       if (allowedMethod && req.method !== allowedMethod) {
         rejectBody(); res.setHeader('Allow', allowedMethod);
         return send(res, 405, { code: 'METHOD_NOT_ALLOWED', error: 'Tato metoda není podporována.' });
       }
       if (req.method === 'GET' && (req.headers['transfer-encoding'] || Number(req.headers['content-length']) > 0)) throw new ServiceError('INVALID_REQUEST', 400);
       if (req.method === 'GET' && path === '/api/health') return send(res, 200, { status: 'ok', ...pipeline.status() });
+      if(req.method==='GET'&&path==='/api/contract-status')return send(res,200,contractPipeline.status());
       if (req.method === 'GET' && path === '/api/session') {
         checkBrowserRequest(req, publicOrigin);
         const key = sessions.hashIp(clientIdentity(resolveClientIp(req)));
@@ -177,7 +193,7 @@ export function createServer({
         sessions.get(req, res);
         return send(res, 200, pipeline.status());
       }
-      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator'].includes(path)) {
+      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator','/api/analyze-contract'].includes(path)) {
         // Resolve only the explicitly configured ingress; never trust X-Forwarded-For.
         const clientIp = resolveClientIp(req);
         checkBrowserRequest(req, publicOrigin);
@@ -198,13 +214,19 @@ export function createServer({
           bodyReleases.push(prefix48Bodies.enter(sessions.hashIp(clientIdentity(clientIp, 48))));
         }
         bodyReleases.push(bodyRequests.enter());
-        const input = await readJson(req, { maxBytes:path === '/api/eshop-operator'?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal });
+        const input = await readJson(req, { maxBytes:path === '/api/analyze-contract'?262144:path === '/api/eshop-operator'?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal });
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
-        const preparedInput = path === '/api/eshop-operator' ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
+        const preparedInput = path === '/api/analyze-contract' ? (()=>{try{return validateContractInput(input);}catch(e){throw new ServiceError(e.message,400);}})() : path === '/api/eshop-operator' ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
         if (clientIdentity(clientIp).startsWith('ipv6:')) {
           prefix56Limiter.check(sessions.hashIp(clientIdentity(clientIp, 56)));
           prefix48Limiter.check(sessions.hashIp(clientIdentity(clientIp, 48)));
+        }
+        if(path==='/api/analyze-contract'){
+          if(preparedInput.ai_consent!==true)throw new ServiceError('AI_CONSENT_REQUIRED',400);
+          globalLimiter.check('analysis');releaseAnalysis=registryRequests.enter();req.setTimeout(50000);
+          const result=await contractPipeline.analyze(preparedInput,{signal:controller.signal,session:sessionId,ip:clientKey});
+          if(!controller.signal.aborted)return send(res,200,result);return;
         }
         if (requireBotCheck) {
           if (!botVerifier) throw new ServiceError('BOT_CHECK_REQUIRED');
@@ -220,7 +242,7 @@ export function createServer({
         if(path === '/api/eshop-operator'){
           globalLimiter.check('analysis');registryLimiter.check('registry');
           releaseAnalysis=registryRequests.enter();
-          return send(res,200,await lookupAres(preparedInput,{signal:controller.signal}));
+          return send(res,200,await lookupAres(preparedInput,{signal:controller.signal,relay:registryRelay}));
         }
         const analysisReleases = [];
         releaseAnalysis = () => analysisReleases.forEach(fn => fn());
@@ -269,7 +291,7 @@ export function createServer({
         const [file, type] = assets.get(path);
         if (!staticFiles.has(file)) {
           const loaded = readFile(new URL(`../public/${file}`, import.meta.url)).then(async bytes => {
-            if (character && (bytes.length !== character.bytes || createHash('sha256').update(bytes).digest('hex') !== character.sha256)) throw new Error('Static integrity rejected');
+            if ((character||pdfAssets.get(path)) && (bytes.length !== (character||pdfAssets.get(path)).bytes || createHash('sha256').update(bytes).digest('hex') !== (character||pdfAssets.get(path)).sha256)) throw new Error('Static integrity rejected');
             // A single precomputed gzip variant per allowlisted text file.
             // Images stay byte-identical; no request data enters this cache.
             return { bytes, compressed: type.startsWith('text/') ? await compressStatic(bytes) : undefined };
@@ -279,15 +301,22 @@ export function createServer({
         const { bytes, compressed } = await staticFiles.get(file);
         // A matching ETag alone is not evidence that a deployment actually
         // contains this file. Verify its physical bytes before returning 304.
-        const cacheHeaders = character ? { 'Cache-Control': 'public, max-age=31536000, immutable', 'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable', ETag: `"${character.sha256}"` } : {};
+        const pdfAsset=pdfAssets.get(path);
+        const cacheHeaders = character ? { 'Cache-Control': 'public, max-age=31536000, immutable', 'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable', ETag: `"${character.sha256}"` } : pdfAsset ? {'Cache-Control':'public, max-age=0, must-revalidate',ETag:`"${pdfAsset.sha256}"`} : {};
+        if(path==='/vendor/pdfjs/legacy/build/pdf.worker.mjs')cacheHeaders['Content-Security-Policy']="default-src 'none'; script-src 'self'; connect-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
         // RUM may load only on these public informational pages. Form pages,
         // APIs and all other assets keep the original same-origin policy.
-        if (['/', '/privacy', '/uz-se-to-stalo'].includes(path)) {
+        // The page needs a same-origin PDF worker. Turnstile origins are added only
+        // while the contract AI runtime is fully configured; rules-only stays first-party.
+        if(path==='/proverit-smlouvu'){const pageCsp=headers['Content-Security-Policy'].replace("worker-src 'none'","worker-src 'self'");cacheHeaders['Content-Security-Policy']=contractPipeline.status().configured===true?pageCsp.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+"; frame-src https://challenges.cloudflare.com":pageCsp;}
+        // Never on /uz-se-to-stalo: the M9 recovery page allows no third-party JavaScript.
+        if (['/', '/privacy'].includes(path)) {
           cacheHeaders['Content-Security-Policy'] = headers['Content-Security-Policy'].replace(
             "script-src 'self'", "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js");
         }
-        const notModified = character && req.headers['if-none-match'] === cacheHeaders.ETag;
+        const notModified = (character||pdfAsset) && req.headers['if-none-match'] === cacheHeaders.ETag;
         const encoded = compressed && acceptsGzip(req.headers['accept-encoding']);
+        if(pdfAssets.has(path)){const key=sessions.hashIp(clientIdentity(resolveClientIp(req)));staticLimiter.check(key);if(!notModified)staticByteLimiter.check(key,limiterClock(),encoded?compressed.length:bytes.length);}
         if (compressed) cacheHeaders.Vary = 'Accept-Encoding';
         if (encoded) cacheHeaders['Content-Encoding'] = 'gzip';
         return send(res, notModified ? 304 : path === '/404.html' ? 404 : 200, notModified ? '' : encoded ? compressed : bytes, type, cacheHeaders);
@@ -326,7 +355,7 @@ export function createServer({
     force.unref();
     return new Promise(resolve => server.close(() => { clearTimeout(force); resolve(); }));
   };
-  server.on('close', () => { visitorQuota?.close(); pipeline.close(); usageStats?.close(); });
+  server.on('close', () => { visitorQuota?.close(); pipeline.close();contractPipeline.close(); usageStats?.close(); });
   return server;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

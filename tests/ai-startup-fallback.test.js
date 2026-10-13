@@ -63,7 +63,10 @@ test('Startup HTTP: failed budget database never advertises consent-free rules f
   assert.equal(Object.hasOwn(f.session, 'rules_fallback'), false);
   for (const consent of [undefined, false]) {
     const response = await f.post({ ...input, ...(consent === false && { ai_consent: false }) });
-    assert.equal(response.status, 400); assert.equal(response.body.code, 'AI_CONSENT_REQUIRED');
+    // Approved: rules-only 200 without consent, labelled 'declined', zero AI operations.
+    assert.equal(response.status, 200); assert.equal(response.body.engine, 'rules-v1');
+    assert.equal(response.body.ai_status, 'not_performed'); assert.equal(response.body.ai_fallback_reason, 'declined');
+    assert.deepEqual(f.requests, []);
   }
   // Retain the existing explicitly consented, truthfully labelled fallback.
   const fallback = await f.post({ ...input, ai_consent: true });
@@ -88,15 +91,17 @@ test('Startup HTTP: genuinely unconfigured AI still offers zero-transmission fal
   }
   assert.deepEqual(f.requests, []); assert.equal(f.pipeline.worker, undefined);
 });
-test('Startup HTTP: configured AI still requires consent before reservation or provider transmission', async t => {
+test('Startup HTTP: configured AI never reserves or transmits without consent and answers rules-only', async t => {
   const f = await fixture(t, 'configured');
   assert.equal(f.session.ai_configured, true); assert.equal(f.session.rules_fallback, true);
   for (const consent of [undefined, false]) {
     const response = await f.post({ ...input, ...(consent === false && { ai_consent: false }) });
-    assert.equal(response.status, 400); assert.equal(response.body.code, 'AI_CONSENT_REQUIRED');
+    assert.equal(response.status, 200); assert.equal(response.body.engine, 'rules-v1');
+    assert.equal(response.body.ai_status, 'not_performed'); assert.equal(response.body.ai_fallback_reason, 'declined');
   }
   assert.deepEqual(f.requests, []);
   assert.equal(f.pipeline.worker.budget.db.prepare('SELECT count(*) AS n FROM ai_daily').get().n, 0);
+  assert.equal(f.pipeline.worker.budget.db.prepare('SELECT reserved FROM ai_total WHERE id=1').get().reserved, 0);
   const response = await f.post({ ...input, ai_consent: true });
   assert.equal(response.status, 200); assert.equal(response.body.ai_status, 'performed');
   assert.equal(f.requests.length, 1);
