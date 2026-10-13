@@ -5,7 +5,7 @@ The checkout restores the six frontend files differing between a7938eb and the a
 
 Deployment builds a small overlay on the immutable current image. Bundle context: src/server.js, src/sender.js, public/index.html, public/style.css, public/sitemap.xml and the three new Web Checker files. The environment is captured privately on VPS outside the build context (root-only permissions), never printed or committed. The helper verifies the production manifest, retains the old container and preserves private network/IP, mounts, environment, resources and isolation. Admin and AI proxy must retain identical container IDs. Failure restores the previous container automatically.
 
-Run on VPS as root: `python3 /tmp/deploy-web-checker.py COMMIT /tmp/verim-web-checker.tar.gz`.
-Rollback: `sudo python3 /opt/verimtomu/web-checker-release/rollback.py`. Old images and containers are retained. No data directories are replaced. The inherited rules-only Docker health probe is unchanged; the real HTTP health endpoint verifies AI readiness.
+Run on VPS as root: `python3 /tmp/deploy.py COMMIT /tmp/verim-web-checker.tar.gz`.
+Rollback: `sudo python3 /opt/verimtomu/web-checker-release-v2/rollback.py`. Old images and containers are retained. No data directories are replaced. The inherited rules-only Docker health probe is unchanged; the real HTTP health endpoint verifies AI readiness.
 
 The Web Checker never visits targets, resolves DNS, calls AI or stores input URLs. It is structural guidance, not identity verification. Supported brands reuse the existing sender metadata (Meta/Facebook and Česká pošta). Browser-only checks do not increment completed-message server counters.

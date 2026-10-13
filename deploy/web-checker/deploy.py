@@ -10,13 +10,15 @@ h=old['HostConfig'];net=list(old['NetworkSettings']['Networks'].items());assert 
 assert h['ReadonlyRootfs']and h['CapDrop']==['ALL']and 'no-new-privileges:true'in h['SecurityOpt']and not h.get('PortBindings')and not h['Privileged']
 assert sorted((m['Source'],m['Destination'],m['RW'])for m in old['Mounts'])==sorted([('/opt/verimtomu/ai-data','/app/data',True),('/opt/verimtomu/usage-private','/usage-private',True),('/opt/verimtomu/usage-export','/usage-export',True)])
 assert subprocess.run(['docker','inspect',backup],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0,'Backup already exists'
-root=pathlib.Path('/opt/verimtomu/web-checker-release');assert not root.exists(),'Release directory exists';root.mkdir(mode=0o700)
+root=pathlib.Path('/opt/verimtomu/web-checker-release-v2');assert not root.exists(),'Release directory exists';root.mkdir(mode=0o700)
 subprocess.check_call(['tar','-xzf',bundle,'-C',str(root)])
 expected=json.loads((root/'production-baseline.json').read_text())
 js='const f=require("fs"),c=require("crypto");let s="";process.stdin.on("data",b=>s+=b);process.stdin.on("end",()=>console.log(JSON.stringify(Object.fromEntries(JSON.parse(s).map(k=>[k,c.createHash("sha256").update(f.readFileSync("/app/"+k)).digest("hex")])))));'
 def hashes(keys):return json.loads(subprocess.check_output(['docker','exec','-i',name,'node','-e',js],input=json.dumps(list(keys)).encode()))
 assert hashes(expected)==expected,'Production source changed'
-context=root/'context';subprocess.check_call(['docker','build','--network','none','--pull=false','--build-arg','BASE_IMAGE='+base,'--build-arg','RELEASE_COMMIT='+commit,'-f',str(context/'Dockerfile'),'-t','verimtomu-web:web-checker-'+commit[:7],str(context)])
+base_tag='verimtomu-web-checker-base:verified';subprocess.check_call(['docker','tag',base,base_tag])
+assert run(['docker','image','inspect',base_tag,'--format','{{.Id}}'])==base
+context=root/'context';subprocess.check_call(['docker','build','--network','none','--pull=false','--build-arg','BASE_IMAGE='+base_tag,'--build-arg','RELEASE_COMMIT='+commit,'-f',str(context/'Dockerfile'),'-t','verimtomu-web:web-checker-'+commit[:7],str(context)])
 image=run(['docker','image','inspect','verimtomu-web:web-checker-'+commit[:7],'--format','{{.Id}}'])
 env=root/'runtime.env';fd=os.open(env,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
 with os.fdopen(fd,'w')as out:
