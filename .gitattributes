@@ -1,0 +1,2 @@
+# Synthetic PDF fixtures must retain exact bytes and byte offsets.
+test-support/contract/*.pdf binary

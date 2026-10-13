@@ -1,0 +1,2 @@
+import{readFileSync}from'node:fs';import{eligibleCatalog}from'../public/contract-verify.js';
+const catalog=JSON.parse(readFileSync(new URL('../public/contract-legal-catalog.json',import.meta.url),'utf8'));if(!Array.isArray(catalog))throw Error('Catalogue must be an array');const approved=catalog.filter(x=>x.status==='approved'),valid=eligibleCatalog(catalog);if(approved.some(x=>!valid.includes(x)))throw Error('Approved catalogue entry fails source/date/review constraints');console.log('PASS contract catalogue: '+valid.length+' eligible approved entries');
