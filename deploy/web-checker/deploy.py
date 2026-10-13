@@ -1,7 +1,7 @@
 """Run as root on VPS: python3 deploy.py COMMIT BUNDLE. No secrets are printed."""
 import subprocess,json,pathlib,os,sys,time,hashlib
 commit,bundle=sys.argv[1:];assert len(commit)==40 and all(x in '0123456789abcdef' for x in commit)
-name='verimtomu-web';backup=name+'-before-web-checker-20261013';base='sha256:d91f79fbc0cde8431e3558a3833b26a8fb124b860f03fb94207511a944023a90'
+name='verimtomu-web';backup=name+'-before-web-checker2-20261013';base='sha256:b2f3a1c579e9df989e0349ae6ac10a35e79b7da23729c7976d97db460b36c084'
 def run(a):return subprocess.check_output(a).decode().strip()
 def inspect(n):return json.loads(run(['docker','inspect',n]))[0]
 old=inspect(name);assert old['Image']==base,'Production image changed'
@@ -10,13 +10,13 @@ h=old['HostConfig'];net=list(old['NetworkSettings']['Networks'].items());assert 
 assert h['ReadonlyRootfs']and h['CapDrop']==['ALL']and 'no-new-privileges:true'in h['SecurityOpt']and not h.get('PortBindings')and not h['Privileged']
 assert sorted((m['Source'],m['Destination'],m['RW'])for m in old['Mounts'])==sorted([('/opt/verimtomu/ai-data','/app/data',True),('/opt/verimtomu/usage-private','/usage-private',True),('/opt/verimtomu/usage-export','/usage-export',True)])
 assert subprocess.run(['docker','inspect',backup],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode!=0,'Backup already exists'
-root=pathlib.Path('/opt/verimtomu/web-checker-release-v2');assert not root.exists(),'Release directory exists';root.mkdir(mode=0o700)
+root=pathlib.Path('/opt/verimtomu/web-checker2-release');assert not root.exists(),'Release directory exists';root.mkdir(mode=0o700)
 subprocess.check_call(['tar','-xzf',bundle,'-C',str(root)])
 expected=json.loads((root/'production-baseline.json').read_text())
 js='const f=require("fs"),c=require("crypto");let s="";process.stdin.on("data",b=>s+=b);process.stdin.on("end",()=>console.log(JSON.stringify(Object.fromEntries(JSON.parse(s).map(k=>[k,c.createHash("sha256").update(f.readFileSync("/app/"+k)).digest("hex")])))));'
 def hashes(keys):return json.loads(subprocess.check_output(['docker','exec','-i',name,'node','-e',js],input=json.dumps(list(keys)).encode()))
 assert hashes(expected)==expected,'Production source changed'
-base_tag='verimtomu-web-checker-base:verified';subprocess.check_call(['docker','tag',base,base_tag])
+base_tag='verimtomu-web-checker2-base:verified';subprocess.check_call(['docker','tag',base,base_tag])
 assert run(['docker','image','inspect',base_tag,'--format','{{.Id}}'])==base
 context=root/'context';subprocess.check_call(['docker','build','--network','none','--pull=false','--build-arg','BASE_IMAGE='+base_tag,'--build-arg','RELEASE_COMMIT='+commit,'-f',str(context/'Dockerfile'),'-t','verimtomu-web:web-checker-'+commit[:7],str(context)])
 image=run(['docker','image','inspect','verimtomu-web:web-checker-'+commit[:7],'--format','{{.Id}}'])
@@ -33,7 +33,7 @@ args.extend(['--log-driver',h['LogConfig']['Type']])
 for k,v in h['LogConfig']['Config'].items():args.extend(['--log-opt',k+'='+v])
 args.append(image)
 rollback="""import subprocess,json,time
-name='verimtomu-web';backup='verimtomu-web-before-web-checker-20261013'
+name='verimtomu-web';backup='verimtomu-web-before-web-checker2-20261013'
 def inspect(n):return json.loads(subprocess.check_output(['docker','inspect',n]))[0]
 assert inspect(backup)['Image']=='"""+base+"""'
 subprocess.check_call(['docker','stop',name]);subprocess.check_call(['docker','rename',name,name+'-rolled-back-'+str(int(time.time()))]);subprocess.check_call(['docker','rename',backup,name]);subprocess.check_call(['docker','start',name]);print('Previous production restored.')

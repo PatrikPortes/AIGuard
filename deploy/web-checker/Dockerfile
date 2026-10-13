@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=verimtomu-web-checker-base:verified
+ARG BASE_IMAGE=verimtomu-web-checker2-base:verified
 FROM ${BASE_IMAGE}
 ARG RELEASE_COMMIT
 LABEL org.opencontainers.image.revision=${RELEASE_COMMIT}

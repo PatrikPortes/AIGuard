@@ -1,0 +1,12 @@
+[Unit]
+Description=Synchronize public COI risk list
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/verimtomu/eshop-sync/sync-coi.py /opt/verimtomu/ai-data/eshop-sources/coi.json
+User=65532
+Group=65532
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/verimtomu/ai-data/eshop-sources

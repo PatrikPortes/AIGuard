@@ -1,3 +1,4 @@
+import {readCoiSnapshot,validateRegistryInput,lookupAres}from'./eshop-sources.js';
 import http from 'node:http';
 import {createUsageStats,countOnFinish}from'./usage-stats.js';
 import { readFileSync } from 'node:fs';
@@ -16,6 +17,8 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/eshop-checker.js', ['eshop-checker.js', 'text/javascript; charset=utf-8']],
+  ['/eshop-coi.json', ['coi-snapshot.json', 'application/json; charset=utf-8']],
   ['/proverit-web', ['web.html', 'text/html; charset=utf-8']],
   ['/web-checker.js', ['web-checker.js', 'text/javascript; charset=utf-8']],
   ['/brand-references.js', ['brand-references.js', 'text/javascript; charset=utf-8']],
@@ -123,6 +126,8 @@ export function createServer({
   const staticLimiter = new WindowLimiter({ limit: staticRateLimit, windowMs: 60000, clock: limiterClock });
   const staticByteLimiter = new WindowLimiter({ limit: staticBytesPerMinute, windowMs: 60000, clock: limiterClock });
   const requests = new AdmissionGate(maxActiveRequests);
+  const registryRequests = new AdmissionGate(2);
+  const registryLimiter = new WindowLimiter({limit:20,windowMs:60000,clock:limiterClock,maxKeys:1});
   const analyses = new AdmissionGate(maxConcurrentAnalyses);
   const clientBodies = new ClientAdmission(maxBodyRequestsPerClient);
   const sessionBodies = new ClientAdmission(1);
@@ -158,7 +163,7 @@ export function createServer({
       releaseRequest = requests.enter();
       checkRequestHeaders(req);
       const path = requestPath(req.url);
-      const allowedMethod = path === '/api/analyze' ? 'POST' : assets.has(path) || ['/api/health', '/api/session'].includes(path) ? 'GET' : null;
+      const allowedMethod = ['/api/analyze','/api/eshop-operator'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session'].includes(path) ? 'GET' : null;
       if (allowedMethod && req.method !== allowedMethod) {
         rejectBody(); res.setHeader('Allow', allowedMethod);
         return send(res, 405, { code: 'METHOD_NOT_ALLOWED', error: 'Tato metoda není podporována.' });
@@ -172,7 +177,7 @@ export function createServer({
         sessions.get(req, res);
         return send(res, 200, pipeline.status());
       }
-      if (req.method === 'POST' && path === '/api/analyze') {
+      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator'].includes(path)) {
         // Resolve only the explicitly configured ingress; never trust X-Forwarded-For.
         const clientIp = resolveClientIp(req);
         checkBrowserRequest(req, publicOrigin);
@@ -193,9 +198,9 @@ export function createServer({
           bodyReleases.push(prefix48Bodies.enter(sessions.hashIp(clientIdentity(clientIp, 48))));
         }
         bodyReleases.push(bodyRequests.enter());
-        const input = await readJson(req, { timeoutMs: bodyTimeoutMs, signal: controller.signal });
+        const input = await readJson(req, { maxBytes:path === '/api/eshop-operator'?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal });
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
-        const preparedInput = pipeline.validate ? pipeline.validate(input) : validateInput(input);
+        const preparedInput = path === '/api/eshop-operator' ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
         if (clientIdentity(clientIp).startsWith('ipv6:')) {
           prefix56Limiter.check(sessions.hashIp(clientIdentity(clientIp, 56)));
@@ -211,6 +216,11 @@ export function createServer({
           });
           const verified = await Promise.race([botVerifier({ token: typeof input?.bot_token === 'string' ? input.bot_token.slice(0, 4096) : '', ip: clientIp, signal: checkSignal }), rejected]);
           if (!verified) throw new ServiceError('BOT_CHECK_REQUIRED', 403);
+        }
+        if(path === '/api/eshop-operator'){
+          globalLimiter.check('analysis');registryLimiter.check('registry');
+          releaseAnalysis=registryRequests.enter();
+          return send(res,200,await lookupAres(preparedInput,{signal:controller.signal}));
         }
         const analysisReleases = [];
         releaseAnalysis = () => analysisReleases.forEach(fn => fn());
@@ -238,6 +248,11 @@ export function createServer({
         return;
       }
       if (req.method === 'GET' && assets.has(path)) {
+        if(path === '/eshop-coi.json'){
+          const key=sessions.hashIp(clientIdentity(resolveClientIp(req)));staticLimiter.check(key);
+          const data=await readCoiSnapshot();staticByteLimiter.check(key,limiterClock(),Buffer.byteLength(JSON.stringify(data)));
+          return send(res,200,data,'application/json; charset=utf-8',{'Cache-Control':'no-store','Cloudflare-CDN-Cache-Control':'no-store'});
+        }
         const character = characterFiles.get(path);
         const alias = characterAliases.get(path);
         if (character || alias) {

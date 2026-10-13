@@ -1,11 +1,8 @@
-# Unified production + SEO + Web Checker release
-The verified production baseline is image sha256:d91f79fbc0cde8431e3558a3833b26a8fb124b860f03fb94207511a944023a90, revision 7e2112e. production-baseline.json records all 60 actual runtime source/public hashes, not an assumed Git tree.
+# Web Checker 2.0 release
+Baseline is the actual fafccd9 production image sha256:b2f3a1c579e9df989e0349ae6ac10a35e79b7da23729c7976d97db460b36c084. production-baseline.json records all runtime source/public files. Only Web Checker UI, new source adapters/data and explicit routes change. SEO, original CSP exceptions, AI and usage code are preserved.
 
-The checkout restores the six frontend files differing between a7938eb and the actual runtime before applying this release. Production privacy.html and robots.txt are identical; sitemap retains all five existing URLs and adds /proverit-web. Existing CSP exceptions remain byte-identical, only on the three approved informational pages. API, form and new checker policies remain same-origin.
+See ../eshop/SOURCES.md for source permissions, data freshness and the production ARES egress limitation. Build context is packaged explicitly by package.py; no environment, keys or runtime databases enter it. deploy.py retains the previous container/image, verifies source hashes and preserves network/IP, mounts, environment, resources, logging and isolation. Other container IDs must remain unchanged. Failed deployment rolls back automatically.
 
-Deployment builds a small overlay on the immutable current image. Bundle context: src/server.js, src/sender.js, public/index.html, public/style.css, public/sitemap.xml and the three new Web Checker files. The environment is captured privately on VPS outside the build context (root-only permissions), never printed or committed. The helper verifies the production manifest, retains the old container and preserves private network/IP, mounts, environment, resources and isolation. Admin and AI proxy must retain identical container IDs. Failure restores the previous container automatically.
+After a future approved deployment, rollback on VPS: `sudo python3 /opt/verimtomu/web-checker2-release/rollback.py`.
 
-Run on VPS as root: `python3 /tmp/deploy.py COMMIT /tmp/verim-web-checker.tar.gz`.
-Rollback: `sudo python3 /opt/verimtomu/web-checker-release-v2/rollback.py`. Old images and containers are retained. No data directories are replaced. The inherited rules-only Docker health probe is unchanged; the real HTTP health endpoint verifies AI readiness.
-
-The Web Checker never visits targets, resolves DNS, calls AI or stores input URLs. It is structural guidance, not identity verification. Supported brands reuse the existing sender metadata (Meta/Facebook and Česká pošta). Browser-only checks do not increment completed-message server counters.
+This release is prepared only; it has not replaced production or installed the COI timer.
