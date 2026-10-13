@@ -56,3 +56,9 @@ Worker má navíc vlastní response CSP `connect-src 'none'`, `default-src 'none
 Šifrování se odmítá nejen při požadavku na heslo, ale i z `EncryptFilterName` po načtení; tím je pokryté PDF s prázdným uživatelským heslem. Timeout a zrušení ukončí worker, parser i probíhající pomocné fetch požadavky; chyby parseru se zobrazují bez diagnostických detailů. Limity 10 MB, 40 stran, 40 000 znaků a 20 sekund se nemění.
 
 Doplněno pět cílených bezpečnostních testů včetně okamžitého zrušení a timeoutu zaseknutého čtení, assertion CSP workeru a syntetické PDF šifrované prázdným heslem. Kontrola v prohlížeči potvrdila textovou extrakci, ignorování PDF JavaScriptu, odmítnutí obou variant šifrování, srozumitelnou chybu parseru a prázdný file input. Tato aktualizace nemění produkci ani neobchází původní build gate.
+
+## Oprava při přípravě nezávislého review
+
+Citace začínající/končící uvnitř anonymizační značky se podle specifikace nadále zobrazuje anonymizovaná. Její offsety ale patří odeslanému textu, nikoli originálu. Původní spojování je mohlo chybně použít jako potvrzení překrývajícího se pravidlového nálezu v originálu. Browser nyní takový nález označí `unmapped`; spojování ho neslučuje podle offsetů s originálem. Nález zůstává viditelný jako samostatné doplnění AI a lze deduplikovat pouze stejnou anonymizovanou citaci. Toto lokální označení se neodesílá na server.
+
+Nový cílený test nejprve reprodukoval chybný `rules+ai` a po opravě potvrzuje zachování `rules` u původního nálezu a viditelné anonymizované AI citace. Po opravě prošlo 23 testů core/pipeline včetně nového testu. Před ní prošlo všech 35 cílených testů aktuálního PR; sada má nově 36 testů. Produkce zůstává beze změny.

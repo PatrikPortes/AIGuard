@@ -14,7 +14,7 @@ export async function runContractCheck({original,contractType='unknown',aiConsen
  const input=contractPayload({sent,contractType,aiConsent,previewApproved,botToken});const result=await transport(input);
  if(!result||!Array.isArray(result.findings))throw Error('Odpověď nelze ověřit.');
  const restored=[];for(const f of result.findings){if(result.mode!=='rules+ai'||!['ai','rules+ai'].includes(f.source))continue;if(!Object.hasOwn(DEFINITIONS,f.category)||!Object.hasOwn(CLASSIFICATIONS,f.classification)||!Number.isInteger(f.start)||!Number.isInteger(f.end)||f.end<=f.start||f.start<0||f.end>sent.length||f.quote!==sent.slice(f.start,f.end)||f.quote.length<20||f.quote.length>600)continue;const range=originalRange(f.start,f.end,map),quote=range?original.slice(range.start,range.end):null;
-  restored.push({...f,quote:quote&&quote.length<=600?quote:f.quote,start:range?.start??f.start,end:range?.end??f.end,page:range?pageAt(original,range.start):null,anonymous:!range||!quote||quote.length>600});
+  restored.push({...f,quote:quote&&quote.length<=600?quote:f.quote,start:range?.start??f.start,end:range?.end??f.end,page:range?pageAt(original,range.start):null,anonymous:!range||!quote||quote.length>600,unmapped:!range});
  }
  const merged=mergeContractResults(local,{findings:restored,questions:result.mode==='rules+ai'&&Array.isArray(result.questions_before_signing)?result.questions_before_signing:[]},contractType,catalog);return{...merged,mode:result.mode,fallback_reason:result.fallback_reason,contract_type_guess:result.contract_type_guess,insufficient_text:merged.insufficient_text||result.insufficient_text};
 }

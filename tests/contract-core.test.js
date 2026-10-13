@@ -14,3 +14,13 @@ test('client consent gate sends zero requests without AI and never sends origina
 test('fallback cannot claim AI corroboration or increase recognition confidence',async()=>{const r=await runContractCheck({original:text,contractType:'consumer_services',aiConsent:true,previewApproved:true,sent:text,transport:async()=>({...rulesForContract(text),mode:'rules_fallback'})});assert(r.findings.every(f=>f.source==='rules'));});
 test('rules meet the 20ms CPU gate at 40k and reject oversize input',()=>{const long=(text+' ').repeat(1000).slice(0,40000);rulesForContract(text);const start=process.cpuUsage();rulesForContract(long);const cpu=process.cpuUsage(start);assert(cpu.user+cpu.system<20000,'CPU: '+(cpu.user+cpu.system));assert.throws(()=>rulesForContract('x'.repeat(40001)));assert.throws(()=>validateContractInput({content:text,contract_type:'unknown',ai_consent:true,original:'private'}));});
 test('older birth numbers, international IBAN and labelled birth-date variants are hidden',()=>{const sample='Rodné číslo 401101/123, IBAN FR7630006000011234567890189, IBAN NL91 ABNA 0417 1643 00, datum narození: 1990-01-01.';const a=anonymizeContract(sample);for(const value of ['401101/123','FR7630006000011234567890189','NL91 ABNA 0417 1643 00','1990-01-01'])assert(!a.sent.includes(value),value);});
+
+test('ambiguous redaction citation stays visible without falsely corroborating original rule offsets',async()=>{
+ const original='Smluvní pokuta činí 1000 Kč a platí pro zákazníka dlouhy.osobni.kontakt@example.invalid při prodlení zákazníka.';
+ const a=anonymizeContract(original);assert.equal(a.map.length,1);
+ const start=a.map[0].sentStart+1,end=a.sent.length;const quote=a.sent.slice(start,end);
+ assert.equal(originalRange(start,end,a.map),null);
+ const r=await runContractCheck({original,contractType:'consumer_services',aiConsent:true,previewApproved:true,sent:a.sent,map:a.map,botToken:'test',transport:async()=>({mode:'rules+ai',findings:[{...finding,start,end,quote,source:'ai',confidence:'medium'}],questions_before_signing:[]})});
+ const localQuote=rulesForContract(original,'consumer_services').findings.find(f=>f.category==='penalty').quote;const originalFinding=r.findings.find(f=>f.quote===localQuote);assert(originalFinding);assert.equal(originalFinding.source,'rules');
+ const anonymousFinding=r.findings.find(f=>f.quote===quote);assert(anonymousFinding);assert.equal(anonymousFinding.source,'ai');assert.equal(anonymousFinding.anonymous,true);
+});
