@@ -309,7 +309,8 @@ export function createServer({
         // The page needs a same-origin PDF worker. Turnstile origins are added only
         // while the contract AI runtime is fully configured; rules-only stays first-party.
         if(path==='/proverit-smlouvu'){const pageCsp=headers['Content-Security-Policy'].replace("worker-src 'none'","worker-src 'self'");cacheHeaders['Content-Security-Policy']=contractPipeline.status().configured===true?pageCsp.replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+"; frame-src https://challenges.cloudflare.com":pageCsp;}
-        if (['/', '/privacy', '/uz-se-to-stalo'].includes(path)) {
+        // Never on /uz-se-to-stalo: the M9 recovery page allows no third-party JavaScript.
+        if (['/', '/privacy'].includes(path)) {
           cacheHeaders['Content-Security-Policy'] = headers['Content-Security-Policy'].replace(
             "script-src 'self'", "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js");
         }
