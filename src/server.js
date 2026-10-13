@@ -1,6 +1,6 @@
 import {createContractRuntime}from'./ai/contract-pipeline.js';
 import{validateContractInput}from'../public/contract-core.js';
-import {readCoiSnapshot,validateRegistryInput,lookupAres}from'./eshop-sources.js';
+import {readCoiSnapshot,validateRegistryInput,lookupAres,aresRelayFromEnv}from'./eshop-sources.js';
 import http from 'node:http';
 import {createUsageStats,countOnFinish}from'./usage-stats.js';
 import { readFileSync } from 'node:fs';
@@ -122,7 +122,7 @@ function serviceError(res, error) {
   send(res, status, { code, error: messages[code] || 'AI ověření je dočasně nedostupné. Zkuste to později. Výsledek nebyl vytvořen.' });
 }
 export function createServer({
-  contractPipeline=createContractRuntime(),
+  contractPipeline=createContractRuntime(), registryRelay=aresRelayFromEnv(),
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
   usageStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
@@ -242,7 +242,7 @@ export function createServer({
         if(path === '/api/eshop-operator'){
           globalLimiter.check('analysis');registryLimiter.check('registry');
           releaseAnalysis=registryRequests.enter();
-          return send(res,200,await lookupAres(preparedInput,{signal:controller.signal}));
+          return send(res,200,await lookupAres(preparedInput,{signal:controller.signal,relay:registryRelay}));
         }
         const analysisReleases = [];
         releaseAnalysis = () => analysisReleases.forEach(fn => fn());
