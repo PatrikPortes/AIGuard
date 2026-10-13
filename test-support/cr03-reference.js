@@ -140,12 +140,33 @@ export function analyze(input) {
     id: randomUUID(), input_type: intake.type, engine: 'rules-v1', risk_score: score, risk_level: level,
     summary: resultSummary(score, intake.type, signals.length),
     signals: signals.map(({ weight, ...signal }) => signal),
-    recommended_actions: ['Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.'],
+    recommended_actions: referenceActions(signals),
     verification_steps: verificationAgent(),
     uncertainties: [
-      'Tento prototyp používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
+      'Tato veřejná zkušební verze používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
       'Neověřili jsme totožnost odesílatele, pravdivost tvrzení ani obsah odkazovaných stránek.',
       ...(intake.type === 'url' ? ['URL jsme pouze rozebrali. Stránku jsme nenavštívili a její bezpečnost nelze tímto skóre určit.'] : []),
     ],
   });
+}
+
+// Approved post-detection guidance update (maintenance, 2026-10-13): an exact copy of the
+// current non-loan action policy from src/analysis.js and src/sender.js. Detection
+// (matching, signals, score, level, summary, uncertainties) stays the frozen M9
+// reference above; only the scenario-specific, action-first guidance is mirrored.
+const REFERENCE_PHISHING_ACTION = 'Na odkaz ve zprávě neklikejte. Přihlaste se přímo přes oficiální web nebo aplikaci služby.';
+function referencePhishingCombination(signals){const ids=new Set(signals.map(s=>s.id));return (ids.has('link')||ids.has('link_request'))&&((ids.has('account_threat')&&ids.has('urgency'))||((ids.has('sender_mismatch')||ids.has('sender_impersonation'))&&(ids.has('account_threat')||ids.has('credentials')||ids.has('urgency'))));}
+function referenceActions(signals) {
+  const has = id => signals.some(signal => signal.id === id);
+  return referencePhishingCombination(signals)
+    ? [REFERENCE_PHISHING_ACTION, 'Nesdělujte hesla, PIN ani ověřovací kódy. Totožnost odesílatele jsme neověřili.']
+    : has('safe_account_transfer')
+      ? ['Peníze nepřevádějte. Banku kontaktujte přes svou známou oficiální aplikaci nebo číslo na své kartě, ne přes kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.']
+    : has('family_cash_pickup')
+      ? ['Hotovost nepředávejte ani peníze neposílejte. Příbuznému zavolejte na číslo, které už znáte z dřívějška.', 'Požadavek proberte s někým, komu důvěřujete. Nespoléhejte na kontakt ze zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.']
+    : has('new_number') && has('money')
+      ? ['Peníze zatím neposílejte. Blízkému zavolejte na jeho původní číslo, které už znáte.', 'Nepřebírejte kontakt z této zprávy.', 'Nesdělujte hesla, PIN ani jednorázové kódy.']
+    : has('credentials')
+      ? ['Heslo, PIN ani ověřovací kód nesdělujte. Požadavek ověřte přes známý kontakt nebo oficiální aplikaci.', 'Nepoužívejte kontakt ani odkaz ze zprávy.']
+    : ['Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.', 'Nesdělujte hesla, PIN ani jednorázové kódy.', 'Podezřelé odkazy a přílohy neotevírejte.'];
 }

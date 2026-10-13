@@ -82,3 +82,15 @@ test('CR03: boundary, URL and invalid rejection semantics stay unchanged', () =>
   assert.equal(validateInput({ type: 'text', content: 'é'.repeat(8000) }).content.length, 8000);
   assert.throws(() => validateInput({ type: 'text', content: 'é'.repeat(8001) }), { code: 'AI_INPUT_LIMIT' });
 });
+
+test('CR03: the public rules-only notice is mapped away whenever AI observations were actually performed', async () => {
+  const { analyze } = await import('../src/analysis.js');
+  const { reconcileObservations, validateObservations } = await import('../src/ai/observations.js');
+  const input = { type: 'text', content: 'Mami, pošli mi ihned 12 000 Kč, nevolej mi.' };
+  const rules = analyze(input);
+  assert.ok(rules.uncertainties.some(note => note.includes('nikoli AI model')), 'rules-only result keeps the notice');
+  const result = reconcileObservations(input, rules, validateObservations({ schema_version: 'observations-v1', observations: [], uncertainty: 'high', insufficient_information: true }, input.content));
+  assert.equal(result.ai_status, 'performed');
+  assert.ok(!result.uncertainties.some(note => note.includes('nikoli AI model')), JSON.stringify(result.uncertainties));
+  assert.ok(result.uncertainties.includes('Pravidlová část používá česká textová pravidla. Nerozpozná všechny podvody a může označit i pravou zprávu.'));
+});

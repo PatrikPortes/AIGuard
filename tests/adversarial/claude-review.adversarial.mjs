@@ -258,8 +258,23 @@ test('FINDING CR-07: multi-MB static PNGs are unthrottled and Cache-Control: no-
 });
 
 test('FINDING CR-08: without JavaScript the analysis form submits the private message via GET query string', { todo: 'CR-08 reproduced' }, async () => {
-  const html = await readFile(new URL('../../public/index.html', import.meta.url), 'utf8');
-  const form = html.match(/<form id="analysis-form"[^>]*>/)[0];
-  const button = html.match(/<button id="submit"[^>]*>/)[0];
-  assert.ok(/method="post"/i.test(form) || /\sdisabled/.test(button), `${form} … ${button}`);
+  // Maintenance 2026-10-13: the analysis form moved from index.html to dedicated
+  // pages. Same invariant, now enforced on every public page: a form holding
+  // free text must be POST or keep every submit button disabled until JavaScript
+  // runs, and no non-POST form may contain named controls that a native GET
+  // submission would copy into the URL.
+  const { readdir } = await import('node:fs/promises');
+  const pages = (await readdir(new URL('../../public/', import.meta.url))).filter(name => name.endsWith('.html'));
+  let textForms = 0;
+  for (const page of pages) {
+    const html = await readFile(new URL('../../public/' + page, import.meta.url), 'utf8');
+    for (const [block] of html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/g)) {
+      const form = block.match(/<form\b[^>]*>/)[0];
+      const post = /method="post"/i.test(form);
+      const submits = [...block.matchAll(/<button\b[^>]*>/g)].map(match => match[0]).filter(button => !/type="button"/i.test(button));
+      if (/<textarea\b/i.test(block)) { textForms++; assert.ok(post || (submits.length > 0 && submits.every(button => /\sdisabled/.test(button))), `${page}: ${form} … ${submits.join(' ')}`); }
+      if (!post) assert.doesNotMatch(block, /<(?:input|textarea|select)\b[^>]*\sname=/i, `${page}: named control in non-POST ${form}`);
+    }
+  }
+  assert.ok(textForms >= 3, `expected message, loan and contract text forms, found ${textForms}`);
 });

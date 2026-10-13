@@ -13,7 +13,10 @@ test('Homepage, privacy, health a skutečný HTTP textový scénář', async t =
   const base = await fixture(t);
   const page = await fetch(base);
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /Přišla vám podezřelá zpráva\?/);
+  // Current approved homepage: tool chooser that links to the dedicated message check.
+  const home = await page.text();
+  assert.match(home, /S čím vám můžeme pomoci\?/);
+  assert.match(home, /href="\/overit-zpravu"/);
   assert.match(page.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.equal((await fetch(`${base}/privacy`)).status, 200);
   assert.equal((await (await fetch(`${base}/api/health`)).json()).status, 'ok');

@@ -11,6 +11,7 @@ import { AnalysisPipeline } from '../src/ai/pipeline.js';
 import { createRuntime } from '../src/ai/runtime.js';
 import { characterAssetFiles } from '../public/character-assets.js';
 import { aiFixture, input, validOutput } from '../test-support/ai.js';
+import { APPROVED_RESPONSIVE_SOURCES } from '../test-support/approved-character-assets.js';
 
 async function fixture(t, options={}) {
   const server=createServer({pipeline:new AnalysisPipeline(),...options});
@@ -132,7 +133,9 @@ test('CR-07: delivery is >85% smaller in total, full canvas/aspect retained, alp
   assert.ok(characterAssetFiles.reduce((s,a)=>s+a.bytes,0)<characterAssetFiles.reduce((s,a)=>s+a.source_bytes,0)*0.15);
   for(const asset of characterAssetFiles){
     assert.ok(Math.abs(asset.width/asset.height-asset.source_width/asset.source_height)<0.003);
-    assert.deepEqual(asset.alpha_range,[0,255]);assert.equal(asset.alpha_equal_to_resampled_source,true);assert.equal(asset.webp_lossless,true);
+    // Alpha is always lossless; RGB may be lossy only for the three approved, size-capped responsive hero derivatives.
+    assert.deepEqual(asset.alpha_range,[0,255]);assert.equal(asset.alpha_equal_to_resampled_source,true);assert.equal(asset.webp_lossless,!Object.hasOwn(APPROVED_RESPONSIVE_SOURCES,asset.source),asset.source);
+    if(Object.hasOwn(APPROVED_RESPONSIVE_SOURCES,asset.source))assert.ok(asset.bytes<=APPROVED_RESPONSIVE_SOURCES[asset.source].maxBytes&&asset.bytes<asset.source_bytes*0.25,asset.source);
     const source=await readFile(new URL('../public/'+asset.source,import.meta.url));assert.equal(createHash('sha256').update(source).digest('hex'),asset.source_sha256);
   }
 });

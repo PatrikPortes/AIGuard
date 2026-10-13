@@ -142,15 +142,20 @@ test('Rules safety HTTP: rules-only and consent-free unconfigured labelled fallb
     assert.equal(jobs, 0); t.diagnostic(`${mode}: 4 real secured HTTP responses; AI queue invocations=0`);
   }
 });
-test('Rules safety: configured AI timeout preserves the warning floor and action-first fallback, without bypassing consent', async t => {
-  let calls = 0;
-  const pipeline = new AnalysisPipeline({ mode: 'ai', fallbackToRules: true, queue: new BoundedQueue({}),
+test('Rules safety: configured AI timeout preserves the warning floor and action-first fallback; no consent means no AI operation', async t => {
+  let calls = 0, jobs = 0;
+  const queue = new BoundedQueue({}), submit = queue.submit.bind(queue);
+  queue.submit = (...args) => { jobs++; return submit(...args); };
+  const pipeline = new AnalysisPipeline({ mode: 'ai', fallbackToRules: true, queue,
     worker: { async run() { calls++; throw new ServiceError('AI_TIMEOUT'); } } });
   t.after(() => pipeline.close());
   for (const content of [family[0], bank[0]]) {
-    const before = calls;
-    await assert.rejects(pipeline.analyze({ ...input(content), ai_consent: false }), { code: 'AI_CONSENT_REQUIRED' });
-    assert.equal(calls, before);
+    const before = calls, queued = jobs;
+    // Approved: without consent → labelled rules-only result, no queue job, no worker/provider call.
+    const declined = await pipeline.analyze({ ...input(content), ai_consent: false });
+    assert.equal(declined.engine, 'rules-v1'); assert.equal(declined.ai_status, 'not_performed'); assert.equal(declined.ai_fallback_reason, 'declined');
+    assert.deepEqual(declined.signals, analyze(input(content)).signals);
+    assert.equal(calls, before); assert.equal(jobs, queued);
     const result = await pipeline.analyze({ ...input(content), ai_consent: true });
     assert.deepEqual(result.signals, analyze(input(content)).signals);
     assert.deepEqual(result.recommended_actions, analyze(input(content)).recommended_actions);

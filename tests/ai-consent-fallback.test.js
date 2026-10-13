@@ -61,6 +61,15 @@ function zero(f) {
   assert.equal(f.budget.db.prepare('SELECT count(*) AS n FROM ai_daily').get().n, 0);
   assert.equal(f.budget.db.prepare('SELECT reserved FROM ai_total WHERE id=1').get().reserved, 0);
 }
+// Approved invariant: without explicit boolean ai_consent === true there are
+// 0 provider calls, 0 content transmissions, 0 AI budget reservations and
+// 0 AI queue jobs. A truthfully labelled rules-only 200 response is allowed.
+function declined(response) {
+  assert.equal(response.status, 200); assert.equal(response.body.engine, 'rules-v1');
+  assert.equal(response.body.ai_status, 'not_performed'); assert.equal(response.body.ai_fallback_reason, 'declined');
+  assert.equal(response.body.topic, 'loan'); assert.match(response.headers['cache-control'], /no-store/);
+  assert.doesNotMatch(JSON.stringify(response.body), /observation|critic_used|rules\+ai-v1/);
+}
 function fallback(response) {
   assert.equal(response.status, 200); assert.equal(response.body.engine, 'rules-v1');
   assert.equal(response.body.ai_status, 'not_performed'); assert.equal(response.body.ai_fallback_reason, 'not_configured');
@@ -75,12 +84,12 @@ test('Consent HTTP: genuinely unconfigured fallback accepts false and absent con
   fallback(await f.post({ ...value, ai_consent: true })); zero(f);
   t.diagnostic('real HTTP: 3 fallback responses, provider=0, reservations=0, routing=0, critic=0, queue=0');
 });
-test('Consent HTTP: configured AI rejects false/missing/spoofed consent and works with explicit boolean true', async t => {
+test('Consent HTTP: configured AI answers false/missing/spoofed consent rules-only with zero AI operations and works with explicit boolean true', async t => {
   const f = await fixture(t, { configured: true });
   assert.equal(f.session.ai_configured, true); assert.equal(f.session.provider_label, 'OpenAI');
   for (const consent of [undefined, false, 'true', 1]) {
     const response = await f.post({ ...value, ...(consent !== undefined && { ai_consent: consent }), ai_configured: false, rules_fallback: true });
-    assert.equal(response.status, 400); assert.equal(response.body.code, 'AI_CONSENT_REQUIRED'); zero(f);
+    declined(response); zero(f);
   }
   const response = await f.post({ ...value, ai_consent: true });
   assert.equal(response.status, 200); assert.equal(response.body.engine, 'rules+ai-v1'); assert.equal(response.body.ai_status, 'performed');
@@ -90,12 +99,12 @@ test('Consent HTTP: configured AI rejects false/missing/spoofed consent and work
 test('Consent HTTP: configured runtime provider failure cannot bypass consent before or after labelled fallback', async t => {
   const f = await fixture(t, { configured: true, fails: true });
   const denied = await f.post({ ...value, ai_consent: false });
-  assert.equal(denied.status, 400); assert.equal(denied.body.code, 'AI_CONSENT_REQUIRED'); zero(f);
+  declined(denied); zero(f);
   const response = await f.post({ ...value, ai_consent: true });
   assert.equal(response.status, 200); assert.equal(response.body.ai_fallback_reason, 'provider_unavailable');
   assert.equal(response.body.ai_status, 'not_performed'); assert.equal(f.counters.provider, 1); assert.equal(f.counters.reservations, 1);
   const before = { ...f.counters };
-  assert.equal((await f.post(value)).body.code, 'AI_CONSENT_REQUIRED'); assert.deepEqual(f.counters, before);
+  declined(await f.post(value)); assert.deepEqual(f.counters, before); assert.equal(f.raw.length, 1);
 });
 test('Consent HTTP: old backend without fallback support still requires consent and returns its unavailable error', async t => {
   const f = await fixture(t, { fallback: false });
@@ -110,7 +119,7 @@ test('Consent HTTP: stale unconfigured session cannot authorize a newly configur
   f.pipeline.worker = f.worker; f.pipeline.unavailableCode = undefined;
   assert.equal(f.pipeline.status().ai_configured, true);
   const denied = await f.post({ ...value, ai_consent: false });
-  assert.equal(denied.status, 400); assert.equal(denied.body.code, 'AI_CONSENT_REQUIRED'); zero(f);
+  declined(denied); zero(f);
   assert.equal((await f.post({ ...value, ai_consent: true })).body.ai_status, 'performed');
   assert.equal(f.counters.provider, 1); assert.equal(f.counters.reservations, 1);
 });
@@ -119,10 +128,10 @@ test('Consent HTTP: existing worker plus unavailable marker or missing queue is 
   for (const code of ['AI_TIMEOUT', 'AI_OVERLOADED', 'AI_PROVIDER_UNAVAILABLE', 'AI_INVALID_CONFIG']) {
     f.pipeline.unavailableCode = code;
     assert.equal(f.pipeline.isAIUnconfigured(), false);
-    assert.equal((await f.post(value)).body.code, 'AI_CONSENT_REQUIRED'); zero(f);
+    declined(await f.post(value)); zero(f);
   }
   f.pipeline.unavailableCode = undefined; f.pipeline.queue = undefined;
-  assert.equal((await f.post(value)).body.code, 'AI_CONSENT_REQUIRED'); zero(f);
+  declined(await f.post(value)); zero(f);
   // Restore the fixture's queue for lifecycle cleanup, not to alter admission.
   f.pipeline.queue = f.queue;
 });
@@ -131,8 +140,9 @@ test('Consent HTTP: absence of a worker after operational failure does not turn 
   for (const code of ['AI_TIMEOUT', 'AI_OVERLOADED', 'AI_PROVIDER_UNAVAILABLE', 'AI_BUDGET_UNAVAILABLE']) {
     f.pipeline.unavailableCode = code;
     assert.equal(f.pipeline.isAIUnconfigured(), false);
+    // Labelled 'declined', never 'not_configured': an operational failure is not a configuration exception.
     const response = await f.post(value);
-    assert.equal(response.status, 400); assert.equal(response.body.code, 'AI_CONSENT_REQUIRED'); zero(f);
+    declined(response); zero(f);
   }
 });
 test('Consent HTTP: fallback without AI still rejects invalid input, forged Origin and missing session', async t => {
