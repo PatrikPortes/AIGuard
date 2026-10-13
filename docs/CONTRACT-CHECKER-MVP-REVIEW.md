@@ -46,3 +46,13 @@ Před produkční aktivací:
 5. Podle `deploy/env/contract.env.example` doplnit pouze nové proměnné, model také do privátní proxy. Zachovat dosavadní síť, secrets, mounty a konfiguraci. Teprve po splnění bran a novém schválení nasazení nastavit `AI_CONTRACT_ENABLED=true`. Nezvyšovat povolené limity.
 
 Koncipient nemá žádné propojení s touto implementací.
+
+## Doplnění: závazný PDF security invariant
+
+PDF je nedůvěryhodný vstup. Používáme výhradně textové API PDF.js v místním browser workeru, žádný viewer, render, scripting manager, annotation/form layer, navigaci ani čtení/spouštění příloh. Původní soubor se neposílá, neloguje, neukládá ani necachuje aplikací. File input se vyprázdní ihned po převzetí souboru. Cache pevně verzované knihovny PDF.js není cache nahraného PDF.
+
+Worker má navíc vlastní response CSP `connect-src 'none'`, `default-src 'none'`, `worker-src 'none'`; jeho skript je pouze same-origin. Nezískává výjimky pro Turnstile. `worker-src 'self'` zůstává jen na HTML `/proverit-smlouvu`. Pomocné soubory mohou přijít jen z pevného seznamu místních fontů/CMap; traversal, URL, neznámé soubory a WASM jsou odmítnuty před fetch. Fetch má `credentials:omit`, zakázané redirecty a kontrolu délky, server nadále ověřuje SHA-256. Obsah dokumentu nemůže zadat jiný síťový cíl.
+
+Šifrování se odmítá nejen při požadavku na heslo, ale i z `EncryptFilterName` po načtení; tím je pokryté PDF s prázdným uživatelským heslem. Timeout a zrušení ukončí worker, parser i probíhající pomocné fetch požadavky; chyby parseru se zobrazují bez diagnostických detailů. Limity 10 MB, 40 stran, 40 000 znaků a 20 sekund se nemění.
+
+Doplněno pět cílených bezpečnostních testů včetně okamžitého zrušení a timeoutu zaseknutého čtení, assertion CSP workeru a syntetické PDF šifrované prázdným heslem. Kontrola v prohlížeči potvrdila textovou extrakci, ignorování PDF JavaScriptu, odmítnutí obou variant šifrování, srozumitelnou chybu parseru a prázdný file input. Tato aktualizace nemění produkci ani neobchází původní build gate.

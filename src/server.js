@@ -303,6 +303,7 @@ export function createServer({
         // contains this file. Verify its physical bytes before returning 304.
         const pdfAsset=pdfAssets.get(path);
         const cacheHeaders = character ? { 'Cache-Control': 'public, max-age=31536000, immutable', 'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable', ETag: `"${character.sha256}"` } : pdfAsset ? {'Cache-Control':'public, max-age=0, must-revalidate',ETag:`"${pdfAsset.sha256}"`} : {};
+        if(path==='/vendor/pdfjs/legacy/build/pdf.worker.mjs')cacheHeaders['Content-Security-Policy']="default-src 'none'; script-src 'self'; connect-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
         // RUM may load only on these public informational pages. Form pages,
         // APIs and all other assets keep the original same-origin policy.
         if(path==='/proverit-smlouvu')cacheHeaders['Content-Security-Policy']=headers['Content-Security-Policy'].replace("worker-src 'none'","worker-src 'self'").replace("script-src 'self'","script-src 'self' https://challenges.cloudflare.com").replace("connect-src 'self'","connect-src 'self' https://challenges.cloudflare.com")+"; frame-src https://challenges.cloudflare.com";
