@@ -58,6 +58,12 @@ export function validateObservations(value, content) {
   return value;
 }
 
+// The rules-only notice ("…nikoli AI model") must never accompany a performed
+// AI result. Keep the historical wording so older rule texts are still mapped.
+const RULES_ONLY_NOTICES = new Set([
+  'Tato veřejná zkušební verze používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
+  'Tento prototyp používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.',
+]);
 export function reconcileObservations(input, rules, assessment) {
   const signals = [
     ...rules.signals.map(item => ({ ...item, source: 'rules' })),
@@ -85,7 +91,7 @@ export function reconcileObservations(input, rules, assessment) {
       // Preserve local limits, especially every Loan-specific uncertainty.
       // The rules-only processing notice must name the rules part when an AI
       // call actually ran; retaining "nikoli AI model" would be misleading.
-      ...rules.uncertainties.map(note => note === 'Tento prototyp používá česká textová pravidla, nikoli AI model. Nerozpozná všechny podvody a může označit i pravou zprávu.'
+      ...rules.uncertainties.map(note => RULES_ONLY_NOTICES.has(note)
         ? 'Pravidlová část používá česká textová pravidla. Nerozpozná všechny podvody a může označit i pravou zprávu.' : note),
       'AI doplnila kontextová pozorování. AI i pravidla mohou přehlédnout podvod nebo označit pravou zprávu.',
       'Neověřili jsme totožnost odesílatele, pravdivost tvrzení ani obsah odkazovaných stránek.',
