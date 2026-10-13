@@ -42,12 +42,14 @@ export function rulesForContract(text,type='unknown'){
  if(typeof text!=='string'||!text.trim()||text.length>40000)throw Error('AI_INPUT_LIMIT');
  const findings=[];let start=0;
  for(let i=0;i<=text.length;i++){
-  const decimal=text[i]==='.'&&/\d/.test(text[i-1]||'')&&/\d/.test(text[i+1]||'');
-  if(i===text.length||(!decimal&&(/[.!?]/.test(text[i])||(text[i]==='\n'&&/^[ \t]{0,40}\r?\n/.test(text.slice(i+1,i+45)))))||i-start>=590){
+  // Char codes instead of per-character strings/regexes: same boundaries, far fewer allocations.
+  const code=text.charCodeAt(i),digit=c=>c>=48&&c<=57,decimal=code===46&&digit(text.charCodeAt(i-1))&&digit(text.charCodeAt(i+1));
+  if(i===text.length||(!decimal&&(code===46||code===33||code===63||(code===10&&/^[ \t]{0,40}\r?\n/.test(text.slice(i+1,i+45)))))||i-start>=590){
    const end=i===text.length?i:i+1,segmentStart=start,segment=text.slice(segmentStart,end);start=end;
    const quote=segment.trim(),actual=segmentStart+segment.indexOf(quote);if(quote.length<20||quote.length>600)continue;
    const normal=normalizeContractText(quote);
-   for(const [category,d]of Object.entries(DEFINITIONS))if((!INJECTION.test(normal)||category==='unclear')&&(d.pattern.test(normal)||(category==='unclear'&&INJECTION.test(normal))))findings.push({category,classification:d.classification,...dFields(d),quote,start:actual,end:actual+quote.length,confidence:['penalty','arbitration'].includes(category)&&(category==='arbitration'||/\d+(?:[.,]\d+)?\s*(?:%|Kč|Kc|CZK|EUR|€)|(?:ve výši|částk[ay]?)\s+\d/iu.test(quote))?'high':'medium',source:'rules',catalog_id:null});
+   const injected=INJECTION.test(normal);
+   for(const [category,d]of Object.entries(DEFINITIONS))if((!injected||category==='unclear')&&(d.pattern.test(normal)||(category==='unclear'&&injected)))findings.push({category,classification:d.classification,...dFields(d),quote,start:actual,end:actual+quote.length,confidence:['penalty','arbitration'].includes(category)&&(category==='arbitration'||/\d+(?:[.,]\d+)?\s*(?:%|Kč|Kc|CZK|EUR|€)|(?:ve výši|částk[ay]?)\s+\d/iu.test(quote))?'high':'medium',source:'rules',catalog_id:null});
   }
  }
  const seen=new Set(),unique=[];for(const f of findings){const key=f.start+':'+f.end+':'+f.category;if(!seen.has(key)){seen.add(key);unique.push(f);}}
