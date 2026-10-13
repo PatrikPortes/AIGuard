@@ -13,7 +13,7 @@ export class CloudflareAnalytics {
   const settings=await this.query('query($zone: string!){viewer{zones(filter:{zoneTag:$zone}){settings{httpRequestsAdaptiveGroups{enabled availableFields notOlderThan maxDuration}}}}}',{zone:this.zone});
   const s=settings.viewer?.zones?.[0]?.settings?.httpRequestsAdaptiveGroups;
   if(!s?.enabled||!s.availableFields?.includes('count'))throw Error('dataset_unavailable');
-  const metrics={};
+  const metrics={};const canBlock=s.availableFields.includes('dimensions_securityAction');
   // This bounded first version requests HTTP counts only; never IPs, URLs or identities.
   for(const hours of [24,168]){
    if(s.notOlderThan<hours*3600||s.maxDuration<hours*3600){metrics[hours]=null;continue;}
@@ -21,7 +21,9 @@ export class CloudflareAnalytics {
    const rows=d.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups;
    if(!Array.isArray(rows))throw Error('dataset_unavailable');const count=rows.length?rows[0].count:0;
    if(!Number.isSafeInteger(count)||count<0)throw Error('upstream');metrics[hours]=count;
+   metrics['blocked'+hours]=null;
+   if(canBlock){const blocked=await this.query('query($zone:string!,$filter:ZoneHttpRequestsAdaptiveGroupsFilter_InputObject!){viewer{zones(filter:{zoneTag:$zone}){httpRequestsAdaptiveGroups(limit:1,filter:$filter){count}}}}',{zone:this.zone,filter:{datetime_geq:new Date(now.getTime()-hours*3600000).toISOString(),datetime_lt:now.toISOString(),clientRequestHTTPHost:this.hostname,securityAction:'block'}});const groups=blocked.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups;if(!Array.isArray(groups))throw Error('dataset_unavailable');const total=groups.length?groups[0].count:0;if(!Number.isSafeInteger(total)||total<0)throw Error('upstream');metrics['blocked'+hours]=total;}
   }
-  return {requests24h:metrics[24],requests7d:metrics[168],source:'Cloudflare HTTP Analytics',sampled:true};
+  return {requests24h:metrics[24],requests7d:metrics[168],blocked24h:metrics.blocked24??null,blocked7d:metrics.blocked168??null,visitorsStatus:'unavailable',securityEventsStatus:'unavailable',source:'Cloudflare HTTP Analytics',sampled:true};
  }
 }
