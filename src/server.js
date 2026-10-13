@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {createUsageStats,countOnFinish}from'./usage-stats.js';
 import { readFileSync } from 'node:fs';
 import { VisitorQuota } from './visitor-quota.js';
 import { readFile } from 'node:fs/promises';
@@ -100,7 +101,7 @@ function serviceError(res, error) {
 }
 export function createServer({
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
-  visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
+  usageStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
   clientIpMode = 'socket', trustedProxyIp,
   publicOrigin, globalApiRateLimit = 600, maxActiveRequests = 64,
@@ -228,7 +229,7 @@ export function createServer({
         const workerRelease = releaseAnalysis; releaseAnalysis = undefined;
         work.finally(workerRelease).catch(() => {});
         const result = await Promise.race([work, timedOut]);
-        if (!controller.signal.aborted) return send(res, 200, result);
+        if (!controller.signal.aborted) { countOnFinish(res,input,result,usageStats); return send(res, 200, result); }
         return;
       }
       if (req.method === 'GET' && assets.has(path)) {
@@ -299,7 +300,7 @@ export function createServer({
     force.unref();
     return new Promise(resolve => server.close(() => { clearTimeout(force); resolve(); }));
   };
-  server.on('close', () => { visitorQuota?.close(); pipeline.close(); });
+  server.on('close', () => { visitorQuota?.close(); pipeline.close(); usageStats?.close(); });
   return server;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -308,7 +309,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const pipeline = createRuntime();
   const secret = process.env.GUARD_SESSION_SECRET_FILE ? readFileSync(process.env.GUARD_SESSION_SECRET_FILE) : undefined;
   const visitorQuota = process.env.AI_MODE === 'ai' ? new VisitorQuota({path:process.env.AI_VISITOR_DB,secret}) : undefined;
-  const server = createServer({ pipeline, visitorQuota,
+  const usageStats=createUsageStats({db:process.env.USAGE_DB_PATH,snapshot:process.env.USAGE_SNAPSHOT_PATH});
+  const server = createServer({ pipeline, visitorQuota, usageStats,
     rateLimit: Number(process.env.GUARD_IP_RATE_LIMIT ?? 20),
     sessionRateLimit: Number(process.env.GUARD_SESSION_RATE_LIMIT ?? 10),
     sessions: new AnonymousSessions({ secret, lifetimeMs:86400000, secure: process.env.GUARD_COOKIE_SECURE === 'true' }),

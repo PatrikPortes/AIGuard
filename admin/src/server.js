@@ -1,4 +1,5 @@
 import http from 'node:http';
+import{usageSummary}from'./usage.js';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { config } from './config.js';import {accessVerifier} from './access.js';import {Store} from './store.js';import {CloudflareAnalytics} from './cloudflare.js';
@@ -13,7 +14,7 @@ export function createDashboard({settings,verify,store,analytics}){
   if(req.method!=='GET')return send(405,'Metoda není povolena.');
   const path=req.url;if(path==='/api/dashboard'){
    try{const cached=store.get('traffic');const traffic=cached?{status:issue?'stale':'available',updated:cached.updated,...cached.value,issue}:{status:'unavailable',issue};
-    return send(200,JSON.stringify({traffic,usage:{status:'unavailable'},ai:{status:'unavailable'},operations:{status:'available',service:'Dashboard',uptimeSeconds:Math.floor((Date.now()-started)/1000),publicApplication:{status:'unavailable'},tunnel:{status:'unavailable'}}}),'application/json; charset=utf-8');
+    return send(200,JSON.stringify({traffic,usage:await usageSummary(settings.usageSnapshot),ai:{status:'unavailable'},operations:{status:'available',service:'Dashboard',uptimeSeconds:Math.floor((Date.now()-started)/1000),publicApplication:{status:'unavailable'},tunnel:{status:'unavailable'}}}),'application/json; charset=utf-8');
    }catch{return send(503,'Data zatím nejsou dostupná.');}
   }
   const files={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8']};
