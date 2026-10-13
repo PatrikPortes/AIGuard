@@ -13,6 +13,9 @@
 !tests/adversarial/claude-review.adversarial.mjs
 !test-support/
 !test-support/*.js
+# Validation-stage inputs only (Dockerfile copies them into the validated stage, never into production).
+!ai-proxy.cjs
+!admin/src/usage.js
 !deploy/
 !deploy/env/
 !deploy/env/app.env.example
