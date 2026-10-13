@@ -26,7 +26,8 @@ if(typeof document!=='undefined'){
  const type=()=>form.querySelector('input[name=contract_type]:checked').value;
  for(const id of ['contract-verka','contract-result-verka'])$(id).src=characterAssets['verka-explaining'];$('contract-robo').src=characterAssets['robo-analyzing'];
  for(const d of Object.values(DEFINITIONS)){const li=document.createElement('li');li.textContent=d.title;$('contract-categories').append(li);}
- fetch('/api/contract-status',{credentials:'omit'}).then(r=>r.ok?r.json():{}).then(v=>{capabilities=v;}).catch(()=>{});
+ // The AI option is offered only when the server reports a fully configured runtime.
+ fetch('/api/contract-status',{credentials:'omit'}).then(r=>r.ok?r.json():{}).then(v=>{capabilities=v&&v.configured===true?v:{configured:false};$('contract-ai-option').hidden=!capabilities.configured;if(!capabilities.configured){$('contract-ai').checked=false;$('contract-redaction').hidden=true;invalidate();}}).catch(()=>{});
  fetch('/contract-legal-catalog.json',{credentials:'omit'}).then(r=>r.ok?r.json():[]).then(v=>{catalog=eligibleCatalog(v);}).catch(()=>{});
  function invalidate(){active?.abort();redacted=null;previewSource='';$('contract-preview').replaceChildren();$('contract-preview-approved').checked=false;}
  input.addEventListener('input',()=>{manual=[];invalidate();$('contract-count').textContent=input.value.length+' / 40 000 znaků';});
@@ -66,7 +67,7 @@ if(typeof document!=='undefined'){
   });
  }
  form.addEventListener('submit',async event=>{event.preventDefault();$('contract-error').hidden=true;active?.abort();active=new AbortController();const signal=active.signal;original=input.value.normalize('NFC');let timers=[];
-  try{if(!original.trim()||original.length>40000)throw Error('Vložte text nejvýše 40 000 znaků.');const consent=$('contract-ai').checked;
+  try{if(!original.trim()||original.length>40000)throw Error('Vložte text nejvýše 40 000 znaků.');const consent=capabilities.configured===true&&$('contract-ai').checked;
    if(consent&&(!redacted||previewSource!==original||!$('contract-preview-approved').checked))throw Error('Nejprve připravte a zkontrolujte přesný náhled textu pro AI.');
    busy(consent?'Připravujeme kontrolu s AI.':'Prověřujeme text pouze ve vašem prohlížeči.');let token='',botFailure=null;if(consent&&capabilities.configured&&!['loan','other'].includes(type())){try{token=await botToken(signal);}catch(e){if(signal.aborted)throw e;botFailure='BOT_CHECK_REQUIRED';}}
    const transport=async payload=>{if(botFailure||!capabilities.configured)return{...rulesForContract(payload.content,payload.contract_type),mode:'rules_fallback',fallback_reason:botFailure||'AI_INVALID_CONFIG'};
