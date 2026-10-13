@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prověřit web · Věřím tomu?</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/web-checker.js" type="module"></script>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Prověřit web · Věřím tomu?">
+<meta property="og:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta property="og:image:alt" content="Věrka a Robo — Věřím tomu? Radši ověřit než litovat.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta name="description" content="Prověřte strukturu adresy webu s Věrkou a Robem. Web neotevíráme; jeho obsah ani provozovatele neověřujeme.">
+<meta property="og:description" content="Prověřte strukturu adresy webu s Věrkou a Robem. Web neotevíráme; jeho obsah ani provozovatele neověřujeme.">
+<meta property="og:url" content="https://verimtomu.fyi/proverit-web">
+<meta property="og:site_name" content="Věřím tomu?">
+<link rel="canonical" href="https://verimtomu.fyi/proverit-web">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png">
+</head>
+<body data-flow="message">
+<a class="skip-link" href="#web-form">Přejít k prověření webu</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true"><span class="brand-text"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></span></a>
+  <nav aria-label="Hlavní navigace">
+    <a class="nav-secondary" href="/#how-it-works">Jak to funguje</a>
+    <a class="nav-secondary" href="/privacy">Soukromí</a>
+    <a class="nav-happened" href="/uz-se-to-stalo">Už se to stalo?</a>
+  </nav>
+</header>
+<main><nav class="flow-navigation" aria-label="Výběr kontroly"><a href="/">← Zpět na úvod</a><a href="/overit-zpravu">Prověřit zprávu</a><a href="/proverit-pujcku">Prověřit půjčku</a></nav>
+<section class="web-entry panel"><h1>Prověřit web</h1><p>Věrka a Robo se podívají na samotnou adresu. Web neotevíráme a neověřujeme jeho obsah ani provozovatele.</p><form id="web-form"><label for="web-url">Adresa webu</label><input id="web-url" type="text" inputmode="url" autocomplete="off" spellcheck="false" maxlength="2048" required placeholder="https://obchod.cz" aria-describedby="web-help"><p id="web-help" class="hint">Adresu můžete vložit i bez https://. Osobní údaje v adrese nejdřív odstraňte. Kontrola probíhá pouze ve vašem prohlížeči.</p><p id="web-error" role="alert" hidden></p><button type="submit">Prověřit web</button></form><noscript>Pro místní kontrolu URL zapněte JavaScript.</noscript></section>
+<section id="web-result" class="panel result" tabindex="-1" hidden><div class="result-lead"><div class="result-heading"><img class="character-avatar" src="/assets/characters/optimized/verka-explaining.eeec7a93a44e09d692f946ae7af8993af79e73e976156140bea37e3999018021.webp" width="144" height="132" alt="" aria-hidden="true" decoding="async"><h1>Co jsme zjistili</h1></div><p class="feature-status">Neověřený web</p><p>Doména: <strong id="web-domain"></strong></p><p id="web-summary"></p><div class="result-now"><h2>Co udělat teď</h2><p class="primary-action">Do neověřeného webu nevpisujte hesla, kódy ani údaje karty. Známou službu otevřete přes její oficiální aplikaci nebo adresu, kterou už znáte.</p></div></div><section class="result-card"><div class="character-heading"><img class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="144" height="132" alt="" aria-hidden="true" decoding="async"><h2>Co si zaslouží pozornost</h2></div><ul id="web-signals"></ul></section><p class="notice">Web jsme nenavštívili. Neověřujeme obsah, provozovatele, certifikát, DNS ani přesměrování. Nepřítomnost varovných znaků nepotvrzuje bezpečnost. Žádnou úplnou URL neukládáme ani neodesíláme.</p><button id="web-again" type="button">Prověřit další web</button></section></main>
+<footer>
+  <span><strong>Věřím tomu?</strong> · Veřejná zkušební verze</span>
+  <nav aria-label="Odkazy v patičce"><a href="/#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí a limity</a></nav>
+</footer>
+</body>
+</html>
+

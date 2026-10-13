@@ -1,10 +1,7 @@
 import { domainToASCII } from 'node:url';
 // Limited local reference list, not identity, ownership, SPF/DKIM or DNS checks.
 // Sources and limits are documented in docs/ux/sender-phishing.md.
-const brands = [
-  {name:'Meta / Facebook',mention:/\b(?:facebook|meta)\b/u,domains:['facebook.com','facebookmail.com','fb.com','meta.com','metamail.com'],tokens:['facebook','meta']},
-  {name:'Česká pošta',mention:/\bcesk[aey] post[aeyu]|\bceskaposta\b/u,domains:['ceskaposta.cz','cpost.cz'],tokens:['ceskaposta','cpost']},
-];
+import {brandReferences as brands} from '../public/brand-references.js';
 export function validatedSender(value) {
  if(value===undefined)return '';
  if(typeof value!=='string'||value.length>256||Buffer.byteLength(value,'utf8')>1024||/[\x00-\x1f\x7f]/u.test(value))throw Error('Neplatný odesílatel.');
