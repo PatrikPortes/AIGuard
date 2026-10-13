@@ -3,6 +3,8 @@ node_modules/
 coverage/
 dist/
 build/
+# Vendored PDF.js runtime is a pinned, hash-verified release asset, not a build output.
+!public/vendor/pdfjs/legacy/build/
 out/
 .cache/
 *.tsbuildinfo
