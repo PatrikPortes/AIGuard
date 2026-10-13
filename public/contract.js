@@ -26,6 +26,8 @@ if(typeof document!=='undefined'){
  const type=()=>form.querySelector('input[name=contract_type]:checked').value;
  for(const id of ['contract-verka','contract-result-verka'])$(id).src=characterAssets['verka-explaining'];$('contract-robo').src=characterAssets['robo-analyzing'];
  for(const d of Object.values(DEFINITIONS)){const li=document.createElement('li');li.textContent=d.title;$('contract-categories').append(li);}
+ // Without JavaScript the submit button stays disabled, so the text can never be sent as a GET query (CR-08).
+ form.querySelector('button[type=submit]').disabled=false;
  // The AI option is offered only when the server reports a fully configured runtime.
  fetch('/api/contract-status',{credentials:'omit'}).then(r=>r.ok?r.json():{}).then(v=>{capabilities=v&&v.configured===true?v:{configured:false};$('contract-ai-option').hidden=!capabilities.configured;if(!capabilities.configured){$('contract-ai').checked=false;$('contract-redaction').hidden=true;invalidate();}}).catch(()=>{});
  fetch('/contract-legal-catalog.json',{credentials:'omit'}).then(r=>r.ok?r.json():[]).then(v=>{catalog=eligibleCatalog(v);}).catch(()=>{});
