@@ -71,11 +71,15 @@ test('neutral clean-firm presentation is scoped to the investment page (CSS attr
  for(const f of ['verdict-view.js','check-view.js','check-flow.js','web-checker.js','web.html','firm.js'])assert.doesNotMatch(read(f),/registry-found|data-presentation|Firma nalezena v registrech/,f);
 });
 
-test('D5: homepage card stays "Již brzy" and the page is not in the sitemap yet (public launch is S4.7)', () => {
+test('S4.7 (D5): homepage card is active and links to the page; the page is in the sitemap', () => {
  const home=read('index.html');
- assert.match(home,/<article class="choice-card coming-soon"><span class="feature-status">Již brzy<\/span><h3>Prověřit investici<\/h3>/);
- assert.doesNotMatch(home,/proverit-investici/);
- assert.doesNotMatch(read('sitemap.xml'),/proverit-investici/);
+ assert.match(home,/<article class="choice-card"><span class="choice-icon" aria-hidden="true">↗<\/span><h3>Prověřit investici<\/h3>[\s\S]*?<a class="choice-link" href="\/proverit-investici">Prověřit investici →<\/a><\/article>/);
+ assert.doesNotMatch(home,/coming-soon|>Již brzy</);
+ assert.equal((home.match(/class="choice-card/g)||[]).length,6);
+ const card=home.match(/<article class="choice-card"><span class="choice-icon" aria-hidden="true">↗[\s\S]*?<\/article>/)[0];
+ for(const text of card.replace(/<[^>]+>/g,'\n').split('\n').map(t=>t.trim()).filter(Boolean))assert(isSafeCopy(text),text);
+ const xml=read('sitemap.xml');
+ assert.equal((xml.match(/<url><loc>/g)||[]).length,9);assert(xml.includes('<url><loc>https://verimtomu.fyi/proverit-investici</loc></url>'));
 });
 
 test('S4.6 regression: the IČO field reuses the existing #sender field style (48px, full width, focus ring)', () => {
