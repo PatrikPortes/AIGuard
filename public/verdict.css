@@ -9,3 +9,5 @@
 @media(max-width:600px){.check-result{font-size:16px}.check-step>summary,.check-detail{padding:12px}.check-step-state,.check-step-reason,.check-step-sources,.check-date,.check-note{font-size:14px}.check-lead .check-explanation{font-size:15px}.check-steps>h3{font-size:20px}}
 
 .check-detail-label{font-size:14px;text-decoration:underline;text-underline-offset:3px;color:#3f35a8}
+/* S4.5 investment page only: a clean firm sub-result is shown neutrally ("found in registers"), not as a green safety signal. */
+.verdict-result[data-level=none_found][data-presentation=registry-found] .verdict-lead{background:#f4f5f9;border-color:#657089}

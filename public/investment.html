@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prověřit investici · Věřím tomu?</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/verdict.css">
+<script src="/investment.js" type="module"></script>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Prověřit investici · Věřím tomu?">
+<meta property="og:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta property="og:image:alt" content="Věrka a Robo — Věřím tomu? Radši ověřit než litovat.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
+<meta name="description" content="Prověřte investiční nabídku: rizikové sliby výnosů, nátlak a požadavky na platbu. Text nabídky zůstane ve vašem prohlížeči.">
+<meta property="og:description" content="Prověřte investiční nabídku: rizikové sliby výnosů, nátlak a požadavky na platbu. Text nabídky zůstane ve vašem prohlížeči.">
+<meta property="og:url" content="https://verimtomu.fyi/proverit-investici">
+<meta property="og:site_name" content="Věřím tomu?">
+<link rel="canonical" href="https://verimtomu.fyi/proverit-investici">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png">
+</head>
+<body data-flow="investment">
+<a class="skip-link" href="#investment-form">Přejít k prověření nabídky</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Věřím tomu? — úvodní stránka"><img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true"><span class="brand-text"><span class="wordmark">Věřím tomu<span>?</span></span><span class="tagline">Radši ověřit než litovat.</span></span></a>
+  <nav aria-label="Hlavní navigace">
+    <a class="nav-secondary" href="/#how-it-works">Jak to funguje</a>
+    <a class="nav-secondary" href="/privacy">Soukromí</a>
+    <a class="nav-happened" href="/uz-se-to-stalo">Už se to stalo?</a>
+  </nav>
+</header>
+<main><nav class="flow-navigation" aria-label="Výběr kontroly"><a href="/">← Zpět na úvod</a><a href="/proverit-firmu">Prověřit firmu</a><a href="/proverit-web">Prověřit web</a></nav>
+<section id="investment-entry" class="hero analysis-section" aria-labelledby="hero-title">
+  <div class="hero-tool">
+    <h1 id="hero-title">Prověřit investici</h1>
+    <p class="hero-lead">Vložte text nabídky. Ukážeme, co je na ní podezřelé a co si ověřit dřív, než pošlete peníze.</p>
+    <div class="tool-card">
+      <noscript><p class="notice">Pro kontrolu je potřeba JavaScript. Bez něj se nic neodesílá.</p></noscript>
+      <form id="investment-form" novalidate>
+        <label for="offer">Text investiční nabídky</label>
+        <textarea id="offer" rows="6" maxlength="20000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte e-mail, zprávu, popis z webu nebo poznámky z hovoru…" aria-describedby="offer-help offer-privacy"></textarea>
+        <p class="hint" id="offer-help">Nejvýše 20 000 znaků. Nepotřebné osobní údaje, čísla účtů a hesla nejdřív smažte.</p>
+        <p class="hint" id="offer-privacy">Text nabídky zůstane ve vašem prohlížeči. Neodesíláme ho na náš server ani do AI. Odkazy z nabídky neotevíráme.</p>
+        <label for="offer-ico">IČO poskytovatele (nepovinné)</label>
+        <input id="offer-ico" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="off" spellcheck="false" aria-describedby="offer-ico-help">
+        <p class="hint" id="offer-ico-help">Najdete ho v obchodních podmínkách nebo v patičce webu. Pokud ho vyplníte, odešleme pouze IČO a firmu prověříme v ARES a Registru DPH.</p>
+        <p id="investment-error" class="notice" role="alert" hidden></p>
+        <button id="investment-submit" type="submit" disabled><span id="investment-submit-label">Prověřit nabídku</span> <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="notice">Jde o orientační kontrolu rizikových tvrzení v textu. Nehodnotíme výnosnost ani vhodnost investice a nedáváme investiční doporučení. Oprávnění poskytovatele u ČNB automaticky neověřujeme.</p>
+    </div>
+  </div>
+  <div class="examples">
+    <p>Vyzkoušejte si to na příkladu:</p>
+    <div class="example-buttons">
+      <button type="button" data-example="guaranteed"><span class="example-icon rose" aria-hidden="true">%</span> Garantovaný výnos</button>
+      <button type="button" data-example="platform"><span class="example-icon violet" aria-hidden="true">₿</span> Kryptoplatforma s poradcem</button>
+      <button type="button" data-example="fund"><span class="example-icon mint" aria-hidden="true">Aa</span> Běžná nabídka fondu</button>
+    </div>
+  </div>
+</section>
+<section id="investment-result" class="panel result" tabindex="-1" hidden aria-label="Výsledek prověření nabídky">
+  <section id="check-combined" class="check-combined" aria-live="polite" hidden></section>
+  <section id="investment-checklist" class="result-card" aria-labelledby="checklist-title" hidden>
+    <div class="character-heading"><img class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="144" height="132" alt="" aria-hidden="true" decoding="async"><h2 id="checklist-title">Než pošlete peníze</h2></div>
+    <ol id="checklist"></ol>
+    <p class="hint">Toto jsou obecné bezpečné kroky. Nejde o investiční doporučení ani o potvrzení, že je nabídka v pořádku.</p>
+  </section>
+  <button id="investment-again" type="button" class="secondary-action">Prověřit jinou nabídku</button>
+</section>
+</main><footer>
+  <span><strong>Věřím tomu?</strong> · Veřejná zkušební verze</span>
+  <nav aria-label="Odkazy v patičce"><a href="/#how-it-works">Jak to funguje</a><a href="/privacy">Soukromí a limity</a></nav>
+</footer>
+</body>
+</html>
