@@ -565,4 +565,3 @@ Očekávaný výstup: `DPH from relay: 200 text/xml;charset=utf-8 …B …ms`, `
 - **Insolvence, ESM, Sbírka listin, ČNB:** uzavřeno rozhodnutím vlastníka (kap. 0).
 
 **READY FOR IMPLEMENTATION: YES**, jakmile příkaz výše vrátí `PASS relay → DPH` a `PASS web → DPH BLOCKED`. Do té doby NO s tímto jediným blockerem.
-

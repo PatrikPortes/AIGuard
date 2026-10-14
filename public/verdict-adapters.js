@@ -1,6 +1,6 @@
 // Presentation adapters only: existing checker objects are never mutated or re-analysed.
 import {createCheckResult,RULE_CATALOG,isSafeCopy} from './verdict-model.js';
-import {SIGNAL_COPY,MESSAGE_ACTIONS} from './verdict-catalog.js';
+import {SIGNAL_COPY,MESSAGE_ACTIONS,LEGACY_RULE_CONTRIBUTIONS} from './verdict-catalog.js';
 import {DEFINITIONS} from './contract-core.js';
 const at=opts=>opts?.checkedAt||new Date().toISOString();
 const source=(id,label,status,checkedAt)=>({id,label,status,checkedAt});
@@ -12,16 +12,18 @@ function message(a,checker,opts={}){
  const aiPerformed=a.ai_status==='performed'||a.engine==='rules+ai-v1';
  for(const s of a.signals){
   if(!s||!RULE_CATALOG[checker].includes(s.id)||!SIGNAL_COPY[s.id]){primaryStatus='skipped';continue;}
+  if((s.source!==undefined&&!['rules','ai'].includes(s.source))||(s.id.startsWith('ai_')&&s.source==='rules')){primaryStatus='skipped';continue;}
   const origin=s.source==='rules'?'rules':s.source==='ai'?'ai':a.engine==='rules-v1'&&!s.id.startsWith('ai_')?'rules':'ai';
   const severity=origin==='rules'&&severeRules.has(s.id)?'serious':'attention';
   if(!findings.some(f=>f.id===s.id))findings.push(finding(s.id,origin,severity,SIGNAL_COPY[s.id]));
  }
- // A mixed API risk_level may have been raised by AI. Its red origin is not inferable.
+ // A mixed aggregate may be raised by AI. Recover only its existing rules floor
+ // from the fixed contribution metadata of baseline 5c91de2, never from AI or risk_score.
  // Preserve a separately supplied rules baseline when the integration has one; otherwise
- // only an explicit existing severe rule can support red. Never promote AI's aggregate.
+ // only existing rules can support red. Never promote AI's aggregate.
  if(opts.rulesBaseline){const baseline=message(opts.rulesBaseline,checker,{checkedAt});for(const f of baseline.findings.filter(f=>f.origin==='rules'))if(!findings.some(x=>x.id===f.id))findings.push(f);}
- else if(['high','very_high'].includes(a.risk_level)&&!aiPerformed&&a.engine==='rules-v1')findings.push(finding('risk_high','rules','serious',{title:'Výrazné signály pravidlové kontroly',explanation:'Pravidlové vyhodnocení ukazuje výrazné varovné signály.'}));
- else if(a.risk_level==='caution'||['high','very_high'].includes(a.risk_level)&&aiPerformed&&!findings.some(f=>f.severity==='serious'))findings.push(finding('risk_caution','rules','attention',{title:'Podněty k dalšímu ověření',explanation:'Výsledek vyžaduje další ověření; původ případného zvýšení úrovně nelze oddělit.'}));
+ else if(a.input_type!=='url'&&(findings.filter(f=>f.origin==='rules').reduce((sum,f)=>sum+(LEGACY_RULE_CONTRIBUTIONS[f.ruleId]||0),0)>=60||['high','very_high'].includes(a.risk_level)&&!aiPerformed&&a.engine==='rules-v1'))findings.push(finding('risk_high','rules','serious',{title:'Výrazné signály pravidlové kontroly',explanation:'Pravidlové vyhodnocení ukazuje výrazné varovné signály.'}));
+ else if(a.risk_level==='caution'||['high','very_high'].includes(a.risk_level)&&aiPerformed&&!findings.some(f=>f.severity==='serious'))findings.push(finding('risk_caution',aiPerformed?'ai':'rules','attention',{title:'Podněty k dalšímu ověření',explanation:'Výsledek vyžaduje další ověření; původ případného zvýšení úrovně nelze oddělit.'}));
  const supplied=a.recommended_actions;
  const actions=Array.isArray(supplied)&&supplied.length>0&&supplied.every(s=>MESSAGE_ACTIONS.includes(s)&&isSafeCopy(s))?{primary:supplied[0],secondary:supplied.slice(1)}:undefined;
  if(!actions)unknowns.push('Doporučené kroky nebylo možné převzít; používáme obecný postup ověření.');
@@ -45,7 +47,7 @@ export function fromWeb(urlResult,coi,ares,opts={}){
 }
 export function fromContract(result,opts={}){
  const checkedAt=at(opts),findings=[],facts=[];let valid=Array.isArray(result?.findings)&&result.findings.length<=100;
- if(valid)for(const f of result.findings){const definition=DEFINITIONS[f.category];if(!definition||!['common','potentially_unfavourable','ambiguous','possible_conflict'].includes(f.classification)){valid=false;continue;}const origin=f.source==='ai'?'ai':'rules';const evidence=[];
+ if(valid)for(const f of result.findings){const definition=DEFINITIONS[f.category];if(!['rules','rules+ai','ai'].includes(f.source)||!definition||!['common','potentially_unfavourable','ambiguous','possible_conflict'].includes(f.classification)){valid=false;continue;}const origin=f.source==='ai'?'ai':'rules';const evidence=[];
   if(typeof f.quote==='string'&&f.quote.length<=600&&isSafeCopy(f.quote)){const id='quote_'+facts.length;facts.push({id,label:'Doslovná citace vloženého textu',value:f.quote,kind:'user_input',source:'user'});evidence.push(id);}
   findings.push(finding('contract_'+findings.length,origin,f.classification==='common'?'info':'attention',{title:definition.title,explanation:definition.explanation},f.category,evidence));
  }

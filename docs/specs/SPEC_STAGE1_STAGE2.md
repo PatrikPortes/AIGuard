@@ -352,4 +352,3 @@ F08 (porovnání účtu se zveřejněnými účty) je ve V2 kroku 2.9. MVP nemá
 **READY FOR CODEX.**
 
 Stage 1 (kroky S1.1–S1.3, S1.5) a Stage 2 (S2.1–S2.7) lze implementovat hned. Kroky S1.4 a S2.8 počkají na sloučení Stage 0, krok S1.6 na sloučení F5a. Produkční nasazení Stage 2 vyžaduje jen jednorázový DPH test z relay (D1); implementaci neblokuje.
-

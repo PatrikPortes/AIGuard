@@ -171,3 +171,33 @@ export const MESSAGE_ACTIONS=Object.freeze([
   "Před platbou nebo sdílením údajů si požadavek nezávisle ověřte.",
   "Na odkaz ve zprávě neklikejte. Přihlaste se přímo přes oficiální web nebo aplikaci služby."
 ]);
+
+// Existing rule contribution metadata, not probabilities; never exported in CheckResult.
+export const LEGACY_RULE_CONTRIBUTIONS=Object.freeze({
+  "urgency": 20,
+  "link_request": 10,
+  "account_threat": 25,
+  "money": 25,
+  "new_number": 35,
+  "credentials": 65,
+  "secrecy": 25,
+  "investment": 45,
+  "authority": 15,
+  "family_cash_pickup": 65,
+  "safe_account_transfer": 70,
+  "loan_advance_fee": 60,
+  "loan_bank_login": 65,
+  "loan_sms_code": 65,
+  "loan_card_details": 65,
+  "loan_remote_access": 65,
+  "loan_id_document": 30,
+  "loan_guaranteed": 35,
+  "loan_no_registry": 30,
+  "loan_pressure": 20,
+  "unusual_characters": 5,
+  "link": 10,
+  "unusual_url": 25,
+  "sender_format": 5,
+  "sender_mismatch": 25,
+  "sender_impersonation": 20
+});
