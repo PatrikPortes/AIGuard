@@ -10,7 +10,7 @@ export const RULE_CATALOG=Object.freeze({
 });
 const sourceStatuses=['checked','unavailable','not_found','not_applicable','skipped'];
 export const HEADLINES=Object.freeze({serious:'Našli jsme závažné varovné signály',attention:'Stojí za pozornost',none_found:'Nenašli jsme výrazné varovné signály',incomplete:'Kontrolu se nepodařilo dokončit',not_assessable:'Z dostupných údajů nelze posoudit'});
-export function isSafeCopy(s){return typeof s==='string'&&!/(?:\d\s*%|\/\s*100|risk_score|\b(?:OpenAI|Anthropic|Claude|GPT|Gemini|Llama)\b|(?:je|jsou)\s+(?:to\s+)?podvod|(?:je|jsou)\s+(?:zcela\s+)?(?:bezpečn|důvěryhodn)|(?:bezpečná|důvěryhodná)\s+(?:firma|nabídka|smlouva|zpráva)|spolehlivý plátce|doporučujeme obchodovat|právně v pořádku)/iu.test(s);}
+export function isSafeCopy(s){return typeof s==='string'&&!/(?:\d\s*%|\/\s*100|risk_score|\b(?:OpenAI|Anthropic|Claude|GPT|Gemini|Llama)\b|(?:je|jsou)\s+(?:to\s+)?podvod|(?:je|jsou)\s+(?:zcela\s+)?(?:bezpečn|důvěryhodn)|(?:bezpečná|důvěryhodná)\s+(?:firma|nabídka|smlouva|zpráva)|(?<![\p{L}])spolehlivý plátce|doporučujeme obchodovat|právně v pořádku)/iu.test(s);}
 const str=(s,max=1000)=>{if(typeof s!=='string'||!s.trim()||s.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(s)||!isSafeCopy(s))throw Error('Invalid verdict text');return s;};
 const iso=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(s)&&Number.isFinite(Date.parse(s));
 export function deriveLevel(findings,sources,policy){

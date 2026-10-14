@@ -54,3 +54,5 @@ export function fromContract(result,opts={}){
  const top=findings.find(f=>f.severity==='attention'),actions=top?{primary:DEFINITIONS[top.ruleId].questions[0],secondary:DEFINITIONS[top.ruleId].questions.slice(1)}:undefined;
  return createCheckResult({checker:'contract',findings,facts,sources:[source('contract_rules','Pravidla pro text smlouvy',valid?'checked':'unavailable',checkedAt)],policy:{primary:'contract_rules',required:[],canConfirmAbsence:false},actions,unknowns:['Kontrola nenahrazuje právní posouzení. Neověřujeme platnost smlouvy ani druhou stranu.'],ai:{status:result?.mode==='rules+ai'?'performed':result?.mode==='rules_fallback'?'unavailable':'not_performed'},checkedAt});
 }
+
+export {fromFirm} from "./firm-verdict.js";
