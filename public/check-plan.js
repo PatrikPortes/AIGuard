@@ -13,13 +13,16 @@ function freeze(value){
 export const CHECKER_REGISTRY=freeze({
  message:{entityKinds:['text'],runAt:'server',requiredDefault:true},
  web:{entityKinds:['url'],runAt:'client',requiredDefault:true},
- firm:{entityKinds:['ico'],runAt:'server',requiredDefault:true}
+ firm:{entityKinds:['ico'],runAt:'server',requiredDefault:true},
+ // Stage 4 (P8): investment offer text is evaluated only in the browser.
+ investment:{entityKinds:['investment_offer'],runAt:'client',requiredDefault:true}
 });
 const REASONS=Object.freeze({
  P1:'Vložili jste text zprávy.',P2:'Vložili jste adresu webu.',
  P3:'Vložili jste IČO firmy.',P4:'Odkaz uvedený v textu zprávy.',
  P5:'IČO uvedené v textu zprávy. Vztah k odesílateli jsme neověřili.',
- P6:'Duplicitní kontrolu neplánujeme.',P7:'Další kontrolu nelze jednoznačně naplánovat nebo přesahuje limit.'
+ P6:'Duplicitní kontrolu neplánujeme.',P7:'Další kontrolu nelze jednoznačně naplánovat nebo přesahuje limit.',
+ P8:'Vložili jste text investiční nabídky.'
 });
 const ORDER=(a,b)=>a<b?-1:a>b?1:0;
 const MAX_URL_CANDIDATES=50;
@@ -98,7 +101,7 @@ function deduplicate(steps){
  return{steps:[...unique.values()],notPlanned};
 }
 function limit(steps){
- const selected=[],notPlanned=[],counts={message:0,web:0,firm:0};
+ const selected=[],notPlanned=[],counts={message:0,web:0,firm:0,investment:0};
  for(const step of steps){
   const max=step.checker==='web'?BUDGET.maxUrls:1;
   if(selected.length>=BUDGET.maxSteps||counts[step.checker]>=max)notPlanned.push(skip(step.input.kind,step.input.ref,'limit'));
@@ -111,36 +114,50 @@ function limit(steps){
 export const PLANNER_RULES=freeze([
  {id:'P1',when:c=>c.input.text!==null,steps:c=>[draft('message','text','text','P1','user_field',true,!c.input.urlField,'server')]},
  {id:'P2',when:c=>c.input.urlField!==null,steps:c=>[draft('web','url',c.input.urlField.normalized,'P2','user_field',true,true,'client')]},
- {id:'P3',when:c=>c.input.icoField!==null,steps:c=>[draft('firm','ico',c.input.icoField,'P3','user_field',true,!c.input.text&&!c.input.urlField,'server')]},
+ {id:'P3',when:c=>c.input.icoField!==null,steps:c=>[draft('firm','ico',c.input.icoField,'P3','user_field',true,!c.input.text&&!c.input.urlField&&!c.input.offer,'server')]},
  {id:'P4',when:c=>c.input.extracted.urls.length>0,steps:c=>c.input.extracted.urls.map(u=>draft('web','url',u.normalized,'P4','extracted_from_text',true,false,c.runAt))},
  {id:'P5',when:c=>!c.input.icoField&&c.input.extracted.icos.length===1,steps:c=>[draft('firm','ico',c.input.extracted.icos[0],'P5','extracted_from_text',false,false,'server')]},
  {id:'P6',when:()=>true,steps:c=>deduplicate(c.steps)},
- {id:'P7',when:()=>true,steps:c=>limit(c.steps)}
+ {id:'P7',when:()=>true,steps:c=>limit(c.steps)},
+ // Stage 4: the offer is the required primary step (unless a URL field is primary), browser only.
+ {id:'P8',when:c=>Boolean(c.input.offer),steps:c=>[draft('investment','text','offer','P8','user_field',true,!c.input.urlField,'client')]}
 ]);
+// Candidate rules in step order (P8 right after P1, so the limit never drops it); then transforms.
+const CANDIDATE_RULES=['P1','P8','P2','P3','P4','P5'],TRANSFORM_RULES=['P6','P7'];
+const rulesById=ids=>ids.map(id=>PLANNER_RULES.find(r=>r.id===id));
 export function planCheck(input={},opts={}){
- if(!keys(input,['text','ico','url']))throw Error('INVALID_INPUT');
+ if(!keys(input,['text','ico','url','offer']))throw Error('INVALID_INPUT');
  if(!keys(opts,['runAt','normalizeUrl'])||opts.runAt!==undefined&&!['server','client'].includes(opts.runAt))throw Error('INVALID_OPTIONS');
  const {normalizeUrl}=opts;
  if(normalizeUrl!==undefined&&typeof normalizeUrl!=='function')throw Error('INVALID_OPTIONS');
- const runAt=opts.runAt||'server';let text=null,icoField=null,urlField=null;
+ const runAt=opts.runAt||'server';let text=null,icoField=null,urlField=null,offer=null;
  if(input.text!==undefined){
   if(typeof input.text!=='string')throw Error('INVALID_TEXT');text=input.text.trim();
   if(text.length<1||text.length>20000)throw Error('INVALID_TEXT');
  }
+ if(input.offer!==undefined){
+  // Stage 4: an investment offer never goes to the server and is not a message text.
+  if(input.text!==undefined)throw Error('INVALID_INPUT');
+  if(typeof input.offer!=='string')throw Error('INVALID_OFFER');offer=input.offer.trim();
+  if(offer.length<1||offer.length>20000)throw Error('INVALID_OFFER');
+  if(runAt!=='client')throw Error('OFFER_NOT_ALLOWED');
+ }
  if(input.ico!==undefined){if(!validIco(input.ico))throw Error('INVALID_ICO');icoField=input.ico;}
- if(text!==null&&typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
+ if((text!==null||offer!==null)&&typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
  if(input.url!==undefined){if(runAt!=='client')throw Error('URL_NOT_ALLOWED');urlField=urlRecord(input.url,normalizeUrl);}
- if(text===null&&!icoField&&!urlField)throw Error('EMPTY_INPUT');
- const extracted=extract(text||'',normalizeUrl);
+ if(text===null&&offer===null&&!icoField&&!urlField)throw Error('EMPTY_INPUT');
+ const extracted=extract(text??offer??'',normalizeUrl);
  const planInput={text:text===null?null:{present:true,chars:text.length},urlField,icoField,
-  extracted:{urls:extracted.urls,icos:extracted.icos,ignored:extracted.ignored}};
+  extracted:{urls:extracted.urls,icos:extracted.icos,ignored:extracted.ignored},
+  // Key only present for an offer, so plans without an offer stay byte-identical.
+  ...(offer===null?{}:{offer:{present:true,chars:offer.length}})};
  const context={input:planInput,runAt,steps:[]},notPlanned=[...extracted.notPlanned];
- for(const rule of PLANNER_RULES.slice(0,5))if(rule.when(context))context.steps.push(...rule.steps(context));
+ for(const rule of rulesById(CANDIDATE_RULES))if(rule.when(context))context.steps.push(...rule.steps(context));
  if(extracted.icos.length>1){for(const ico of extracted.icos)notPlanned.push(skip('ico',ico,'ambiguous'));}
  else if(icoField&&extracted.icos.length){
   const ico=extracted.icos[0];notPlanned.push(skip('ico',ico,ico===icoField?'duplicate':'limit'));
  }
- for(const rule of PLANNER_RULES.slice(5)){
+ for(const rule of rulesById(TRANSFORM_RULES)){
   const result=rule.steps(context);context.steps=result.steps;notPlanned.push(...result.notPlanned);
  }
  const omissions=[...new Map(notPlanned.map(n=>[JSON.stringify(n),n])).values()]
@@ -159,8 +176,10 @@ export function validateCheckPlan(plan,opts={}){
  require(plan.schema===1&&plan.planner===PLANNER_VERSION&&keys(plan.budget,Object.keys(BUDGET),true));
  require(Object.keys(BUDGET).every(k=>plan.budget[k]===BUDGET[k]));
  const input=plan.input;
- require(keys(input,['text','urlField','icoField','extracted'],true));
+ const hasOffer=own(input||{},'offer');
+ require(keys(input,hasOffer?['text','urlField','icoField','extracted','offer']:['text','urlField','icoField','extracted'],true));
  require(input.text===null||keys(input.text,['present','chars'],true)&&input.text.present===true&&Number.isInteger(input.text.chars)&&input.text.chars>=1&&input.text.chars<=20000);
+ require(!hasOffer||input.text===null&&keys(input.offer,['present','chars'],true)&&input.offer.present===true&&Number.isInteger(input.offer.chars)&&input.offer.chars>=1&&input.offer.chars<=20000);
  const validateUrl=record=>{
   require(keys(record,['host','normalized'],true));let canonical;
   if(typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
@@ -169,17 +188,17 @@ export function validateCheckPlan(plan,opts={}){
  };
  if(input.urlField!==null)validateUrl(input.urlField);
  require(input.icoField===null||validIco(input.icoField));
- require(input.text!==null||input.urlField!==null||input.icoField!==null);
+ require(input.text!==null||hasOffer||input.urlField!==null||input.icoField!==null);
  require(keys(input.extracted,['urls','icos','ignored'],true));
  const {urls,icos,ignored}=input.extracted;
  require(Array.isArray(urls)&&urls.length<=MAX_URL_CANDIDATES&&Array.isArray(icos)&&icos.length<=MAX_ICO_CANDIDATES&&Array.isArray(ignored)&&ignored.length<=MAX_ICO_CANDIDATES+MAX_URL_CANDIDATES+1);
  urls.forEach(validateUrl);require(new Set(urls.map(u=>u.normalized)).size===urls.length);
  require(icos.every(validIco)&&new Set(icos).size===icos.length);
  require(ignored.every(x=>keys(x,['kind','reason'],true)&&['url','ico'].includes(x.kind)&&['invalid','limit'].includes(x.reason)));
- if(input.text===null)require(urls.length===0&&icos.length===0&&ignored.length===0);
+ if(input.text===null&&!hasOffer)require(urls.length===0&&icos.length===0&&ignored.length===0);
  require(Array.isArray(plan.steps)&&plan.steps.length>=1&&plan.steps.length<=BUDGET.maxSteps);
  require(Array.isArray(plan.notPlanned)&&plan.notPlanned.length<=MAX_ICO_CANDIDATES+2*MAX_URL_CANDIDATES+2);
- const unique=new Set(),counts={message:0,web:0,firm:0};let primaries=0;
+ const unique=new Set(),counts={message:0,web:0,firm:0,investment:0};let primaries=0;
  for(const [index,step]of plan.steps.entries()){
   require(keys(step,['id','checker','input','trigger','reason','required','primary','runAt'],true));
   require(step.id==='s'+(index+1)&&own(CHECKER_REGISTRY,step.checker));counts[step.checker]++;
@@ -191,12 +210,14 @@ export function validateCheckPlan(plan,opts={}){
   require(!unique.has(key));unique.add(key);if(step.primary)primaries++;
   if(rule==='P1')require(step.checker==='message'&&step.input.kind==='text'&&step.input.ref==='text'&&input.text!==null&&step.trigger==='user_field'&&step.required&&step.primary===!input.urlField&&step.runAt==='server');
   else if(rule==='P2')require(step.checker==='web'&&step.input.kind==='url'&&step.input.ref===input.urlField?.normalized&&step.trigger==='user_field'&&step.required&&step.primary&&step.runAt==='client');
-  else if(rule==='P3')require(step.checker==='firm'&&step.input.kind==='ico'&&step.input.ref===input.icoField&&step.trigger==='user_field'&&step.required&&step.primary===(!input.text&&!input.urlField)&&step.runAt==='server');
-  else if(rule==='P4')require(step.checker==='web'&&step.input.kind==='url'&&urls.some(u=>u.normalized===step.input.ref)&&step.input.ref!==input.urlField?.normalized&&step.trigger==='extracted_from_text'&&step.required&&!step.primary&&(!input.urlField||step.runAt==='client'));
+  else if(rule==='P3')require(step.checker==='firm'&&step.input.kind==='ico'&&step.input.ref===input.icoField&&step.trigger==='user_field'&&step.required&&step.primary===(!input.text&&!input.urlField&&!hasOffer)&&step.runAt==='server');
+  else if(rule==='P4')require(step.checker==='web'&&step.input.kind==='url'&&urls.some(u=>u.normalized===step.input.ref)&&step.input.ref!==input.urlField?.normalized&&step.trigger==='extracted_from_text'&&step.required&&!step.primary&&(!input.urlField&&!hasOffer||step.runAt==='client'));
+  else if(rule==='P8')require(step.checker==='investment'&&step.input.kind==='text'&&step.input.ref==='offer'&&hasOffer&&step.trigger==='user_field'&&step.required&&step.primary===!input.urlField&&step.runAt==='client');
   else if(rule==='P5')require(step.checker==='firm'&&step.input.kind==='ico'&&icos.length===1&&step.input.ref===icos[0]&&!input.icoField&&step.trigger==='extracted_from_text'&&!step.required&&!step.primary&&step.runAt==='server');
   else require(false); // P6/P7 remove/limit steps; they never create checker executions.
  }
- require(primaries===1&&counts.message<=1&&counts.web<=2&&counts.firm<=1);
+ require(primaries===1&&counts.message<=1&&counts.web<=2&&counts.firm<=1&&counts.investment<=1&&counts.message+counts.investment<=1);
+ if(hasOffer)require(plan.steps.some(s=>s.reason.ruleId==='P8'));
  if(input.text!==null)require(plan.steps.some(s=>s.reason.ruleId==='P1'));
  if(input.urlField!==null)require(plan.steps.some(s=>s.reason.ruleId==='P2'));
  if(input.icoField!==null)require(plan.steps.some(s=>s.reason.ruleId==='P3'));
@@ -271,7 +292,7 @@ export function aggregate(steps,outcomes){
  else if((decisive=rows.find(r=>r.step.required&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')))){level='attention';ruleId='A3';}
  else if((decisive=find('attention'))){level='attention';ruleId='A4';}
  // A completed optional incomplete result cannot satisfy A6 (all completed none_found).
- else if((decisive=find('not_assessable'))||(decisive=find('incomplete'))||(decisive=rows.find(r=>['message','web'].includes(r.step.checker)))){level='not_assessable';ruleId='A5';}
+ else if((decisive=find('not_assessable'))||(decisive=find('incomplete'))||(decisive=rows.find(r=>['message','web','investment'].includes(r.step.checker)))){level='not_assessable';ruleId='A5';}
  else{level='none_found';ruleId='A6';}
  const influential=ruleId==='A3'?rows.filter(r=>r.step.required&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')):[decisive];
  const reasons=influential.map(r=>({ruleId,stepId:r?.step.id||null,text:AGGREGATE_COPY[ruleId]}));
