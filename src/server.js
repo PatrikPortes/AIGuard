@@ -1,3 +1,4 @@
+import {createCheckRunner} from './check-runner.js';
 import {createFirmSources} from './firm-sources.js';
 import {evaluateFirm} from './firm-rules.js';
 import {fromFirm} from '../public/firm-verdict.js';
@@ -135,8 +136,18 @@ function serviceError(res, error) {
   if (status === 429 || status === 503) res.setHeader('Retry-After', '60');
   send(res, status, { code, error: messages[code] || 'AI ověření je dočasně nedostupné. Zkuste to později. Výsledek nebyl vytvořen.' });
 }
+// Flat JSON wire schema also rejects duplicate/escaped duplicate keys before parsing.
+const checkString=String.raw`"(?:\\["\\/bfnrt]|\\u[0-9a-fA-F]{4}|[^"\\\x00-\x1f])*"`;
+const checkPair=checkString+String.raw`\s*:\s*`+checkString;
+const checkWire=new RegExp('^\\s*\\{\\s*'+checkPair+'(?:\\s*,\\s*'+checkPair+')?\\s*\\}\\s*$');
+function validCheckWire(text){
+ if(!checkWire.test(text))return false;
+ const keys=[...text.matchAll(new RegExp('('+checkString+')\\s*:\\s*'+checkString, 'g'))].map(m=>JSON.parse(m[1]));
+ return keys.every(k=>['text','ico'].includes(k))&&new Set(keys).size===keys.length;
+}
 export function createServer({
   contractPipeline=createContractRuntime(), registryRelay=aresRelayFromEnv(), firmSources,
+  checkAdapters, checkClock=Date.now, checkTimers,
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
   usageStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
@@ -159,6 +170,7 @@ export function createServer({
   const firmRequests=new AdmissionGate(2);
   const firmLimiter=new WindowLimiter({limit:20,windowMs:60000,clock:limiterClock,maxKeys:1});
   const firmSessionLimiter=new WindowLimiter({limit:10,windowMs:60000,clock:limiterClock});
+  const checkRunner=createCheckRunner({firmClient,firmRequests,firmLimiter,firmSessionLimiter,adapters:checkAdapters,clock:checkClock,...(checkTimers?{timers:checkTimers}:{})});
   const registryRequests = new AdmissionGate(2);
   const registryLimiter = new WindowLimiter({limit:20,windowMs:60000,clock:limiterClock,maxKeys:1});
   const analyses = new AdmissionGate(maxConcurrentAnalyses);
@@ -196,7 +208,7 @@ export function createServer({
       releaseRequest = requests.enter();
       checkRequestHeaders(req);
       const path = requestPath(req.url);
-      const allowedMethod = ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session','/api/contract-status'].includes(path) ? 'GET' : null;
+      const allowedMethod = ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm','/api/check'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session','/api/contract-status'].includes(path) ? 'GET' : null;
       if (allowedMethod && req.method !== allowedMethod) {
         rejectBody(); res.setHeader('Allow', allowedMethod);
         return send(res, 405, { code: 'METHOD_NOT_ALLOWED', error: 'Tato metoda není podporována.' });
@@ -211,7 +223,7 @@ export function createServer({
         sessions.get(req, res);
         return send(res, 200, pipeline.status());
       }
-      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm'].includes(path)) {
+      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm','/api/check'].includes(path)) {
         // Resolve only the explicitly configured ingress; never trust X-Forwarded-For.
         const clientIp = resolveClientIp(req);
         checkBrowserRequest(req, publicOrigin);
@@ -232,9 +244,12 @@ export function createServer({
           bodyReleases.push(prefix48Bodies.enter(sessions.hashIp(clientIdentity(clientIp, 48))));
         }
         bodyReleases.push(bodyRequests.enter());
-        const input = await readJson(req, { maxBytes:path === '/api/analyze-contract'?262144:['/api/eshop-operator','/api/firm'].includes(path)?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal, validateText:path==='/api/firm'?text=>/^\s*\{\s*"ico"\s*:\s*"\d{8}"\s*\}\s*$/.test(text):undefined });
+        const input = await readJson(req, { maxBytes:path === '/api/analyze-contract'?262144:['/api/eshop-operator','/api/firm'].includes(path)?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal, validateText:path==='/api/check'?validCheckWire:path==='/api/firm'?text=>/^\s*\{\s*"ico"\s*:\s*"\d{8}"\s*\}\s*$/.test(text):undefined }).catch(error=>{if(path==='/api/check'&&error.code==='BODY_TOO_LARGE')throw new ServiceError('BODY_TOO_LARGE',400);throw error;});
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
-        const preparedInput = path === '/api/analyze-contract' ? (()=>{try{return validateContractInput(input);}catch(e){throw new ServiceError(e.message,400);}})() : ['/api/eshop-operator','/api/firm'].includes(path) ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
+        if(path==='/api/check'&&input.text!==undefined&&(typeof input.text!=='string'||!input.text.trim()||input.text.length>10000)){
+          rejectBody();return send(res,400,{code:'INVALID_INPUT',error:'Text musí mít 1 až 10 000 znaků. Delší text nezkracujeme.'});
+        }
+        const preparedInput = path === '/api/check' ? (()=>{try{return checkRunner.prepare(input);}catch{throw new ServiceError('INVALID_INPUT',400);}})() : path === '/api/analyze-contract' ? (()=>{try{return validateContractInput(input);}catch(e){throw new ServiceError(e.message,400);}})() : ['/api/eshop-operator','/api/firm'].includes(path) ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
         if (clientIdentity(clientIp).startsWith('ipv6:')) {
           prefix56Limiter.check(sessions.hashIp(clientIdentity(clientIp, 56)));
@@ -276,6 +291,10 @@ export function createServer({
         // Session acquisition, rejected origins/bodies and over-quota clients
         // never spend the shared emergency analysis bucket.
         globalLimiter.check('analysis');
+        if(path==='/api/check'){
+          const result=await preparedInput.run({sessionId,signal:controller.signal});
+          if(!controller.signal.aborted)return send(res,200,result);return;
+        }
         const deadline = new AbortController();
         analysisTimer = setTimeout(() => deadline.abort(), analysisTimeoutMs);
         const analysisSignal = AbortSignal.any([controller.signal, deadline.signal]);
