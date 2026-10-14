@@ -101,6 +101,29 @@ function parseDph(xml,dic){
  }if(accounts.length>100)throw Error('Too many accounts');
  return{status:s.attrs.typSubjektu,unreliable:s.attrs.nespolehlivyPlatce,publishedAccounts:accounts,unreliableSince:date(s.attrs.datumZverejneniNespolehlivosti),generatedOn:status[0].attrs.odpovedGenerovana};
 }
+// Search extends the existing authenticated relay, never accepts a client URL.
+async function firmSearch(req,res){
+ const key='ares-search';let window=firmWindows.get(key);if(!window){window={active:0,calls:[]};firmWindows.set(key,window);}
+ if(window.active>=2){req.resume();return reply(res,429);}window.active++;
+ const timer=setTimeout(()=>req.destroy(),3000);
+ try{
+  const parts=[];let bytes=0;for await(const p of req){bytes+=p.length;if(bytes>1024)throw Error('Body limit');parts.push(p);}clearTimeout(timer);
+  const wire=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(parts));
+  // Reject duplicate/escaped keys; JSON string escapes in the name remain legitimate.
+  if(!/^\s*\{\s*"name"\s*:\s*"(?:[^"\\]|\\.)*"\s*,\s*"start"\s*:\s*\d+\s*\}\s*$/.test(wire))return reply(res,400);
+  const {name,start}=JSON.parse(wire);
+  if(typeof name!=='string'||name!==name.trim()||name.length<3||name.length>100||/[\p{Cc}\p{Cf}]/u.test(name)||/[<>\/\\?#]/.test(name)||!/[\p{L}]/u.test(name)||!Number.isInteger(start)||start<0||start>990||start%10)return reply(res,400);
+  const now=Date.now();while(window.calls.length&&window.calls[0]<=now-60000)window.calls.shift();if(window.calls.length>=10)return reply(res,429);window.calls.push(now);
+  const raw=await boundedUpstream(FIRM_REST+'ekonomicke-subjekty/vyhledat',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({obchodniJmeno:name,start,pocet:10})},256000);
+  if(!Number.isInteger(raw.pocetCelkem)||raw.pocetCelkem<0||raw.pocetCelkem>1000||!Array.isArray(raw.ekonomickeSubjekty)||raw.ekonomickeSubjekty.length>10||raw.ekonomickeSubjekty.length>raw.pocetCelkem)throw Error('Search schema');
+  const seen=new Set();const candidates=raw.ekonomickeSubjekty.map(x=>{
+   if(!validIco(x.ico)||seen.has(x.ico)||typeof x.obchodniJmeno!=='string'||!x.obchodniJmeno.trim()||x.obchodniJmeno.length>500||!/^\d{3}$/.test(x.pravniForma||''))throw Error('Candidate schema');seen.add(x.ico);
+   const sole=['101','102','104','105','107','108','424','425'].includes(x.pravniForma);
+   return{ico:x.ico,name:x.obchodniJmeno,seat:text(sole?x.sidlo?.nazevObce:x.sidlo?.textovaAdresa)};
+  });
+  res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({total:raw.pocetCelkem,candidates}));
+ }catch(e){if(!res.destroyed)reply(res,e.message==='Body limit'?400:502);}finally{clearTimeout(timer);window.active--;}
+}
 async function firmRegistry(req,res){
  const kind=req.url.split('/').pop();let window=firmWindows.get(kind);
  if(!window){window={active:0,calls:[]};firmWindows.set(kind,window);}
@@ -137,7 +160,8 @@ async function firmRegistry(req,res){
 const server=http.createServer({maxHeaderSize:8192},async(req,res)=>{
  if(req.method==='GET'&&req.url==='/health'){return reply(res,200);}
  const supplied=Buffer.from(req.headers.authorization||'');
- if(req.method!=='POST'||!['/v1/chat/completions','/v1/contract/chat/completions','/v1/contract/turnstile','/v1/registry/ares','/v1/registry/ares-profile','/v1/registry/dph'].includes(req.url)||supplied.length!==expected.length||!timingSafeEqual(supplied,expected)){req.resume();return reply(res,403);}
+ if(req.method!=='POST'||!['/v1/chat/completions','/v1/contract/chat/completions','/v1/contract/turnstile','/v1/registry/ares','/v1/registry/ares-profile','/v1/registry/dph','/v1/registry/ares-search'].includes(req.url)||supplied.length!==expected.length||!timingSafeEqual(supplied,expected)){req.resume();return reply(res,403);}
+ if(req.url==='/v1/registry/ares-search')return firmSearch(req,res);
  if(req.url==='/v1/registry/ares')return ares(req,res);
  if(['/v1/registry/ares-profile','/v1/registry/dph'].includes(req.url))return firmRegistry(req,res);
  const bot=req.url==='/v1/contract/turnstile',contract=req.url==='/v1/contract/chat/completions';

@@ -2,6 +2,21 @@ import {validateRegistryInput} from './eshop-sources.js';
 const text=v=>typeof v==='string'?v.slice(0,500):null;
 const date=v=>{if(v==null||v==='')return null;if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v)||!Number.isFinite(Date.parse(v))||new Date(v).toISOString().slice(0,10)!==v)throw Error('Invalid date');return v;};
 const list=(v,max=100)=>{if(!Array.isArray(v)||v.length>max)throw Error('List');return v;};
+// Name search is bounded and exact-schema; neither URL nor bank account is accepted.
+export function validateFirmSearch(input){
+ if(!input||typeof input!=='object'||Array.isArray(input)||!Object.hasOwn(input,'name')||Object.keys(input).some(k=>!['name','start'].includes(k)))throw Error('INVALID_INPUT');
+ const {name,start=0}=input;
+ if(typeof name!=='string'||name!==name.trim()||name.length<3||name.length>100||/[\p{Cc}\p{Cf}]/u.test(name)||/[<>\/\\?#]/.test(name)||!/[\p{L}]/u.test(name)||!Number.isInteger(start)||start<0||start>990||start%10)throw Error('INVALID_INPUT');
+ return{name,start};
+}
+export function sanitizeFirmSearch(raw){
+ if(!raw||!Number.isInteger(raw.total)||raw.total<0||raw.total>1000||!Array.isArray(raw.candidates)||raw.candidates.length>10||raw.candidates.length>raw.total)throw Error('Search schema');
+ const seen=new Set();const candidates=raw.candidates.map(x=>{
+  validateRegistryInput({ico:x.ico});if(seen.has(x.ico)||typeof x.name!=='string'||!x.name.trim()||x.name.length>500||(x.seat!==null&&typeof x.seat!=='string'))throw Error('Candidate');seen.add(x.ico);
+  return{ico:x.ico,name:x.name,seat:text(x.seat)};
+ });
+ return{total:raw.total,candidates};
+}
 // Second whitelist at application boundary: never forward relay extras or personal addresses.
 export function sanitizeFirmProfile(raw,ico){
  const x=raw?.identity;if(!x||x.ico!==ico||typeof x.name!=='string'||typeof x.legalFormCode!=='string'||!/^\d{3}$/.test(x.legalFormCode)||typeof x.soleTrader!=='boolean')throw Error('Identity');
@@ -55,5 +70,9 @@ export function createFirmSources({relay,fetchImpl=fetch,clock=Date.now}={}){
   if(!pending){pending=load(ico).then(data=>{if(data.identity){if(cache.size>=100)cache.delete(cache.keys().next().value);cache.set(ico,{until:clock()+600000,data:structuredClone(data)});}return data;}).finally(()=>inflight.delete(ico));inflight.set(ico,pending);}
   return structuredClone(await pending);
  }
- return{profile};
+ async function search(input,{signal}={}){
+  const body=validateFirmSearch(input);if(signal?.aborted)throw Error('Cancelled');const deadline=signal?AbortSignal.any([signal,AbortSignal.timeout(4000)]):AbortSignal.timeout(4000);
+  return sanitizeFirmSearch(await call('ares-search',body,deadline));
+ }
+ return{profile,search};
 }

@@ -19,3 +19,15 @@
 .contract-party-options label{min-height:48px}
 #contract-party-ico{display:block;box-sizing:border-box;width:100%;min-height:48px;padding:.65rem;font:inherit;border:2px solid #8b87a8;border-radius:.75rem}
 .contract-party button{min-height:48px}
+/* On narrow phones keep the guide beside the heading without squeezing the text. */
+@media(max-width:440px){
+ .contract-entry>.contract-card-heading{gap:12px;align-items:center}
+ .contract-entry>.contract-card-heading img{width:64px;flex-shrink:0}
+ .contract-entry h1{font-size:clamp(1.6rem,7vw,2rem)}
+ #contract-result>.contract-card-heading{grid-template-columns:76px minmax(0,1fr);min-height:84px;gap:12px}
+ #contract-result-verka{width:104px;left:-20px;top:-32px}
+ .contract-status{flex-wrap:wrap;gap:12px}
+ .contract-status span{flex:1;min-width:0}
+ .contract-actions button{flex:1 1 160px}
+ .contract-type-options label{min-height:48px}
+}
