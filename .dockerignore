@@ -13,6 +13,11 @@
 !tests/adversarial/claude-review.adversarial.mjs
 !test-support/
 !test-support/*.js
+# Gate fixtures named explicitly: some .dockerignore implementations re-include only the
+# directory entry for "!dir/", not its subtree.
+!test-support/contract/
+!test-support/contract/evaluation.json
+!test-support/contract/relay-fetch.cjs
 # Validation-stage inputs only (Dockerfile copies them into the validated stage, never into production).
 !ai-proxy.cjs
 !admin/src/usage.js
