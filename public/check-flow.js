@@ -173,7 +173,7 @@ export async function startWebFirmCheck(container,{url,ico,checkWebUrl,coiResult
  try{
   const result=await runWebFirmCheck({url,ico},{checkWebUrl,coiResult,coiData,signal:controller.signal});
   if(controller.signal.aborted)return;
-  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl});
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,share:'web'});
  }catch{
   if(controller.signal.aborted)return;
   const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
@@ -191,7 +191,8 @@ export async function startMessageCheck(container,{text,ico,analysis,analysisMs,
  try{
   const result=await runMessageCheck({text,ico,analysis,analysisMs},{checkWebUrl,coiResult,coiData,signal:controller.signal});
   if(controller.signal.aborted)return;
-  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,focus:false});
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,focus:false,share:'message'});
+  return result;
  }catch{
   if(controller.signal.aborted)return;
   const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
@@ -208,7 +209,7 @@ export async function startInvestmentCheck(container,{offer,ico,url,evaluateInve
  try{
   const result=await runInvestmentCheck({offer,ico,url},{evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData,signal:controller.signal});
   if(controller.signal.aborted)return;
-  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,registryNeutral:true});
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,registryNeutral:true,share:'investment'});
   return result;
  }catch{
   if(controller.signal.aborted)return;
@@ -226,7 +227,7 @@ export async function startLoanCheck(container,{loan,ico,analysis,analysisMs,che
  try{
   const result=await runLoanCheck({loan,ico,analysis,analysisMs},{checkWebUrl,coiResult,coiData,signal:controller.signal});
   if(controller.signal.aborted)return;
-  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,focus:false,registryNeutral:true});
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,focus:false,registryNeutral:true,share:'loan'});
   return result;
  }catch{
   if(controller.signal.aborted)return;
@@ -244,7 +245,7 @@ export async function startContractFirmCheck(container,{contract,ico,contractRes
  try{
   const result=await runContractFirmCheck({contract,ico,contractResult},{checkWebUrl,coiResult,signal:controller.signal});
   if(controller.signal.aborted)return;
-  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,registryNeutral:true});
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,registryNeutral:true,share:'contract'});
   return result;
  }catch{
   if(controller.signal.aborted)return;

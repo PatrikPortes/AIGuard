@@ -1,6 +1,6 @@
 import {validateCombinedResult} from './check-plan.js';
-import {renderVerdict} from './verdict-view.js';
-import {characterAssets} from './character-assets.js';
+import {renderVerdict,applyGuide} from './verdict-view.js';
+import {createShareControl,shareCategory} from './share-result.js';
 const SYMBOL={serious:'🔴',attention:'🟠',none_found:'🟢',incomplete:'⚪',not_assessable:'⚪'};
 const CHECKER={message:'Zpráva',web:'Web',firm:'Firma',loan:'Půjčka',contract:'Smlouva',investment:'Investice'};
 const SOURCE={ARES:'ARES',ARES_VR:'Veřejný rejstřík přes ARES',ARES_RES:'RES přes ARES',DPH:'Registr DPH',COI:'Místní kopie seznamu ČOI',none:'Pravidla bez externího zdroje'};
@@ -42,18 +42,21 @@ function presentRegistryNeutral(detail,note){
  const p=detail.ownerDocument.createElement('p');p.className='verdict-limitation registry-found-note';p.textContent=note;
  headline.closest('.verdict-heading')?.after(p);
 }
-export function renderCombinedResult(container,result,{normalizeUrl,focus=true,registryNeutral=false}={}){
+// Stage 8: share (a checker type constant of the integrating page) adds the share control to the
+// final combined result; its category comes from the aggregate level only.
+export function renderCombinedResult(container,result,{normalizeUrl,focus=true,registryNeutral=false,share}={}){
  validateCombinedResult(result,{normalizeUrl});const el=dom(container);
  const root=el('article',undefined,'check-result');root.setAttribute('aria-label','Výsledek společného prověření');
  const lead=el('div',undefined,'verdict-result check-lead');lead.dataset.level=result.aggregate.level;
  const card=el('section',undefined,'verdict-lead'),heading=el('div',undefined,'verdict-heading');
- const guide=el('img',undefined,'verdict-guide');guide.src=characterAssets['verka-explaining'];guide.alt='Věrka vysvětluje výsledek';guide.width=72;guide.height=66;
+ const guide=applyGuide(el('img',undefined,'verdict-guide'),result.aggregate.level);
  const h=el('h2',result.aggregate.headline,'verdict-headline check-headline');h.tabIndex=-1;
  const symbol=el('span',SYMBOL[result.aggregate.level],'verdict-symbol');symbol.setAttribute('aria-hidden','true');h.prepend(symbol);heading.append(guide,h);card.append(heading);
  card.append(el('p',result.aggregate.reasons[0].text,'check-explanation'));
  const action=el('section',undefined,'verdict-next');action.append(el('h3','Co udělat teď'));
  action.append(el('p',result.aggregate.actions.primary??'Z dokončených kontrol nemáme k dispozici další krok.','verdict-primary'));
  if(result.aggregate.actions.secondary.length){const more=el('details');more.append(el('summary','Další kroky'));result.aggregate.actions.secondary.forEach(s=>more.append(el('p',s)));action.append(more);}card.append(action);
+ if(share!==undefined)card.append(createShareControl(container.ownerDocument,share,shareCategory(result.aggregate.level)));
  const reasons=el('details',undefined,'verdict-reasons');reasons.append(el('summary','Proč tento výsledek?'));for(const r of result.aggregate.reasons)reasons.append(el('p',r.text+(r.stepId?' · '+CHECKER[result.plan.steps.find(s=>s.id===r.stepId).checker]:'')));card.append(reasons);
  lead.append(card);root.append(lead,el('p','Datum kontroly: '+result.checkedAt,'check-date'));
  const checks=el('section',undefined,'check-steps');checks.append(el('h3','Co jsme prověřili'),el('p','Kontrola proběhla neznamená, že je vše v pořádku. Nedostupný zdroj zůstává neověřený.','check-note'));

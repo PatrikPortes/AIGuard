@@ -1,5 +1,20 @@
 import {validateCheckResult,limitationFor} from './verdict-model.js';
-import {characterAssets} from './character-assets.js';
+import {characterAssets,characterAssetFiles} from './character-assets.js';
+// Stage 8 (S8.4): static Věrka mood per verdict level, existing approved assets only.
+// A success pose is never used for a result: "none found" is not a confirmation of safety.
+const GUIDE=Object.freeze({
+ serious:Object.freeze({name:'verka-warning',alt:'Věrka upozorňuje na varovné signály'}),
+ attention:Object.freeze({name:'verka-explaining',alt:'Věrka vysvětluje výsledek'}),
+ none_found:Object.freeze({name:'verka-thinking',alt:'Věrka přemýšlí nad výsledkem'}),
+ incomplete:Object.freeze({name:'verka-thinking',alt:'Věrka přemýšlí nad výsledkem'}),
+ not_assessable:Object.freeze({name:'verka-thinking',alt:'Věrka přemýšlí nad výsledkem'})
+});
+export function guideFor(level){
+ const g=GUIDE[level];if(!g)throw Error('INVALID_GUIDE_LEVEL');
+ const file=characterAssetFiles.find(f=>f.name===g.name);
+ return {name:g.name,src:characterAssets[g.name],alt:g.alt,width:72,height:Math.round(72*file.height/file.width)};
+}
+export function applyGuide(img,level){const g=guideFor(level);img.src=g.src;img.alt=g.alt;img.width=g.width;img.height=g.height;img.dataset.mood=g.name;return img;}
 const SYMBOL={serious:'🔴',attention:'🟠',none_found:'🟢',incomplete:'⚪',not_assessable:'⚪'};
 const SOURCES={ARES:'ARES (Ministerstvo financí)',DPH:'Registr DPH',COI:'ČOI',user:'Uživatel',calc:'Výpočet'};
 const STATUS={checked:'Kontrola proběhla',not_found:'Kontrola proběhla, záznam nenalezen',unavailable:'Nedostupné, neověřeno',skipped:'Kontrola neprovedena',not_applicable:'Pro tuto kontrolu nepoužito'};
@@ -9,7 +24,7 @@ export function renderVerdict(container,result,{focus=true}={}){
  const root=el('article',undefined,'verdict-result');root.dataset.level=result.level;
  const section=(label,className)=>{const n=el('section',undefined,className);n.append(el('h3',label));root.append(n);return n;};
  const link=(label,url)=>{const n=el('a',label);n.href=url;n.target='_blank';n.rel='noopener noreferrer';n.referrerPolicy='no-referrer';return n;};
- const lead=el('section',undefined,'verdict-lead'),heading=el('div',undefined,'verdict-heading'),guide=el('img');guide.src=characterAssets['verka-explaining'];guide.alt='Věrka vysvětluje výsledek';guide.width=72;guide.height=66;guide.className='verdict-guide';
+ const lead=el('section',undefined,'verdict-lead'),heading=el('div',undefined,'verdict-heading'),guide=applyGuide(el('img'),result.level);guide.className='verdict-guide';
  const h=el('h2',result.headline,'verdict-headline');h.tabIndex=-1;const symbol=el('span',SYMBOL[result.level],'verdict-symbol');symbol.setAttribute('aria-hidden','true');h.prepend(symbol);heading.append(guide,h);lead.append(heading);
  if(result.level==='none_found')lead.append(el('p',limitationFor(result.checker),'verdict-limitation'));
  const reasons=el('details',undefined,'verdict-reasons');reasons.append(el('summary','Proč tento výsledek?'));for(const r of result.reasons)reasons.append(el('p',r.text));lead.append(reasons);

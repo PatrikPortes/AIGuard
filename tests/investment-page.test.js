@@ -71,11 +71,11 @@ test('neutral clean-firm presentation: shared in check-view (S5.2), opt-in for i
  const css=read('verdict.css');
  assert.match(css,/\.verdict-result\[data-level=none_found\]\[data-presentation=registry-found\] \.verdict-lead\{background:#f4f5f9;border-color:#657089\}/);
  const view=read('check-view.js'),flow=read('check-flow.js');
- assert.match(view,/export function renderCombinedResult\(container,result,\{normalizeUrl,focus=true,registryNeutral=false\}=\{\}\)/);
+ assert.match(view,/export function renderCombinedResult\(container,result,\{normalizeUrl,focus=true,registryNeutral=false,share\}=\{\}\)/);
  // Enabled only by the investment, loan (S5.2) and contract (S5.3) starters; Web (S3.6) and Message (S3.7) keep the default.
  assert.equal((flow.match(/registryNeutral:true/g)||[]).length,3);
- assert.match(flow,/renderCombinedResult\(container,result,\{normalizeUrl:checkWebUrl\}\);/,'Web + Firma default');
- assert.match(flow,/renderCombinedResult\(container,result,\{normalizeUrl:checkWebUrl,focus:false\}\);/,'Message default');
+ assert.match(flow,/renderCombinedResult\(container,result,\{normalizeUrl:checkWebUrl,share:'web'\}\);/,'Web + Firma default');
+ assert.match(flow,/renderCombinedResult\(container,result,\{normalizeUrl:checkWebUrl,focus:false,share:'message'\}\);/,'Message default');
  for(const f of ['verdict-view.js','web-checker.js','web.html','firm.js','investment.js'])assert.doesNotMatch(read(f),/registry-found|data-presentation|Firma nalezena v registrech/,f);
 });
 

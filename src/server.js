@@ -36,6 +36,7 @@ const assets = new Map([
   ['/verdict.css',['verdict.css','text/css; charset=utf-8']],
   ['/check-plan.js',['check-plan.js','text/javascript; charset=utf-8']],
   ['/check-view.js',['check-view.js','text/javascript; charset=utf-8']],
+  ['/share-result.js',['share-result.js','text/javascript; charset=utf-8']],
   ['/check-flow.js',['check-flow.js','text/javascript; charset=utf-8']],
   // Stage 4 (S4.5): investment page; the offer is evaluated only in the browser.
   ['/proverit-investici',['investment.html','text/html; charset=utf-8']],

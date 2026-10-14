@@ -1,4 +1,5 @@
 import {renderVerdict} from './verdict-view.js';
+import {createShareControl,shareCategory} from './share-result.js';
 const $=id=>document.getElementById(id);
 const form=$('firm-form'),input=$('firm-ico'),name=$('firm-name'),error=$('firm-error'),progress=$('firm-progress'),button=$('firm-submit'),entry=$('firm-entry'),result=$('firm-result'),followup=$('firm-followup'),candidates=$('firm-candidates'),list=$('firm-candidates-list');
 const valid=ico=>/^\d{8}$/.test(ico)&&((11-[8,7,6,5,4,3,2].reduce((v,w,i)=>v+Number(ico[i])*w,0)%11)%10)===Number(ico[7]);
@@ -18,7 +19,9 @@ async function run(operation,label){
  finally{busy=false;button.disabled=false;progress.textContent='';for(const b of candidates.querySelectorAll('button'))b.disabled=false;}
 }
 async function profile(ico){
- const data=await request('/api/firm',{ico});entry.hidden=true;result.hidden=false;followup.hidden=false;renderVerdict(result,data);result.scrollIntoView({block:'start'});
+ const data=await request('/api/firm',{ico});entry.hidden=true;result.hidden=false;followup.hidden=false;renderVerdict(result,data);
+ // Stage 8: share only the final standalone result (never nested firm results).
+ $('firm-share')?.remove();const control=createShareControl(document,'firm',shareCategory(data.level));control.id='firm-share';followup.prepend(control);result.scrollIntoView({block:'start'});
 }
 async function search(offset){
  candidates.hidden=true;list.replaceChildren();

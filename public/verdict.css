@@ -12,3 +12,5 @@
 /* S4.5 investment page only: a clean firm sub-result is shown neutrally ("found in registers"), not as a green safety signal. */
 .verdict-result[data-level=none_found][data-presentation=registry-found] .verdict-lead{background:#f4f5f9;border-color:#657089}
 .check-firm-link{margin:.25rem 0 1rem}.check-firm-link a{display:inline-flex;align-items:center;min-height:48px;font-weight:750;overflow-wrap:anywhere}
+/* Stage 8: share control. Static only: no animation or transition (animations are out of scope). */
+.share-result{margin:16px 0}.share-result .share-button{min-height:48px;max-width:100%;white-space:normal;overflow-wrap:anywhere}.share-result .share-hint{margin:8px 0 0}.share-result .share-status:empty{display:none}.share-result .share-status{margin:8px 0 0;font-weight:700}.share-result .share-manual{display:block;box-sizing:border-box;width:100%;max-width:100%;margin-top:8px;padding:12px;font:inherit;border:2px solid #8b87a8;border-radius:12px}.share-result .share-manual[hidden]{display:none}

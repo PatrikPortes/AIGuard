@@ -119,6 +119,10 @@ try{
   assert.deepEqual(posts.map(p=>p.body),['{"ico":"27082440"}']);mode='ok';await context.close();scenarios++;}
  // 8) Keyboard in the result: details open with Enter, focus visible, "Prověřit jinou nabídku" by keyboard.
  {const {context,page}=await open(375);await run(page,'Nabídka platí jen dnes!');
+  // Stage 8: the share button is the first result control (after "Co udělat teď"); then the details.
+  await page.keyboard.press('Tab');
+  const share=await page.evaluate(()=>({tag:document.activeElement.tagName,text:document.activeElement.textContent,outline:getComputedStyle(document.activeElement).outlineStyle}));
+  assert.deepEqual([share.tag,share.text],['BUTTON','Poslat výsledek blízkému']);assert.notEqual(share.outline,'none','visible focus on the share button');
   await page.keyboard.press('Tab');
   const first=await page.evaluate(()=>({tag:document.activeElement.tagName,outline:getComputedStyle(document.activeElement).outlineStyle}));
   assert.equal(first.tag,'SUMMARY');assert.notEqual(first.outline,'none','visible focus on the first result control');

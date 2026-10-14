@@ -1,4 +1,5 @@
 import { characterAssets } from './character-assets.js';
+import { createShareControl } from './share-result.js';
 const dedicatedLoan = document.body.dataset.flow === 'loan';
 let loanReady = !dedicatedLoan;
 const form = document.querySelector('#analysis-form');
@@ -203,6 +204,14 @@ function resetCombined() {
   combinedFlow?.resetWebFirmCheck(combined);
   if (combined) { combined.replaceChildren(); combined.hidden = true; }
 }
+// Stage 8: the final F5a result has no risk level, so it is shared neutrally. When a combined
+// result is shown, its own control shares the aggregate category and replaces this one.
+function mountResultShare() {
+  document.querySelector('#result-share')?.remove();
+  const control = createShareControl(document, dedicatedLoan ? 'loan' : 'message', 'neutral');
+  control.id = 'result-share';
+  document.querySelector('#next-check').before(control);
+}
 async function startCombined(text, completed, analysisMs) {
   // S5.2: on /proverit-pujcku the combined run is Loan (+ Web) + Firm; on the message page a
   // loan topic still keeps the original single result.
@@ -219,8 +228,9 @@ async function startCombined(text, completed, analysisMs) {
     if (plan.steps.length < 2 && plan.notPlanned.length === 0) return;
     // The local ČOI copy is loaded only for a planned web step; no URL is sent.
     const coiData = () => fetch('/eshop-coi.json', { cache: 'no-store', credentials: 'omit' }).then(r => r.ok ? r.json() : null);
-    if (dedicatedLoan) await flow.startLoanCheck(combined, { loan: text, ico: ico || undefined, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
-    else await flow.startMessageCheck(combined, { text, ico: ico || undefined, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
+    const shown = dedicatedLoan ? await flow.startLoanCheck(combined, { loan: text, ico: ico || undefined, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData })
+      : await flow.startMessageCheck(combined, { text, ico: ico || undefined, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
+    if (shown && run === combinedRun) document.querySelector('#result-share')?.remove();
   } catch {
     if (run !== combinedRun) return;
     const note = document.createElement('p');
@@ -388,7 +398,7 @@ form.addEventListener('submit', async event => {
   if (!failure) {
     try {
       rejections = 0;
-      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); result.hidden = false;
+      analysis = data; render(request.topic === 'loan', Boolean(request.loan_context && Object.keys(request.loan_context).length), request.ai_consent === true); mountResultShare(); result.hidden = false;
       // Start reading at the result heading, not wherever focus scrolling lands.
       status.textContent = 'Kontrola je dokončena.';
       document.querySelector('#status-character').hidden = false;

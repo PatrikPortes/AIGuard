@@ -3,6 +3,8 @@ import{anonymizeContract,originalRange,pageAt}from'./contract-privacy.js';
 import{mergeContractResults,eligibleCatalog}from'./contract-verify.js';
 import{extractContractPdf}from'./contract-pdf.js';
 import{characterAssets}from'./character-assets.js';
+import{fromContract}from'./verdict-adapters.js';
+import{createShareControl,shareCategory}from'./share-result.js';
 export function contractPayload({sent,contractType,aiConsent,previewApproved,botToken}){
  if(aiConsent!==true||previewApproved!==true)throw Error('Nejdříve potvrďte souhlas a přesný náhled textu.');
  return validateContractInput({content:sent,contract_type:contractType,ai_consent:true,bot_token:botToken||''});
@@ -77,9 +79,16 @@ if(typeof document!=='undefined'){
     timers=[setTimeout(()=>{$('contract-status-text').textContent='Robo ještě kontroluje citace.';},8000),setTimeout(()=>{$('contract-status-text').textContent='Delší smlouva potřebuje více času. Můžete počkat nebo kontrolu zrušit.';},20000)];
     const response=await fetch('/api/analyze-contract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.any([signal,AbortSignal.timeout(50000)])});if(!response.ok)throw Error('AI kontrola není dostupná.');return response.json();};
    let result;try{result=await runContractCheck({original,contractType:type(),aiConsent:consent,previewApproved:$('contract-preview-approved').checked,sent:redacted?.sent,map:redacted?.map||[],botToken:token,transport,catalog});}catch(e){if(signal.aborted)throw e;result={...rulesForContract(original,type()),mode:'rules_fallback',fallback_reason:'AI_UNAVAILABLE'};}
-   if(signal.aborted)throw Error('Kontrola byla zrušena.');render(result);showParties(original,result);entry.hidden=true;resultEl.hidden=false;resultEl.focus({preventScroll:true});resultEl.scrollIntoView({block:'start'});$('contract-robo').src=characterAssets['robo-success'];
+   if(signal.aborted)throw Error('Kontrola byla zrušena.');render(result);mountShare(result);showParties(original,result);entry.hidden=true;resultEl.hidden=false;resultEl.focus({preventScroll:true});resultEl.scrollIntoView({block:'start'});$('contract-robo').src=characterAssets['robo-success'];
   }catch(e){showError(e.message);$('contract-robo').src=characterAssets['robo-error'];}finally{timers.forEach(clearTimeout);doneBusy();}
  });
+ // Stage 8: share the final contract result; category from the existing fromContract adapter (D2).
+ // A combined result (after the party choice) brings its own control and replaces this one.
+ function mountShare(result){
+  document.getElementById('contract-share')?.remove();
+  const control=createShareControl(document,'contract',shareCategory(fromContract(result).level));control.id='contract-share';
+  $('contract-copy-status').after(control);
+ }
  function render(result){
   const findings=result.findings;$('contract-findings').replaceChildren();$('contract-summary').textContent=findings.length?'Našli jsme '+findings.length+' ustanovení, která stojí za pozornost. Nejde o právní posouzení.':'Nenašli jsme ustanovení z oblastí, které sledujeme. Neznamená to, že je smlouva v pořádku.';
   $('contract-action').textContent=findings.length?'Než podepíšete: '+findings[0].what_to_check[0]:'Před podpisem si ověřte cenu, způsob ukončení a všechny související dokumenty.';
@@ -122,7 +131,7 @@ if(typeof document!=='undefined'){
   if(!chosen||!ico){error.textContent='Vyberte firmu ze smlouvy nebo zadejte IČO ručně. Nic jsme neodeslali.';error.hidden=false;(chosen?$('contract-party-ico'):$('contract-party-options').querySelector('input'))?.focus();return;}
   if(!partyFlow.isValidIco(ico)){error.textContent='IČO musí mít 8 číslic a platný kontrolní součet. Nic jsme neodeslali.';error.hidden=false;$('contract-party-ico').focus();return;}
   partyBusy=true;$('contract-party-submit').disabled=true;
-  try{const [,web,eshop]=await loadParty();await partyFlow.startContractFirmCheck($('check-combined'),{contract:partyContract,ico,contractResult:partyResult,checkWebUrl:web.checkWebUrl,coiResult:eshop.coiResult});}
+  try{const [,web,eshop]=await loadParty();const shown=await partyFlow.startContractFirmCheck($('check-combined'),{contract:partyContract,ico,contractResult:partyResult,checkWebUrl:web.checkWebUrl,coiResult:eshop.coiResult});if(shown)document.getElementById('contract-share')?.remove();}
   finally{partyBusy=false;$('contract-party-submit').disabled=false;}
  });
  function clearSecrets(){resetParties();active?.abort();parseActive?.abort();original='';redacted=null;manual=[];previewSource='';questions=[];input.value='';$('contract-file').value='';$('contract-preview').replaceChildren();$('contract-findings').replaceChildren();$('contract-preview-approved').checked=false;}

@@ -18,14 +18,14 @@ function fixture(index){
  });
  return createCombinedResult({plan,outcomes,checkedAt:at},{normalizeUrl});
 }
-const allow=new Set(['check-view.js','check-plan.js','verdict-model.js','verdict-view.js','character-assets.js','verdict.css']);
+const allow=new Set(['check-view.js','check-plan.js','verdict-model.js','verdict-view.js','character-assets.js','verdict.css','share-result.js']);
 const s=http.createServer(async(req,res)=>{
  const u=new URL(req.url,'http://localhost');res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'");
  try{
   if(u.pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end('<!doctype html><html lang="cs"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Orchestrátor – testovací výsledky</title><link rel="stylesheet" href="/verdict.css"><main id="result"></main><script type="module" src="/fixture.js?case='+Number(u.searchParams.get('case')||0)+'"></script></html>');}
   if(u.pathname==='/fixture.js'){res.setHeader('Content-Type','text/javascript');return res.end('import{renderCombinedResult,renderCheckProgress}from"/check-view.js";const c=document.querySelector("#result");renderCheckProgress(c);renderCombinedResult(c,'+JSON.stringify(fixture(Number(u.searchParams.get('case')||0)))+', {normalizeUrl:u=>({hostname:new URL(u).hostname,normalized:u})});');}
   const file=u.pathname.slice(1);
-  if(!allow.has(file)&&!/^assets\/characters\/optimized\/verka-explaining\.[a-f0-9]+\.webp$/.test(file)){res.writeHead(404);return res.end();}
+  if(!allow.has(file)&&!/^assets\/characters\/optimized\/verka-(?:explaining|warning|thinking)\.[a-f0-9]+\.webp$/.test(file)){res.writeHead(404);return res.end();}
   res.setHeader('Content-Type',file.endsWith('.css')?'text/css':file.endsWith('.webp')?'image/webp':'text/javascript');res.end(await readFile(new URL('../public/'+file,import.meta.url)));
  }catch{res.writeHead(500);res.end();}
 });
