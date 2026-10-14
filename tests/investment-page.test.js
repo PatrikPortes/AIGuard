@@ -77,3 +77,9 @@ test('D5: homepage card stays "Již brzy" and the page is not in the sitemap yet
  assert.doesNotMatch(home,/proverit-investici/);
  assert.doesNotMatch(read('sitemap.xml'),/proverit-investici/);
 });
+
+test('S4.6 regression: the IČO field reuses the existing #sender field style (48px, full width, focus ring)', () => {
+ const css=read('style.css');
+ assert.match(css,/#sender,#offer-ico\{box-sizing:border-box;width:100%;min-height:48px;/);
+ assert.match(css,/#sender:focus-visible,#offer-ico:focus-visible\{outline:3px solid var\(--brand-action\);outline-offset:3px\}/);
+});
