@@ -34,7 +34,8 @@ export async function startEshop(host){
  resetEshop();currentController=new AbortController();const signal=currentController.signal;
  document.querySelector('#operator-result').replaceChildren();document.querySelector('#operator-ico').value='';
  renderEshop(host,null);document.querySelector('#eshop-coi').append(text('p','Načítáme místní kopii seznamu ČOI…'));
- try{const r=await fetch('/eshop-coi.json',{signal:AbortSignal.any([signal,AbortSignal.timeout(5000)]),cache:'no-store',credentials:'omit'});if(!r.ok)throw Error('Unavailable');const data=await r.json();if(!signal.aborted)renderEshop(host,data);}catch{if(!signal.aborted)renderEshop(host,null);}
+ // Returns the one loaded local snapshot so the page can reuse it (no second fetch).
+ try{const r=await fetch('/eshop-coi.json',{signal:AbortSignal.any([signal,AbortSignal.timeout(5000)]),cache:'no-store',credentials:'omit'});if(!r.ok)throw Error('Unavailable');const data=await r.json();if(!signal.aborted)renderEshop(host,data);return data;}catch{if(!signal.aborted)renderEshop(host,null);return null;}
 }
 if(typeof document!=='undefined'){
  document.querySelector('#operator-form').addEventListener('submit',async event=>{

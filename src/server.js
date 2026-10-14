@@ -32,6 +32,9 @@ const assets = new Map([
   ['/verdict-adapters.js',['verdict-adapters.js','text/javascript; charset=utf-8']],
   ['/verdict-view.js',['verdict-view.js','text/javascript; charset=utf-8']],
   ['/verdict.css',['verdict.css','text/css; charset=utf-8']],
+  ['/check-plan.js',['check-plan.js','text/javascript; charset=utf-8']],
+  ['/check-view.js',['check-view.js','text/javascript; charset=utf-8']],
+  ['/check-flow.js',['check-flow.js','text/javascript; charset=utf-8']],
 
   ['/proverit-smlouvu', ['smlouva.html', 'text/html; charset=utf-8']],
   ['/contract.js', ['contract.js', 'text/javascript; charset=utf-8']],
