@@ -23,6 +23,8 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/o-projektu', ['o-projektu.html', 'text/html; charset=utf-8']],
+  ['/kontakt', ['kontakt.html', 'text/html; charset=utf-8']],
   ['/proverit-firmu',['firm.html','text/html; charset=utf-8']],
   ['/firm.js',['firm.js','text/javascript; charset=utf-8']],
   ['/firm.css',['firm.css','text/css; charset=utf-8']],

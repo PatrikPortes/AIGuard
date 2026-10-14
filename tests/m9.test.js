@@ -69,8 +69,11 @@ test('M9: content needs no scripts, forms, input, external resources or characte
   assert.deepEqual(images, ['<img class="brand-logo" src="/assets/brand/logo.png" width="64" height="64" alt="" aria-hidden="true">']);
   assert.doesNotMatch(html, /\son[a-z]+\s*=/iu);
   assert.doesNotMatch(html, /\b(?:javascript:|data:|srcdoc\s*=|srcset\s*=|url\s*\(|@import|http-equiv\s*=)/iu);
-  // Absolute URLs only as non-loading same-origin metadata in <head>; never in the body.
-  assert.doesNotMatch(body, /\bhttps?:/iu);
+  // Stage 7 permits exactly one non-loading brand anchor in the shared footer.
+  // Keep the ban on every external resource, active element and other body URL.
+  const brandLinks=body.match(/<a href="https:\/\/growmate\.cz" rel="noopener noreferrer" referrerpolicy="no-referrer">GrowMate <span class="trust-external">\(externí web\)<\/span><\/a>/gu)||[];
+  assert.equal(brandLinks.length,1);
+  assert.doesNotMatch(body.replace(brandLinks[0],''), /\bhttps?:/iu);
   for (const [url] of head.matchAll(/\bhttps?:[^"'\s>]*/giu)) assert.match(url, /^https:\/\/verimtomu\.fyi\//u, url);
   for (const tag of head.match(/<[^>]*\bhttps?:[^>]*>/giu) || []) assert.match(tag, /^<(?:meta\s+(?:property|name)="(?:og:image|og:url|twitter:image)"|link rel="canonical")/u, tag);
   assert.doesNotMatch(html, /assets\/characters|character-assets/iu);
@@ -78,7 +81,7 @@ test('M9: content needs no scripts, forms, input, external resources or characte
   assert.ok(targets.length > 0);
   const approvedTargets = ['/', '/style.css', 'tel:158', '/privacy', '/uz-se-to-stalo',
     '/favicon.ico', '/assets/brand/favicon.png', '/assets/brand/apple-touch-icon.png', '/assets/brand/logo.png',
-    'https://verimtomu.fyi/uz-se-to-stalo'];
+    'https://verimtomu.fyi/uz-se-to-stalo', '/o-projektu', '/kontakt', '/#how-it-works', 'https://growmate.cz'];
   assert.ok(targets.every(target => approvedTargets.includes(target)), JSON.stringify(targets));
   assert.equal([...html.matchAll(/href=["']tel:158["']/gu)].length, 1);
   assert.match(html, /href="tel:158" aria-label="158 – zavolat Policii ČR">158<\/a>/u);

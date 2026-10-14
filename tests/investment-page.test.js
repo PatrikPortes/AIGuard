@@ -87,7 +87,7 @@ test('S4.7 (D5): homepage card is active and links to the page; the page is in t
  const card=home.match(/<article class="choice-card"><span class="choice-icon" aria-hidden="true">↗[\s\S]*?<\/article>/)[0];
  for(const text of card.replace(/<[^>]+>/g,'\n').split('\n').map(t=>t.trim()).filter(Boolean))assert(isSafeCopy(text),text);
  const xml=read('sitemap.xml');
- assert.equal((xml.match(/<url><loc>/g)||[]).length,9);assert(xml.includes('<url><loc>https://verimtomu.fyi/proverit-investici</loc></url>'));
+ assert.equal((xml.match(/<url><loc>/g)||[]).length,11);assert(xml.includes('<url><loc>https://verimtomu.fyi/proverit-investici</loc></url>'));
 });
 
 test('S4.6 regression: the IČO field reuses the existing #sender field style (48px, full width, focus ring)', () => {
