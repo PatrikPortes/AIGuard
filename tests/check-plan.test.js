@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {planCheck,validateCheckPlan,validIco,PLANNER_VERSION,BUDGET,CHECKER_REGISTRY,PLANNER_RULES} from '../public/check-plan.js';
+import {planCheck as rawPlanCheck,validateCheckPlan as rawValidateCheckPlan,validIco,PLANNER_VERSION,BUDGET,CHECKER_REGISTRY,PLANNER_RULES} from '../public/check-plan.js';
 import {validateRegistryInput} from '../src/eshop-sources.js';
 import {CHECKERS,createCheckResult} from '../public/verdict-model.js';
 
+import {checkWebUrl} from '../public/web-checker.js';
+const planCheck=(input,opts={})=>rawPlanCheck(input,{normalizeUrl:checkWebUrl,...opts});
+const validateCheckPlan=(plan,opts={})=>rawValidateCheckPlan(plan,{normalizeUrl:checkWebUrl,...opts});
 const client={runAt:'client'},ico='27082440',other='00006947';
 const signature=p=>p.steps.map(s=>[s.checker,s.reason.ruleId,s.required,s.primary,s.runAt]);
 const firmSteps=p=>p.steps.filter(s=>s.checker==='firm');
@@ -135,11 +138,11 @@ test('validateCheckPlan rejects extra fields and invalid IDs, provenance, primar
 
 test('planner performs no I/O, no AI, no execution; deterministic import and planning with forbidden fetch',()=>{
  const module=new URL('../public/check-plan.js',import.meta.url).href;
- const child=spawnSync(process.execPath,['--input-type=module','-e',`let calls=0;globalThis.fetch=()=>{calls++;throw Error('network');};const {planCheck}=await import(${JSON.stringify(module)});const p=planCheck({text:'https://example.com IČO: 27082440'});if(calls||p.steps.length!==3)process.exit(1);`],{encoding:'utf8'});
+ const child=spawnSync(process.execPath,['--input-type=module','-e',`let calls=0;globalThis.fetch=()=>{calls++;throw Error('network');};globalThis.document={getElementById(){throw Error('DOM access');}};const {planCheck}=await import(${JSON.stringify(module)});const p=planCheck({ico:'27082440'});if(calls||p.steps.length!==1)process.exit(1);`],{encoding:'utf8'});
  assert.equal(child.status,0,child.stderr);const source=readFileSync(new URL('../public/check-plan.js',import.meta.url),'utf8').replace(/^\s*\/\/.*$/gm,'');
  assert.doesNotMatch(source,/\b(?:fetch|XMLHttpRequest|WebSocket|document|process|setTimeout|setInterval)\s*[.(]|Date\.now|node:|src\//);
- assert.deepEqual([...source.matchAll(/^import\s+.*?from\s+['"]([^'"]+)['"]/gm)].map(m=>m[1]),['./web-checker.js']);
- assert.doesNotMatch(source,/\b(?:AI|LLM|OpenAI|analyze|firmClient|aggregate)\s*[.(]/);
+ assert.deepEqual([...source.matchAll(/^import\s+.*?from\s+['"]([^'"]+)['"]/gm)].map(m=>m[1]),['./verdict-model.js']);
+ assert.doesNotMatch(source,/\b(?:AI|LLM|OpenAI|analyze|firmClient)\s*[.(]/);
 });
 
 test('20k characters / 500 URL-IČO candidates stay below unchanged 20ms thread CPU after warmup',t=>{
@@ -148,4 +151,24 @@ test('20k characters / 500 URL-IČO candidates stay below unchanged 20ms thread 
  const before=process.threadCpuUsage();const p=planCheck({text});const used=process.threadCpuUsage(before),cpuMs=(used.user+used.system)/1000;
  assert(cpuMs<20,'Planner thread CPU '+cpuMs+' ms, threshold 20 ms');assert.equal(p.steps.length,3);t.diagnostic('500 candidates: '+cpuMs+' ms thread CPU');
  const whitespace='IČO'+ ' '.repeat(19996)+'x';const start=process.threadCpuUsage();planCheck({text:whitespace});const elapsed=process.threadCpuUsage(start);assert((elapsed.user+elapsed.system)/1000<20);
+});
+
+
+test('S3.2a requires injected normalizer for text/URL, never for pure IČO',()=>{
+ for(const input of [{text:'Zpráva'},{text:'https://example.com'}])assert.throws(()=>rawPlanCheck(input),/^Error: URL_NORMALIZER_REQUIRED$/);
+ assert.throws(()=>rawPlanCheck({url:'example.com'},{runAt:'client'}),/^Error: URL_NORMALIZER_REQUIRED$/);
+ const p=rawPlanCheck({ico});assert.equal(rawValidateCheckPlan(p),p);
+ assert.throws(()=>rawValidateCheckPlan(planCheck({url:'example.com'},client)),/^Error: URL_NORMALIZER_REQUIRED$/);
+ assert.throws(()=>rawValidateCheckPlan(planCheck({text:'https://example.com'})),/^Error: URL_NORMALIZER_REQUIRED$/);
+});
+
+test('injected normalizer keeps full original S3.1 plans byte-for-byte',()=>{
+ // Run the committed original module with a redirected existing checker import.
+ const original=spawnSync('git',['show','2dcf1ac64ee96af2792e37a80bbb0be2c8880798:public/check-plan.js'],{encoding:'utf8'});
+ assert.equal(original.status,0);
+ const moduleSource=original.stdout.replace("'./web-checker.js'",JSON.stringify(new URL('../public/web-checker.js',import.meta.url).href));
+ const inputs=[{text:'Běžná zpráva'},{ico},{url:'EXAMPLE.COM'}, {text:'https://a.example https://b.example https://c.example IČO: '+ico}, {url:'example.com',ico,text:'https://example.com/ IČO: '+ico+' IČO: '+other}];
+ const child=spawnSync(process.execPath,['--input-type=module','-e',`const {planCheck}=await import('data:text/javascript;base64,'+${JSON.stringify(Buffer.from(moduleSource).toString('base64'))});console.log(JSON.stringify(${JSON.stringify(inputs)}.map(input=>planCheck(input,{runAt:'client'}))));`],{encoding:'utf8'});
+ assert.equal(child.status,0,child.stderr);
+ assert.deepEqual(inputs.map(input=>planCheck(input,client)),JSON.parse(child.stdout));
 });

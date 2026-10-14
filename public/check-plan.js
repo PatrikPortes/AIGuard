@@ -1,9 +1,5 @@
-// S3.1 only: a synchronous plan, never a runner or an aggregate.
-// URL normalization uses the existing function; no findings are retained.
-// Integration blocker outside S3.1: web-checker.js/eshop-checker.js bind DOM
-// listeners at import time. A side-effect-free browser import needs their UI
-// initialization isolated first; this module does not modify those checkers.
-import {checkWebUrl} from './web-checker.js';
+// Pure shared planner and aggregation: no checker imports, DOM or I/O.
+import {CHECKERS,HEADLINES,validateCheckResult,isSafeCopy} from './verdict-model.js';
 
 export const PLANNER_VERSION='p1';
 export const BUDGET=Object.freeze({maxSteps:4,maxUrls:2,maxIcos:1,deadlineMs:5000});
@@ -44,15 +40,16 @@ export function validIco(ico){
  const sum=[8,7,6,5,4,3,2].reduce((total,weight,i)=>total+Number(ico[i])*weight,0);
  return ((11-sum%11)%10)===Number(ico[7]);
 }
-function urlRecord(value){
- try{const {hostname,normalized}=checkWebUrl(value);return{host:hostname,normalized};}
+function urlRecord(value,normalizeUrl){
+ if(typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
+ try{const {hostname,normalized}=normalizeUrl(value);return{host:hostname,normalized};}
  catch{throw Error('INVALID_URL');}
 }
 const draft=(checker,kind,ref,ruleId,trigger,required,primary,runAt)=>({
  checker,input:{kind,ref},trigger,reason:{ruleId,text:REASONS[ruleId]},required,primary,runAt
 });
 const skip=(kind,value,reason)=>({kind,value,reason});
-function extract(text){
+function extract(text,normalizeUrl){
  const urls=new Map(),icos=new Set(),ignored=[],notPlanned=[];
  // The full match must also fit the existing normalizer's 2048-character cap.
  // Never truncate an overlong URL into a different, seemingly valid address.
@@ -63,7 +60,7 @@ function extract(text){
   if(candidate.length>2048||next!==undefined&&/[^\s<>"']/u.test(next)){
    ignored.push({kind:'url',reason:'invalid'});notPlanned.push(skip('url','','invalid'));continue;
   }
-  let record;try{record=urlRecord(candidate);}catch{
+  let record;try{record=urlRecord(candidate,normalizeUrl);}catch{
    ignored.push({kind:'url',reason:'invalid'});notPlanned.push(skip('url','','invalid'));continue;
   }
   if(urls.has(record.normalized))notPlanned.push(skip('url',record.normalized,'duplicate'));
@@ -114,16 +111,19 @@ export const PLANNER_RULES=freeze([
 ]);
 export function planCheck(input={},opts={}){
  if(!keys(input,['text','ico','url']))throw Error('INVALID_INPUT');
- if(!keys(opts,['runAt'])||opts.runAt!==undefined&&!['server','client'].includes(opts.runAt))throw Error('INVALID_OPTIONS');
+ if(!keys(opts,['runAt','normalizeUrl'])||opts.runAt!==undefined&&!['server','client'].includes(opts.runAt))throw Error('INVALID_OPTIONS');
+ const {normalizeUrl}=opts;
+ if(normalizeUrl!==undefined&&typeof normalizeUrl!=='function')throw Error('INVALID_OPTIONS');
  const runAt=opts.runAt||'server';let text=null,icoField=null,urlField=null;
  if(input.text!==undefined){
   if(typeof input.text!=='string')throw Error('INVALID_TEXT');text=input.text.trim();
   if(text.length<1||text.length>20000)throw Error('INVALID_TEXT');
  }
  if(input.ico!==undefined){if(!validIco(input.ico))throw Error('INVALID_ICO');icoField=input.ico;}
- if(input.url!==undefined){if(runAt!=='client')throw Error('URL_NOT_ALLOWED');urlField=urlRecord(input.url);}
+ if(text!==null&&typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
+ if(input.url!==undefined){if(runAt!=='client')throw Error('URL_NOT_ALLOWED');urlField=urlRecord(input.url,normalizeUrl);}
  if(text===null&&!icoField&&!urlField)throw Error('EMPTY_INPUT');
- const extracted=extract(text||'');
+ const extracted=extract(text||'',normalizeUrl);
  const planInput={text:text===null?null:{present:true,chars:text.length},urlField,icoField,
   extracted:{urls:extracted.urls,icos:extracted.icos,ignored:extracted.ignored}};
  const context={input:planInput,runAt,steps:[]},notPlanned=[...extracted.notPlanned];
@@ -139,11 +139,13 @@ export function planCheck(input={},opts={}){
   .sort((a,b)=>ORDER(a.kind,b.kind)||ORDER(a.value,b.value)||ORDER(a.reason,b.reason));
  const plan={schema:1,planner:PLANNER_VERSION,input:planInput,
   steps:context.steps.map((step,i)=>({id:'s'+(i+1),...step})),notPlanned:omissions,budget:{...BUDGET}};
- validateCheckPlan(plan);
+ validateCheckPlan(plan,{normalizeUrl});
  return freeze(plan);
 }
 
-export function validateCheckPlan(plan){
+export function validateCheckPlan(plan,opts={}){
+ if(!keys(opts,['normalizeUrl'])||opts.normalizeUrl!==undefined&&typeof opts.normalizeUrl!=='function')throw Error('INVALID_OPTIONS');
+ const {normalizeUrl}=opts;
  const require=value=>{if(!value)throw Error('INVALID_PLAN');};
  require(keys(plan,['schema','planner','input','steps','notPlanned','budget'],true));
  require(plan.schema===1&&plan.planner===PLANNER_VERSION&&keys(plan.budget,Object.keys(BUDGET),true));
@@ -153,7 +155,8 @@ export function validateCheckPlan(plan){
  require(input.text===null||keys(input.text,['present','chars'],true)&&input.text.present===true&&Number.isInteger(input.text.chars)&&input.text.chars>=1&&input.text.chars<=20000);
  const validateUrl=record=>{
   require(keys(record,['host','normalized'],true));let canonical;
-  try{canonical=urlRecord(record.normalized);}catch{throw Error('INVALID_PLAN');}
+  if(typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
+  try{canonical=urlRecord(record.normalized,normalizeUrl);}catch{throw Error('INVALID_PLAN');}
   require(record.host===canonical.host&&record.normalized===canonical.normalized);
  };
  if(input.urlField!==null)validateUrl(input.urlField);
@@ -192,8 +195,106 @@ export function validateCheckPlan(plan){
  for(const omission of plan.notPlanned){
   require(keys(omission,['kind','value','reason'],true)&&['url','ico'].includes(omission.kind)&&typeof omission.value==='string'&&omission.value.length<=2048&&['limit','ambiguous','duplicate','invalid'].includes(omission.reason));
   if(omission.kind==='ico')require(/^\d{8}$/.test(omission.value));
-  else if(omission.value!==''){try{urlRecord(omission.value);}catch{throw Error('INVALID_PLAN');}}
+  else if(omission.value!==''){if(typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');try{urlRecord(omission.value,normalizeUrl);}catch{throw Error('INVALID_PLAN');}}
   if(omission.reason==='ambiguous')require(omission.kind==='ico'&&icos.length>1&&icos.includes(omission.value));
  }
  return plan;
+}
+
+const OUTCOME_SOURCES=Object.freeze(['ARES','ARES_VR','ARES_RES','DPH','COI','none']);
+const SKIP_REASONS=Object.freeze(['rate_limited','deadline','duplicate','budget']);
+const RISK_ORDER=Object.freeze(['serious','incomplete','attention','not_assessable','none_found']);
+const AGGREGATE_COPY=Object.freeze({
+ A1:'Dílčí kontrola ukazuje závažný varovný signál.',
+ A2:'Primární kontrolu se nepodařilo dokončit.',
+ A3:'Část povinných kontrol se nepodařilo dokončit.',
+ A4:'Dílčí kontrola našla podněty k dalšímu ověření.',
+ A5:'Rozsah kontroly neumožňuje potvrdit nepřítomnost rizika.',
+ A6:'V prověřených zdrojích jsme nenašli výrazné varovné signály. Kontrola nemůže zaručit, že je obsah nebo nabídka bezpečná.'
+});
+function aggregationInputs(steps,outcomes){
+ const require=value=>{if(!value)throw Error('INVALID_OUTCOMES');};
+ require(Array.isArray(steps)&&steps.length>=1&&steps.length<=BUDGET.maxSteps);
+ require(Array.isArray(outcomes)&&outcomes.length===steps.length);
+ require(steps.filter(s=>s?.primary===true).length===1);
+ const ids=new Set();
+ for(const [i,s]of steps.entries()){
+  require(keys(s,['id','checker','input','trigger','reason','required','primary','runAt'],true));
+  require(s.id==='s'+(i+1)&&CHECKERS.includes(s.checker)&&typeof s.required==='boolean'&&typeof s.primary==='boolean');
+  require(keys(s.input,['kind','ref'],true)&&['text','url','ico'].includes(s.input.kind)&&typeof s.input.ref==='string');
+  require(keys(s.reason,['ruleId','text'],true)&&own(REASONS,s.reason.ruleId)&&s.reason.text===REASONS[s.reason.ruleId]);
+  require(['user_field','extracted_from_text'].includes(s.trigger)&&['server','client'].includes(s.runAt));
+ }
+ for(const o of outcomes){
+  require(keys(o,['stepId','status','skipReason','sourcesContacted','durationMs','result']));
+  require(['stepId','status','sourcesContacted','durationMs','result'].every(k=>own(o,k)));
+  const s=steps.find(s=>s.id===o.stepId);require(s&&!ids.has(o.stepId));ids.add(o.stepId);
+  require(['done','failed','skipped'].includes(o.status));
+  require(Number.isSafeInteger(o.durationMs)&&o.durationMs>=0);
+  require(Array.isArray(o.sourcesContacted)&&o.sourcesContacted.length<=OUTCOME_SOURCES.length&&o.sourcesContacted.every(s=>OUTCOME_SOURCES.includes(s))&&new Set(o.sourcesContacted).size===o.sourcesContacted.length);
+  require(!o.sourcesContacted.includes('none')||o.sourcesContacted.length===1);
+  if(o.status==='skipped')require(SKIP_REASONS.includes(o.skipReason));else require(!own(o,'skipReason'));
+  if(o.status==='done'){
+   require(o.result!==null);validateCheckResult(o.result);require(o.result.checker===s.checker);
+   // Schema-1 nested whitelist prevents hidden raw inputs/scores in the wrapper.
+   const r=o.result;
+   require(keys(r.actions,['primary','secondary'],true));
+   require(r.reasons.every(v=>keys(v,['ruleId','text'],true)));
+   require(r.facts.every(v=>keys(v,['id','label','value','kind','source','sourceDetail','observedAt','sourceUrl'])));
+   require(r.findings.every(v=>keys(v,['id','ruleId','origin','severity','title','explanation','evidence'],true)));
+   require(r.sources.every(v=>keys(v,['id','label','status','checkedAt','note'])));
+   require(r.verifyLinks.every(v=>keys(v,['label','url'],true)));
+   require(r.ai===null||keys(r.ai,['status','summary']));
+   require(!['none_found','not_assessable'].includes(r.level)||!r.findings.some(v=>v.severity==='attention'));
+   require(r.level!=='none_found'||!r.sources.some(v=>['unavailable','skipped'].includes(v.status)));
+
+  }else require(o.result===null);
+ }
+ return steps.map(step=>({step,outcome:outcomes.find(o=>o.stepId===step.id)}));
+}
+
+// A1-A6 only consume completed, validated results; no checker execution occurs.
+export function aggregate(steps,outcomes){
+ const rows=aggregationInputs(steps,outcomes),completed=rows.filter(r=>r.outcome.status==='done');
+ const find=level=>completed.find(r=>r.outcome.result.level===level);
+ let level,ruleId,decisive;
+ if((decisive=find('serious'))){level='serious';ruleId='A1';}
+ else if((decisive=rows.find(r=>r.step.primary&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')))){level='incomplete';ruleId='A2';}
+ else if((decisive=rows.find(r=>r.step.required&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')))){level='attention';ruleId='A3';}
+ else if((decisive=find('attention'))){level='attention';ruleId='A4';}
+ // A completed optional incomplete result cannot satisfy A6 (all completed none_found).
+ else if((decisive=find('not_assessable'))||(decisive=find('incomplete'))||(decisive=rows.find(r=>['message','web'].includes(r.step.checker)))){level='not_assessable';ruleId='A5';}
+ else{level='none_found';ruleId='A6';}
+ const influential=ruleId==='A3'?rows.filter(r=>r.step.required&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')):[decisive];
+ const reasons=influential.map(r=>({ruleId,stepId:r?.step.id||null,text:AGGREGATE_COPY[ruleId]}));
+ // Sort by severity, then original plan order, never outcome arrival order.
+ const ranked=[...completed].sort((a,b)=>RISK_ORDER.indexOf(a.outcome.result.level)-RISK_ORDER.indexOf(b.outcome.result.level)||steps.indexOf(a.step)-steps.indexOf(b.step));
+ const primary=ranked[0]?.outcome.result.actions.primary||null;
+ const secondary=[...new Set(ranked.slice(1).flatMap(r=>[r.outcome.result.actions.primary,...r.outcome.result.actions.secondary]))].filter(s=>s!==primary).slice(0,3);
+ return freeze({level,headline:HEADLINES[level],reasons,actions:{primary,secondary}});
+}
+
+// Explicit checkedAt keeps the shared module deterministic (no implicit clock).
+export function createCombinedResult({plan,outcomes,checkedAt},opts={}){
+ validateCheckPlan(plan,opts);
+ const combinedAggregate=aggregate(plan.steps,outcomes);
+ const result={schema:1,kind:'combined',plan:structuredClone(plan),outcomes:structuredClone(outcomes),aggregate:combinedAggregate,checkedAt};
+ validateCombinedResult(result,opts);
+ return freeze(result);
+}
+export function validateCombinedResult(result,opts={}){
+ const require=value=>{if(!value)throw Error('INVALID_COMBINED_RESULT');};
+ require(keys(result,['schema','kind','plan','outcomes','aggregate','checkedAt'],true));
+ require(result.schema===1&&result.kind==='combined');
+ require(typeof result.checkedAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(result.checkedAt)&&Number.isFinite(Date.parse(result.checkedAt)));
+ validateCheckPlan(result.plan,opts);
+ const expected=aggregate(result.plan.steps,result.outcomes),a=result.aggregate;
+ require(keys(a,['level','headline','reasons','actions'],true));
+ require(a.level===expected.level&&a.headline===expected.headline);
+ require(Array.isArray(a.reasons)&&a.reasons.length===expected.reasons.length);
+ a.reasons.forEach((r,i)=>require(keys(r,['ruleId','stepId','text'],true)&&r.ruleId===expected.reasons[i].ruleId&&r.stepId===expected.reasons[i].stepId&&r.text===expected.reasons[i].text&&isSafeCopy(r.text)));
+ require(keys(a.actions,['primary','secondary'],true)&&a.actions.primary===expected.actions.primary);
+ require(Array.isArray(a.actions.secondary)&&a.actions.secondary.length===expected.actions.secondary.length&&a.actions.secondary.every((s,i)=>s===expected.actions.secondary[i]&&isSafeCopy(s)));
+ require(a.actions.primary===null||isSafeCopy(a.actions.primary));
+ return result;
 }
