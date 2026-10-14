@@ -30,7 +30,9 @@ export function checkWebUrl(value){
  if(/(?:login|signin|verify|password|account|payment|secure)/i.test(url.pathname)&&signals.some(s=>s.id.startsWith('brand-')))add('phishing','Napodobování značky spojené s přihlášením','Adresa kombinuje podobnost se známou značkou a část připomínající přihlášení či ověření. Do takového formuláře nevpisujte údaje bez nezávislého ověření.');
  return{status:'unverified',normalized:url.href,hostname:host,signals};
 }
-if(typeof document!=='undefined'){
+// Wires the Web page only. Other pages (S3.7 message page) import checkWebUrl
+// as a pure function; without #web-form nothing is attached.
+if(typeof document!=='undefined'&&document.querySelector('#web-form')){
  const form=document.querySelector('#web-form'),input=document.querySelector('#web-url'),result=document.querySelector('#web-result'),error=document.querySelector('#web-error');
  // S3.6: optional operator IČO. Empty → the original Web Checker only. Valid → the
  // combined Web + Firma result; only the IČO is sent (existing /api/firm), never the URL.

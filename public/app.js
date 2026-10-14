@@ -157,7 +157,7 @@ if (dedicatedLoan) {
 document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => {
   // Choosing another example is explicit new-analysis intent, even while
   // correcting a rejected loan input. Its answers must not follow the example.
-  setLoanMode(false); submittedContent = undefined;
+  setLoanMode(false); submittedContent = undefined; resetCombined();
   if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
   document.querySelector('#content').value = examples[button.dataset.example];
   document.querySelector('#content').focus();
@@ -183,6 +183,38 @@ function analysisRequest(content) {
 function list(id, items) {
   const target = document.querySelector(id);
   target.replaceChildren(...items.map(text => { const li = document.createElement('li'); li.textContent = text; return li; }));
+}
+// S3.7: message + links + firm. Runs only after the F5a message result is shown,
+// never on the loan flow. The planner (check-plan.js via check-flow.js) decides;
+// this cheap test only avoids loading the orchestrator for text with no link or IČO.
+const combined = document.querySelector('#check-combined');
+let combinedFlow;
+let combinedRun = 0;
+function resetCombined() {
+  combinedRun++;
+  combinedFlow?.resetWebFirmCheck(combined);
+  if (combined) { combined.replaceChildren(); combined.hidden = true; }
+}
+async function startCombined(text, completed, analysisMs) {
+  if (!combined || isLoan() || dedicatedLoan || !/https?:\/\/|www\.|IČ/iu.test(text)) return;
+  const run = ++combinedRun;
+  try {
+    const [flow, web, eshop] = await Promise.all([import('/check-flow.js'), import('/web-checker.js'), import('/eshop-checker.js')]);
+    combinedFlow = flow;
+    if (run !== combinedRun) return;
+    const plan = flow.planMessageCheck(text, { checkWebUrl: web.checkWebUrl });
+    // Message only, nothing omitted: the F5a result above is the whole answer.
+    if (plan.steps.length < 2 && plan.notPlanned.length === 0) return;
+    // The local ČOI copy is loaded only for a planned web step; no URL is sent.
+    const coiData = () => fetch('/eshop-coi.json', { cache: 'no-store', credentials: 'omit' }).then(r => r.ok ? r.json() : null);
+    await flow.startMessageCheck(combined, { text, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
+  } catch {
+    if (run !== combinedRun) return;
+    const note = document.createElement('p');
+    note.setAttribute('role', 'alert');
+    note.textContent = 'Odkazy a firmu ze zprávy se teď nepodařilo prověřit. Výsledek kontroly zprávy výše zůstává platný.';
+    combined.replaceChildren(note); combined.hidden = false;
+  }
 }
 // Presentation compatibility for the existing backend templates. Preserve their
 // limitations without referring to a score that this UI does not display.
@@ -315,6 +347,7 @@ form.addEventListener('submit', async event => {
   hideError();
   correctingLoanInput = false;
   document.querySelector('#status-character').hidden = true; result.hidden = true; analysis = undefined;
+  resetCombined();
   const request = analysisRequest(document.querySelector('#content').value);
   submittedContent = request.content;
   if (request.content !== rejectedFor) rejections = 0;
@@ -323,6 +356,7 @@ form.addEventListener('submit', async event => {
   status.textContent = 'Prověřuji zadaný obsah… Chvíli prosím počkejte.';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 35000);
+  const started = Date.now();
   let failure;
   let response;
   let data;
@@ -332,6 +366,7 @@ form.addEventListener('submit', async event => {
   } catch (caught) {
     failure = caught.name === 'AbortError' ? 'CLIENT_TIMEOUT' : 'NETWORK';
   } finally { clearTimeout(timer); }
+  const analysisMs = Math.max(0, Math.round(Date.now() - started));
   if (!failure && !response.ok) failure = failureFor(data?.code, response.status);
   else if (!failure && !isAnalysis(data)) failure = 'UNEXPECTED';
   setBusy(false);
@@ -344,6 +379,7 @@ form.addEventListener('submit', async event => {
       document.querySelector('#status-character').hidden = false;
       result.scrollIntoView({ block: 'start' });
       result.focus({ preventScroll: true });
+      startCombined(request.content, data, analysisMs);
     } catch {
       analysis = undefined; result.hidden = true; failure = 'UNEXPECTED';
     }
@@ -382,11 +418,11 @@ content.addEventListener('input', () => {
   }
 });
 document.querySelector('#next-check').addEventListener('click', () => {
-  setLoanMode(false); submittedContent = undefined;
+  setLoanMode(false); submittedContent = undefined; resetCombined();
   if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
   content.scrollIntoView({ block: 'center' }); content.select();
 });
 
 
 
-senderInput?.addEventListener('input', () => { analysis = undefined; result.hidden = true; submittedContent = undefined; rejections = 0; hideError(); });
+senderInput?.addEventListener('input', () => { analysis = undefined; result.hidden = true; resetCombined(); submittedContent = undefined; rejections = 0; hideError(); });
