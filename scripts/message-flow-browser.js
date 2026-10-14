@@ -111,12 +111,12 @@ try{
  {mode='hang';const {page}=await open(375);await check(page,'Ahoj, pošli prosím zálohu firmě IČO 27082440.');const t=Date.now();await combinedDone(page);
   assert(Date.now()-t<6500,'deadline');assert.match(await page.locator('#check-combined .check-steps').innerText(),/Přeskočeno/);
   assert.notEqual(await page.locator('#check-combined .check-lead').getAttribute('data-level'),'none_found');await page.close();scenarios++;}
- // 9) Built-in "bank" example still works. Its link ends with a comma, which the S3.1 P4
- // pattern keeps, so the planner rejects it: it is listed as not checked, never as checked.
+ // 9) Built-in "bank" example: its link ends with a comma (S3.8 P4 fix) and still gets a local web row.
  {mode='ok';const {page,errors}=await open(375);await page.locator('[data-example="bank"]').click();await page.locator('#submit').click();
   await page.locator('#result').waitFor({state:'visible'});await combinedDone(page);
-  assert.equal(await page.locator('#check-combined .check-step').count(),1);assert.deepEqual(posts.map(p=>p.url),['/api/analyze']);
-  assert.match(await page.locator('#check-combined .check-omitted').innerText(),/Odkaz — Neplatný údaj/);
+  assert.equal(await page.locator('#check-combined .check-step').count(),2);assert.deepEqual(posts.map(p=>p.url),['/api/analyze']);
+  assert.match(await page.locator('#check-combined .check-steps').innerText(),/Web · banka-priklad\.invalid/);
+  assert.equal(await page.locator('#check-combined .check-omitted').count(),0);
   assert.deepEqual(errors,[]);await page.close();scenarios++;}
  // 10) Loan page shares app.js: no combined flow, no errors.
  {const page=await browser.newPage({viewport:{width:375,height:740}});const errors=[];page.on('pageerror',e=>errors.push(String(e)));

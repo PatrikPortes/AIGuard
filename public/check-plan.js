@@ -60,7 +60,15 @@ function extract(text,normalizeUrl){
   if(candidate.length>2048||next!==undefined&&/[^\s<>"']/u.test(next)){
    ignored.push({kind:'url',reason:'invalid'});notPlanned.push(skip('url','','invalid'));continue;
   }
-  let record;try{record=urlRecord(candidate,normalizeUrl);}catch{
+  // Sentence punctuation after a link (".", ",", ";", "!", "?") is not part of it.
+  // Only literal trailing characters are removed; inner punctuation, query strings and
+  // percent-encoding stay intact, and the scheme/www prefix itself is never consumed.
+  let end=candidate.length;while(end>0&&'.,;!?'.includes(candidate[end-1]))end--;
+  const link=candidate.slice(0,end);
+  if(!/^(?:https?:\/\/|www\.)./iu.test(link)){
+   ignored.push({kind:'url',reason:'invalid'});notPlanned.push(skip('url','','invalid'));continue;
+  }
+  let record;try{record=urlRecord(link,normalizeUrl);}catch{
    ignored.push({kind:'url',reason:'invalid'});notPlanned.push(skip('url','','invalid'));continue;
   }
   if(urls.has(record.normalized))notPlanned.push(skip('url',record.normalized,'duplicate'));

@@ -161,7 +161,7 @@ async function openPage(viewport, options = {}) {
   return { context, page };
 }
 async function ready(page) {
-  await page.goto(base, { waitUntil: 'load' });
+  await page.goto(base + '/overit-zpravu', { waitUntil: 'load' });
   await page.waitForFunction(() => !document.querySelector('#submit').disabled, null, { timeout: 10000 });
 }
 

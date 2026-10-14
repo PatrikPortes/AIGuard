@@ -176,3 +176,41 @@ test('injected normalizer keeps full original S3.1 plans byte-for-byte',()=>{
  assert.equal(child.status,0,child.stderr);
  assert.deepEqual(inputs.map(input=>planCheck(input,client)),JSON.parse(child.stdout));
 });
+
+// S3.8: P4 ignores sentence punctuation after a link. Other rules are unchanged.
+const linksOf=text=>webSteps(planCheck({text},client)).map(s=>s.input.ref);
+test('P4 strips trailing . , ; ! ? after a link and plans the real address',()=>{
+ for(const mark of ['.',',',';','!','?','...','?!',',.'])
+  assert.deepEqual(linksOf('Platba na https://banka-priklad.invalid'+mark+' jinak účet zablokujeme'),['https://banka-priklad.invalid/'],JSON.stringify(mark));
+ // The built-in "bank" example of the message page.
+ const p=planCheck({text:'Vaše banka: ihned zadejte heslo a potvrzovací kód na https://banka-priklad.invalid, jinak bude účet zablokován.'},client);
+ assert.deepEqual(webSteps(p).map(s=>s.input.ref),['https://banka-priklad.invalid/']);assert.deepEqual(p.notPlanned,[]);
+ assert.deepEqual(linksOf('Navštivte www.priklad.example.'),['https://www.priklad.example/']);
+ assert.deepEqual(linksOf('Konec věty https://priklad.example/'),['https://priklad.example/']);
+});
+test('P4 punctuation fix keeps query strings, percent-encoding and inner punctuation intact',()=>{
+ assert.deepEqual(linksOf('Odkaz https://x.example/p?a=1&b=2.'),['https://x.example/p?a=1&b=2']);
+ assert.deepEqual(linksOf('Odkaz https://x.example/p?q=a,b;c!d.e, prosím'),['https://x.example/p?q=a,b;c!d.e']);
+ assert.deepEqual(linksOf('Soubor https://x.example/v1.2/file.pdf.'),['https://x.example/v1.2/file.pdf']);
+ assert.deepEqual(linksOf('Kód https://x.example/a%2Cb%2E%3F?x=%21, hotovo'),['https://x.example/a%2Cb%2E%3F?x=%21']);
+ assert.deepEqual(linksOf('Kotva https://x.example/a#sekce.1!'),['https://x.example/a#sekce.1']);
+ // Unchanged without trailing punctuation (byte-for-byte as before).
+ assert.deepEqual(linksOf('https://x.example/p?a=1&b=2 a www.y.example/z'),['https://www.y.example/z','https://x.example/p?a=1&b=2']);
+});
+test('P4 never strips into the prefix; duplicates after stripping are deduplicated (P6)',()=>{
+ for(const text of ['Jen www., nic dál','Jen https://. nic','Jen http://?! nic']){
+  const p=planCheck({text},client);
+  assert.deepEqual(webSteps(p),[],text);assert.deepEqual(p.notPlanned,[{kind:'url',value:'',reason:'invalid'}],text);
+ }
+ const p=planCheck({text:'https://a.example, nebo https://a.example. nebo https://a.example'},client);
+ assert.deepEqual(webSteps(p).map(s=>s.input.ref),['https://a.example/']);
+ // notPlanned lists each distinct omission once (existing planner behaviour).
+ assert.deepEqual(p.notPlanned,[{kind:'url',value:'https://a.example/',reason:'duplicate'}]);
+});
+test('P4 punctuation stripping stays linear on punctuation-heavy input',(t)=>{
+ const unit='https://p.example/'+'.,;!?'.repeat(400)+' ',text=(unit.repeat(20)).slice(0,20000);
+ for(let n=0;n<5;n++)planCheck({text});
+ const before=process.threadCpuUsage();const p=planCheck({text});const used=process.threadCpuUsage(before),cpuMs=(used.user+used.system)/1000;
+ assert(cpuMs<20,'Planner thread CPU '+cpuMs+' ms, threshold 20 ms');assert.deepEqual(webSteps(p).map(s=>s.input.ref),['https://p.example/']);
+ t.diagnostic('punctuation-heavy: '+cpuMs+' ms thread CPU');
+});
