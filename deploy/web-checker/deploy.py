@@ -1,4 +1,9 @@
 """Run as root on VPS: python3 deploy.py COMMIT BUNDLE. No secrets are printed."""
+import sys
+# RETIRED: this partial-overlay bundle (Web Checker 2.0 only) cannot build a complete runtime
+# (no contract modules, contract page or PDF.js). Releases use deploy/release/verimtomu-release.sh
+# (git archive of the full approved SHA + root Dockerfile). Refuse to run.
+sys.exit('RETIRED: use deploy/release/verimtomu-release.sh; this overlay tool must not be used.')
 import subprocess,json,pathlib,os,sys,time,hashlib
 commit,bundle=sys.argv[1:];assert len(commit)==40 and all(x in '0123456789abcdef' for x in commit)
 name='verimtomu-web';backup=name+'-before-web-checker2-20261013';base='sha256:b2f3a1c579e9df989e0349ae6ac10a35e79b7da23729c7976d97db460b36c084'

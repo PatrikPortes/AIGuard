@@ -2,3 +2,15 @@
 .contract-entry h1{font-size:clamp(2rem,4vw,3rem);line-height:1.2;flex:1;min-width:0}.contract-result h2{font-size:clamp(1.5rem,3vw,2rem)}
 
 .contract-help-links{flex-wrap:wrap;gap:.5rem}.contract-help-links a{max-width:100%;overflow-wrap:anywhere}
+
+/* Only the leading result guide grows; individual finding illustrations stay unchanged. */
+#contract-result{margin-top:3rem}
+#contract-result>.contract-card-heading{position:relative;display:grid;grid-template-columns:160px minmax(0,1fr);gap:1.5rem;min-height:110px;align-items:start}
+#contract-result-verka{position:absolute;width:160px;height:auto;left:-40px;top:-56px}
+#contract-result>.contract-card-heading h2{grid-column:2;margin:0;min-width:0}
+@media(max-width:440px){
+ #contract-result{margin-top:2.5rem}
+ #contract-result>.contract-card-heading{grid-template-columns:116px minmax(0,1fr);gap:.75rem;min-height:100px}
+ #contract-result-verka{width:128px;left:-24px;top:-40px}
+}
+@media print{#contract-result-verka{position:static;width:96px}#contract-result>.contract-card-heading{min-height:0;grid-template-columns:96px minmax(0,1fr)}}

@@ -96,7 +96,8 @@ function acceptsGzip(value = '') {
 function send(res, code, body, type = 'application/json; charset=utf-8', responseHeaders = {}) {
   if (res.destroyed) return;
   res.writeHead(code, { ...headers, ...responseHeaders, 'Content-Type': type });
-  res.end(type.startsWith('application/json') ? JSON.stringify(body) : body);
+  // Static JSON files arrive as raw bytes and are sent verbatim; only API objects are serialised.
+  res.end(type.startsWith('application/json') && !Buffer.isBuffer(body) ? JSON.stringify(body) : body);
 }
 function serviceError(res, error) {
   const known = error instanceof ServiceError;
