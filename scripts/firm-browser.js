@@ -1,0 +1,17 @@
+// Real page/API fixture harness. No production requests or registry network calls.
+import assert from'node:assert/strict';import{createServer}from'../src/server.js';import{profile}from'../test-support/firm/profiles.js';
+const calls=[],fixture=b=>{calls.push(b);const p=profile({query:{ico:b.ico}});p.identity.ico=b.ico;p.identity.dic='CZ'+b.ico;if(b.ico==='02032945')p.register.liquidation.active=true;if(b.ico==='00006947')p.identity=null;if(b.ico==='04147464')p.vat={status:'NEOVĚŘENO',maintenance:true};if(b.ico==='01988468')p.identity.name='<img src=x onerror=alert(1)>';return p;};
+const server=createServer({rateLimit:1000,sessionRateLimit:1000,staticRateLimit:1000,staticBytesPerMinute:100000000,limiterClock:()=>Date.now()+calls.length*60001,firmSources:{profile:async b=>fixture(b)}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+if(process.env.FIRM_MANUAL)server.on('request',(req)=>{const parts=[];req.on('data',c=>parts.push(c));req.on('end',()=>console.log('FIRM_WIRE '+JSON.stringify({method:req.method,url:req.url,body:Buffer.concat(parts).toString()})));});
+if(process.env.FIRM_MANUAL){console.log('FIRM_FIXTURE '+base+'/proverit-firmu');await new Promise(()=>{});}
+let browser;try{
+ const{chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
+ for(const width of [320,375,390,430]){const page=await browser.newPage({viewport:{width,height:568}}),requests=[],errors=[];page.on('request',r=>requests.push({url:r.url(),method:r.method(),body:r.postData()}));page.on('pageerror',e=>errors.push(e.message));
+  for(const [ico,level]of [['27082440','none_found'],['02032945','serious'],['00006947','incomplete'],['04147464','attention'],['01988468','none_found']]){
+   await page.goto(base+'/proverit-firmu');await page.locator('#firm-ico').fill(ico);await page.locator('#firm-submit').click();await page.locator('.verdict-headline').waitFor();
+   const m=await page.evaluate(()=>({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,focus:document.activeElement.className,action:document.querySelector('.verdict-primary').getBoundingClientRect().bottom,level:document.querySelector('.verdict-result').dataset.level,small:[...document.querySelectorAll('summary,a,button,input')].filter(e=>e.getBoundingClientRect().height>0&&e.getBoundingClientRect().height<48).map(e=>e.textContent),active:document.querySelectorAll('[onerror]').length}));assert(!m.overflow,JSON.stringify(m));assert.equal(m.level,level);assert.equal(m.focus,'verdict-headline');assert(m.action<=568,JSON.stringify(m));assert.equal(m.active,0);assert.equal(m.small.length,0,JSON.stringify(m));
+  }
+  await page.goto(base+'/proverit-firmu');await page.locator('#firm-ico').fill('27082441');await page.locator('#firm-submit').click();await page.locator('#firm-error').waitFor({state:'visible'});assert.equal(requests.filter(r=>r.method==='POST').length,5);assert(requests.every(r=>r.url.startsWith(base)));assert(requests.filter(r=>r.method==='POST').every(r=>/^\{"ico":"\d{8}"\}$/.test(r.body)));assert.deepEqual(errors,[]);await page.close();
+ }
+ console.log('PASS: 20 mobile result scenarios, invalid IČO, same-origin requests, only IČO sent, focus, fold, 48px targets, XSS isolation.');
+}finally{await browser?.close();await new Promise(r=>server.close(r));}

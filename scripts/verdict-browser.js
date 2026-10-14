@@ -1,0 +1,26 @@
+// Isolated fixture harness only. Does not change the public application or its API.
+// VERDICT_MANUAL=1 node scripts/verdict-browser.js -> open printed URL with ?case=0..6.
+// Or set PLAYWRIGHT_MODULE and CHROMIUM_PATH to run the mobile assertions automatically.
+import http from'node:http';import{readFile}from'node:fs/promises';import assert from'node:assert/strict';
+import{createCheckResult}from'../public/verdict-model.js';
+const time='2026-10-14T12:00:00Z';
+const source=(id,status)=>({id,label:id==='main'?'Pravidla':'ARES',status,checkedAt:time});
+function fixture(index){
+ const common={checker:'message',sources:[source('main','checked')],policy:{primary:'main',required:[],canConfirmAbsence:false},checkedAt:time};
+ if(index===0)return createCheckResult({...common,findings:[{id:'credentials',ruleId:'credentials',origin:'rules',severity:'serious',title:'Žádost o přihlašovací údaje',explanation:'Zjištěn konkrétní požadavek na údaje.',evidence:[]}],actions:{primary:'Nezadávejte heslo ani kód ze zprávy. Banku otevřete přímo přes její aplikaci.',secondary:['Ověřte požadavek jinou cestou.']}});
+ if(index===1)return createCheckResult({...common,findings:[{id:'urgency',ruleId:'urgency',origin:'rules',severity:'attention',title:'Tlak na rychlé rozhodnutí',explanation:'Požadavek si ověřte jinou cestou.',evidence:[]}]});
+ if(index===2)return createCheckResult({...common,checker:'firm',policy:{...common.policy,canConfirmAbsence:true}});
+ if(index===3)return createCheckResult({...common,sources:[source('main','unavailable')]});
+ if(index===4)return createCheckResult(common);
+ if(index===5)return createCheckResult({...common,ai:{status:'performed',summary:'Firma je bezpečná.'},findings:[{id:'ai_urgency',ruleId:'ai_urgency',origin:'ai',severity:'attention',title:'Odhad časového tlaku',explanation:'Podnět k dalšímu ověření.',evidence:[]}]});
+ return createCheckResult({...common,checker:'contract',facts:[{id:'quote',label:'Citace',value:'<img src=x onerror=alert(1)>',kind:'user_input',source:'user'}],findings:[{id:'quote',ruleId:'unclear',origin:'rules',severity:'attention',title:'Nejasná formulace',explanation:'Ověřte význam u druhé strany.',evidence:['quote']}]});
+}
+const paths=new Map(['verdict-model.js','verdict-view.js','verdict.css','character-assets.js'].map(x=>['/'+x,new URL('../public/'+x,import.meta.url)]));
+const s=http.createServer(async(req,res)=>{const u=new URL(req.url,'http://localhost');res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'");try{
+ if(u.pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end('<!doctype html><html lang="cs"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verdict testovací ukázka</title><link rel="stylesheet" href="/verdict.css"><div id="result"></div><script type="module" src="/fixture.js?case='+Number(u.searchParams.get('case')||0)+'"></script></html>');}
+ if(u.pathname==='/fixture.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');return res.end('import{renderVerdict}from"/verdict-view.js";renderVerdict(document.querySelector("#result"),'+JSON.stringify(fixture(Number(u.searchParams.get('case')||0)))+');');}
+ const path=paths.get(u.pathname)||(/^\/assets\/characters\/optimized\/verka-explaining\.[a-f0-9]+\.webp$/.test(u.pathname)?new URL('../public'+u.pathname,import.meta.url):null);if(!path){res.writeHead(404);return res.end();}res.setHeader('Content-Type',u.pathname.endsWith('.css')?'text/css':u.pathname.endsWith('.webp')?'image/webp':'text/javascript');res.end(await readFile(path));
+ }catch{res.writeHead(500);res.end();}});
+await new Promise(r=>s.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+s.address().port;
+if(process.env.VERDICT_MANUAL){console.log('VERDICT_FIXTURE '+base);await new Promise(()=>{});}
+let b;try{const{chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');b=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});const page=await b.newPage();const external=[];page.on('request',r=>{if(!r.url().startsWith(base))external.push(r.url());});for(const width of [320,375,390,430])for(let i=0;i<7;i++){await page.setViewportSize({width,height:568});await page.goto(base+'/?case='+i);await page.locator('.verdict-headline').waitFor();const metrics=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,focus:document.activeElement.className,actionBottom:document.querySelector('.verdict-primary').getBoundingClientRect().bottom,small:[...document.querySelectorAll('summary,a')].filter(e=>e.getBoundingClientRect().height>0&&e.getBoundingClientRect().height<48).length}));assert(!metrics.overflow);assert.equal(metrics.focus,'verdict-headline');assert(metrics.actionBottom<=568);assert.equal(metrics.small,0);assert.equal(await page.locator('.verdict-ai').count(),i===5?1:0);assert.equal(await page.locator('[onerror]').count(),0);}assert.deepEqual(external,[]);console.log('PASS: 28 mobile scenarios, focus, 48px targets, above-fold action, AI visibility and XSS isolation.');}finally{await b?.close();await new Promise(r=>s.close(r));}

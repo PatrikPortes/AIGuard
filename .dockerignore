@@ -15,6 +15,9 @@
 !test-support/*.js
 # Gate fixtures named explicitly: some .dockerignore implementations re-include only the
 # directory entry for "!dir/", not its subtree.
+!test-support/firm/
+!test-support/firm/fixtures.cjs
+!test-support/firm/relay-fetch.cjs
 !test-support/contract/
 !test-support/contract/evaluation.json
 !test-support/contract/relay-fetch.cjs
@@ -36,3 +39,5 @@
 **/*.map
 **/.git
 **/node_modules
+
+!test-support/firm/profiles.js
