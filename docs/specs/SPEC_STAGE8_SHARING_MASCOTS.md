@@ -2,8 +2,8 @@
 
 *Stav 2026-10-14: pouze S8.1 (inventura a návrh). Nic není implementováno. Soutěžní deadline 26. 10. 2026.*
 
-- **Produkční baseline:** `6980bc5b384a4b2af3cd5a3c0f9b6247ba7e7430`. Ověřeno: HEAD `release/web-checker-2-2026-10-13` = Stage 7.
-- **Stage 7.1 (úprava odkazů GrowMate):** na remote neexistuje žádná větev ani commit nad produkcí (`feat/stage7-trust` = produkce). Nic se nezačleňuje. Pokud vznikne, Stage 8 se na ni přebázuje až po jejím review.
+- **Produkční baseline:** `a961078dddc40e0743ab50e80a120c8aa116ccd1` (Stage 7.1). Ověřeno 2026-10-14: HEAD `release/web-checker-2-2026-10-13` = `a961078`, fast-forward z Stage 7 `6980bc5`.
+- **Stage 7.1** (`fix/stage7-growmate-links-layout`) mění jen odkazy GrowMate, zarovnání kontaktních údajů a patičku. Neovlivňuje ilustrace ani výsledkové komponenty, takže inventura níže platí beze změny. Tato specifikace je založená na `a961078`; implementace Stage 8 vznikne ze stejné revize.
 - **Rozsah (rozhodnutí autora 2026-10-14):**
   1. bezpečné sdílení výsledků;
   2. Native Share API s funkčním fallbackem;
