@@ -92,6 +92,6 @@ test('S4.7 (D5): homepage card is active and links to the page; the page is in t
 
 test('S4.6 regression: the IČO field reuses the existing #sender field style (48px, full width, focus ring)', () => {
  const css=read('style.css');
- assert.match(css,/#sender,#offer-ico,#loan-ico\{box-sizing:border-box;width:100%;min-height:48px;/);
- assert.match(css,/#sender:focus-visible,#offer-ico:focus-visible,#loan-ico:focus-visible\{outline:3px solid var\(--brand-action\);outline-offset:3px\}/);
+ assert.match(css,/#sender,#offer-ico,#loan-ico,#message-ico\{box-sizing:border-box;width:100%;min-height:48px;/);
+ assert.match(css,/#sender:focus-visible,#offer-ico:focus-visible,#loan-ico:focus-visible,#message-ico:focus-visible\{outline:3px solid var\(--brand-action\);outline-offset:3px\}/);
 });

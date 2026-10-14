@@ -128,7 +128,7 @@ test('view copy and static boundaries', () => {
  assert.throws(()=>planLoanCheck({loan:SAFE}),/INVALID_FLOW_DEPENDENCIES/);
  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
  assert.deepEqual([...app.matchAll(/fetch\('([^']+)'/g)].map(m=>m[1]).sort(),['/api/analyze','/api/session','/eshop-coi.json']);
- assert.match(app,/if \(loanIcoInput\?\.value\.trim\(\) && !validIcoDigits\(loanIcoInput\.value\.trim\(\)\)\) \{ showError\('INVALID_ICO'\);/);
+ assert.match(app,/if \(icoInput\?\.value\.trim\(\) && !validIcoDigits\(icoInput\.value\.trim\(\)\)\) \{ showError\(dedicatedLoan \? 'INVALID_ICO' : 'INVALID_FIRM_ICO'\);/);
  const flow=readFileSync(new URL('../public/check-flow.js',import.meta.url),'utf8');
  assert.deepEqual([...flow.matchAll(/fetchImpl\('([^']+)'/g)].map(m=>m[1]),['/api/session','/api/firm']);
  const html=readFileSync(new URL('../public/loan.html',import.meta.url),'utf8');

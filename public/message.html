@@ -43,6 +43,9 @@
         <input id="sender" type="text" maxlength="256" autocomplete="off" spellcheck="false" aria-describedby="sender-help sender-privacy" placeholder="Například info@firma.cz, +420777123456 nebo Česká pošta">
         <p class="hint" id="sender-help">E-mailová adresa, telefonní číslo nebo název odesílatele.</p>
         <p class="hint" id="sender-privacy">Identitu odesílatele neověřujeme. Tento údaj vyhodnocujeme pouze na serveru služby a neposíláme jej do AI.</p>
+        <label for="message-ico">IČO firmy (nepovinné)</label>
+        <input id="message-ico" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="off" spellcheck="false" aria-describedby="message-ico-help">
+        <p class="hint" id="message-ico-help">Pokud zpráva uvádí firmu a znáte její IČO, prověříme ji v ARES a Registru DPH. Odešleme pouze IČO. Neověřujeme, že zprávu poslala tato firma.</p>
         <label for="content">Obsah k ověření</label>
         <textarea id="content" rows="4" maxlength="10000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte zkopírovanou zprávu nebo odkaz…" aria-describedby="content-help"></textarea>
         <p class="hint" id="content-help">Zpráva, e-mail, SMS nebo odkaz, nejvýše 10 000 znaků. Nepotřebné osobní údaje smažte.</p>

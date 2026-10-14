@@ -11,3 +11,4 @@
 .check-detail-label{font-size:14px;text-decoration:underline;text-underline-offset:3px;color:#3f35a8}
 /* S4.5 investment page only: a clean firm sub-result is shown neutrally ("found in registers"), not as a green safety signal. */
 .verdict-result[data-level=none_found][data-presentation=registry-found] .verdict-lead{background:#f4f5f9;border-color:#657089}
+.check-firm-link{margin:.25rem 0 1rem}.check-firm-link a{display:inline-flex;align-items:center;min-height:48px;font-weight:750;overflow-wrap:anywhere}

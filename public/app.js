@@ -48,6 +48,7 @@ const failures = {
   REJECTED_AGAIN: { kind: 'wait', title: 'Výsledek kontroly nebyl dost spolehlivý, proto ho nezobrazujeme.', message: 'Ani druhý pokus nebyl spolehlivý. Zkuste to prosím později.' },
   // S5.2: invalid optional provider IČO on the loan page; checked before anything is sent.
   INVALID_ICO: { kind: 'input', title: 'IČO poskytovatele není platné.', message: 'IČO musí mít 8 číslic a platný kontrolní součet. Nic jsme neodeslali.' },
+  INVALID_FIRM_ICO: { kind: 'input', title: 'IČO firmy není platné.', message: 'IČO musí mít 8 číslic a platný kontrolní součet. Nic jsme neodeslali.' },
   SESSION_START: { kind: 'session', title: 'Prověřování se nepodařilo připravit.', message: 'Zkuste to prosím znovu. Pokud se to bude opakovat, načtěte stránku později.' },
 };
 let lastFailure;
@@ -161,6 +162,7 @@ document.querySelectorAll('[data-example]').forEach(button => button.addEventLis
   // correcting a rejected loan input. Its answers must not follow the example.
   setLoanMode(false); submittedContent = undefined; resetCombined();
   if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
+  if (icoInput && !dedicatedLoan) icoInput.value = '';
   document.querySelector('#content').value = examples[button.dataset.example];
   document.querySelector('#content').focus();
 }));
@@ -190,7 +192,8 @@ function list(id, items) {
 // never on the loan flow. The planner (check-plan.js via check-flow.js) decides;
 // this cheap test only avoids loading the orchestrator for text with no link or IČO.
 const combined = document.querySelector('#check-combined');
-const loanIcoInput = document.querySelector('#loan-ico');
+// S5.2 provider IČO on the loan page; S5.4 optional firm IČO on the message page.
+const icoInput = document.querySelector('#loan-ico') || document.querySelector('#message-ico');
 // Same IČO checksum as check-plan.js validIco (8 digits, weights 8..2, mod 11).
 const validIcoDigits = ico => /^\d{8}$/.test(ico) && ((11 - [8, 7, 6, 5, 4, 3, 2].reduce((sum, w, i) => sum + Number(ico[i]) * w, 0) % 11) % 10) === Number(ico[7]);
 let combinedFlow;
@@ -204,20 +207,20 @@ async function startCombined(text, completed, analysisMs) {
   // S5.2: on /proverit-pujcku the combined run is Loan (+ Web) + Firm; on the message page a
   // loan topic still keeps the original single result.
   if (!combined || (!dedicatedLoan && isLoan())) return;
-  const ico = dedicatedLoan ? loanIcoInput?.value.trim() || '' : '';
+  const ico = icoInput?.value.trim() || '';
   if (!ico && !/https?:\/\/|www\.|IČ/iu.test(text)) return;
   const run = ++combinedRun;
   try {
     const [flow, web, eshop] = await Promise.all([import('/check-flow.js'), import('/web-checker.js'), import('/eshop-checker.js')]);
     combinedFlow = flow;
     if (run !== combinedRun) return;
-    const plan = dedicatedLoan ? flow.planLoanCheck({ loan: text, ico: ico || undefined }, { checkWebUrl: web.checkWebUrl }) : flow.planMessageCheck(text, { checkWebUrl: web.checkWebUrl });
+    const plan = dedicatedLoan ? flow.planLoanCheck({ loan: text, ico: ico || undefined }, { checkWebUrl: web.checkWebUrl }) : flow.planMessageCheck(text, { checkWebUrl: web.checkWebUrl, ico: ico || undefined });
     // Message only, nothing omitted: the F5a result above is the whole answer.
     if (plan.steps.length < 2 && plan.notPlanned.length === 0) return;
     // The local ČOI copy is loaded only for a planned web step; no URL is sent.
     const coiData = () => fetch('/eshop-coi.json', { cache: 'no-store', credentials: 'omit' }).then(r => r.ok ? r.json() : null);
     if (dedicatedLoan) await flow.startLoanCheck(combined, { loan: text, ico: ico || undefined, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
-    else await flow.startMessageCheck(combined, { text, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
+    else await flow.startMessageCheck(combined, { text, ico: ico || undefined, analysis: completed, analysisMs, checkWebUrl: web.checkWebUrl, coiResult: eshop.coiResult, coiData });
   } catch {
     if (run !== combinedRun) return;
     const note = document.createElement('p');
@@ -347,8 +350,8 @@ form.addEventListener('submit', async event => {
   if (busy || recovering || submit.disabled || !loanReady) return;
   if (!mode) { showError('SESSION_START'); return; }
   if (aiAvailable && !rulesFallback && !document.querySelector('#consent').checked) { showError('AI_CONSENT_REQUIRED'); return; }
-  // S5.2: an invalid provider IČO stops the check before /api/analyze or /api/firm.
-  if (loanIcoInput?.value.trim() && !validIcoDigits(loanIcoInput.value.trim())) { showError('INVALID_ICO'); loanIcoInput.focus(); return; }
+  // S5.2/S5.4: an invalid IČO stops the check before /api/analyze or /api/firm.
+  if (icoInput?.value.trim() && !validIcoDigits(icoInput.value.trim())) { showError(dedicatedLoan ? 'INVALID_ICO' : 'INVALID_FIRM_ICO'); icoInput.focus(); return; }
   // Keep keyboard focus in place when the control that started this disappears.
   if (errorPanel.contains(document.activeElement)) submit.focus();
   // Also cover programmatic replacement (examples/clipboard), which need not
@@ -432,6 +435,7 @@ content.addEventListener('input', () => {
 document.querySelector('#next-check').addEventListener('click', () => {
   setLoanMode(false); submittedContent = undefined; resetCombined();
   if (senderInput) { senderInput.value = ''; analysis = undefined; result.hidden = true; }
+  if (icoInput && !dedicatedLoan) icoInput.value = '';
   content.scrollIntoView({ block: 'center' }); content.select();
 });
 

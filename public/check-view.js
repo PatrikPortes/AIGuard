@@ -27,6 +27,10 @@ export const REGISTRY_CONTEXT=Object.freeze({
  loan:Object.freeze({row:'Zápis v obchodním rejstříku neznamená oprávnění poskytovat spotřebitelské úvěry ani bezpečnost půjčky.',neutral:'Zápis firmy v registru nepotvrzuje oprávnění poskytovat spotřebitelské úvěry ani výhodnost nabídky.'}),
  contract:Object.freeze({row:'Firmu jste vybrali vy. Neověřili jsme, že smlouvu uzavírá právě tato firma. Kontrola firmy nenahrazuje právní posouzení smlouvy.',neutral:'Firma s tímto IČO existuje v registrech. Neověřuje to, že smlouvu uzavírá právě ona, ani obsah smlouvy.'})
 });
+// S5.4: follow-up to the detailed firm page. Only the IČO, only in the fragment (never sent to
+// the server or logged); the firm page prefills it and never starts a check by itself.
+export const FIRM_DETAIL_LABEL='Prověřit firmu podrobně';
+export const firmDetailHref=ico=>'/proverit-firmu#ico='+ico;
 export const CONTRACT_LEGAL_NOTE='Kontrola smlouvy ani firmy nenahrazuje právní posouzení.';
 export const LOAN_AUTHORISATION_NOTE='Oprávnění poskytovat spotřebitelské úvěry (ČNB) jsme automaticky neověřili.';
 const registryContext=plan=>['investment','loan','contract'].find(c=>plan.steps.some(s=>s.checker===c));
@@ -76,6 +80,7 @@ export function renderCombinedResult(container,result,{normalizeUrl,focus=true,r
   if(done){const detail=el('div',undefined,'check-detail');renderVerdict(detail,outcome.result,{focus:false});
    if(registryNeutral&&context&&outcome.result.level==='none_found')presentRegistryNeutral(detail,REGISTRY_CONTEXT[context].neutral);
    row.append(detail);}checks.append(row);
+  if(step.checker==='firm'){const p=el('p',undefined,'check-firm-link'),a=el('a',FIRM_DETAIL_LABEL);a.href=firmDetailHref(step.input.ref);p.append(a);checks.append(p);}
  }
  if(result.plan.notPlanned.length){const omitted=el('section',undefined,'check-omitted');omitted.append(el('h3','Co jsme neprověřili'));for(const n of result.plan.notPlanned)omitted.append(el('p',(n.kind==='ico'?'IČO':'Odkaz')+(n.value?' · '+n.value:'')+' — '+OMIT[n.reason]));checks.append(omitted);}
  root.append(checks);const status=el('p','Výsledek společného prověření je připraven.','verdict-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');root.append(status);

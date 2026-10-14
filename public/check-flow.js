@@ -34,13 +34,14 @@ export async function runWebFirmCheck({url,ico}={},{checkWebUrl,coiResult,coiDat
 // S3.7: the message text is planned in the browser (P1, P4, P5). `analysis` is the
 // completed /api/analyze response for exactly this text; it is never re-requested.
 // coiData may be a function, so the ČOI snapshot is loaded only for a planned web step.
-export function planMessageCheck(text,{checkWebUrl}={}){
+// S5.4: optional IČO field on the message page (P3); without it the plan is unchanged.
+export function planMessageCheck(text,{checkWebUrl,ico}={}){
  if(typeof checkWebUrl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
- return planCheck({text},{runAt:'client',normalizeUrl:checkWebUrl});
+ return planCheck({text,...(ico===undefined||ico===''?{}:{ico})},{runAt:'client',normalizeUrl:checkWebUrl});
 }
-export async function runMessageCheck({text,analysis,analysisMs=0}={},{checkWebUrl,coiResult,coiData=null,fetchImpl=globalThis.fetch,clock=Date.now,signal}={}){
+export async function runMessageCheck({text,ico,analysis,analysisMs=0}={},{checkWebUrl,coiResult,coiData=null,fetchImpl=globalThis.fetch,clock=Date.now,signal}={}){
  if(typeof checkWebUrl!=='function'||typeof coiResult!=='function'||typeof fetchImpl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
- const plan=planMessageCheck(text,{checkWebUrl});
+ const plan=planMessageCheck(text,{checkWebUrl,ico});
  const message={analysis,durationMs:Number.isSafeInteger(analysisMs)&&analysisMs>=0?analysisMs:0};
  return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message});
 }
@@ -183,12 +184,12 @@ export async function startWebFirmCheck(container,{url,ico,checkWebUrl,coiResult
 
 // S3.7: rendered below the message result. Focus stays on the F5a result the user
 // is already reading; the combined result is announced through role="status".
-export async function startMessageCheck(container,{text,analysis,analysisMs,checkWebUrl,coiResult,coiData}){
+export async function startMessageCheck(container,{text,ico,analysis,analysisMs,checkWebUrl,coiResult,coiData}){
  resetWebFirmCheck(container);
  const controller=new AbortController();current=controller;
  container.hidden=false;renderCheckProgress(container);
  try{
-  const result=await runMessageCheck({text,analysis,analysisMs},{checkWebUrl,coiResult,coiData,signal:controller.signal});
+  const result=await runMessageCheck({text,ico,analysis,analysisMs},{checkWebUrl,coiResult,coiData,signal:controller.signal});
   if(controller.signal.aborted)return;
   renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,focus:false});
  }catch{

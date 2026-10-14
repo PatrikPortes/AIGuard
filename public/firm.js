@@ -14,4 +14,10 @@ form.addEventListener('submit',async event=>{
  }catch(e){entry.hidden=false;result.hidden=true;followup.hidden=true;error.textContent=e.name==='TimeoutError'?'Kontrola trvala příliš dlouho. Zkuste to později.':e.message;error.hidden=false;}
  finally{button.disabled=false;progress.textContent='';}
 });
+// S5.4: prefill from /proverit-firmu#ico=XXXXXXXX (links from combined results). Only a valid
+// IČO is taken; nothing is requested until the user presses the button. The fragment is then
+// removed from the address bar so the IČO is not shared or bookmarked by accident.
+{const m=/^#ico=(\d{8})$/.exec(location.hash);
+ if(m&&valid(m[1])){input.value=m[1];progress.textContent='IČO jsme předvyplnili. Kontrolu spustíte tlačítkem Prověřit firmu.';}
+ if(location.hash.startsWith('#ico='))history.replaceState(null,'',location.pathname+location.search);}
 document.querySelector('#firm-again').addEventListener('click',()=>{entry.hidden=false;result.hidden=true;followup.hidden=true;input.focus();});
