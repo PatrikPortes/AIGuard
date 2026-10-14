@@ -32,3 +32,9 @@ Initial macOS complete run: 13 failures. Two stale assumptions introduced by the
 ## Limitations / release conditions
 
 No blocking code findings. This is transparent project information, not a legal compliance certification. Provider contractual details/retention remain explicitly unverified in privacy copy, rather than invented. No new external integration was added. Before any later production deployment, follow the existing approved release process and its native build/rollback gates. Stage 8 artwork changes are intentionally absent.
+
+## Final correction after independent review
+
+Reviewed parent: `f62efcca35bfd442c8e517a0bed3463d75791c1f`. Corrected privacy/about text to distinguish IČO submitted directly in message/loan forms or automatically detected as a single explicitly labelled valid IČO from independent rules/consented AI processing of the text. ARES receives IČO and Registr DPH receives the public company DIČ obtained from ARES; registry queries do not contain the message/offer text. The non-automatic selection statement now applies specifically to company-name search.
+
+Added a scoped regression assertion in `tests/stage7-trust.test.js`. Stage 7 targeted tests: **5/5 PASS**; `npm run check`: **PASS**. Only these two HTML text contents, the corresponding test and this report changed. HTML structure/design, algorithms, APIs, relay, limits and F5a are unchanged. No repeated Docker gate needed for this text-only correction. Decision: **GO for review**, still no production merge/deployment.
