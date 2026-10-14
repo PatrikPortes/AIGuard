@@ -41,3 +41,7 @@
 **/node_modules
 
 !test-support/firm/profiles.js
+# Byte-identical reference sources for the S3.2/S3.4 baseline comparisons (no .git in the build).
+!test-support/baselines/
+!test-support/baselines/server-6e6ed02.js
+!test-support/baselines/check-plan-2dcf1ac.js

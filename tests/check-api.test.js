@@ -1,11 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import {spawnSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {createServer} from '../src/server.js';
 import {createFirmSources} from '../src/firm-sources.js';
 import {profile} from '../test-support/firm/profiles.js';
 import {validateCombinedResult} from '../public/check-plan.js';
+// Committed reference sources, byte-identical to the given commit (verified by Git blob id),
+// so these comparisons also run in git archive / Docker builds without .git.
+function baselineSource(file,blobId){const bytes=readFileSync(new URL('../test-support/baselines/'+file,import.meta.url));assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),blobId,file+' must equal the reference blob');return bytes.toString('utf8');}
 import {checkWebUrl} from '../public/web-checker.js';
 const ico='27082440';
 async function app(t,extra={}){
@@ -87,7 +91,8 @@ test('concurrency gate is shared across legacy firm and orchestrator, and releas
 });
 
 test('baseline comparison: existing analyze/firm/health/contract/static responses and headers unchanged',async t=>{
- const baseline=spawnSync('git',['show','6e6ed02d614a41ff7c2e86dd8ddc42f4f70f74ae:src/server.js'],{encoding:'utf8'});assert.equal(baseline.status,0);
+ // 6e6ed02d614a41ff7c2e86dd8ddc42f4f70f74ae:src/server.js
+ const baseline={stdout:baselineSource('server-6e6ed02.js','a584deca295ea900249a928e30fcf4110b432942')};
  const location=new URL('../src/server.js',import.meta.url);
  const source=baseline.stdout.replace(/from\s*(['"])(\.[^'"]+)\1/g,(_,quote,path)=>'from '+JSON.stringify(new URL(path,location).href)).replaceAll('import.meta.url',JSON.stringify(location.href));
  const original=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));

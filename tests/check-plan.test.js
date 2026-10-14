@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {planCheck as rawPlanCheck,validateCheckPlan as rawValidateCheckPlan,validIco,PLANNER_VERSION,BUDGET,CHECKER_REGISTRY,PLANNER_RULES} from '../public/check-plan.js';
 import {validateRegistryInput} from '../src/eshop-sources.js';
 import {CHECKERS,createCheckResult} from '../public/verdict-model.js';
@@ -10,6 +11,9 @@ import {checkWebUrl} from '../public/web-checker.js';
 const planCheck=(input,opts={})=>rawPlanCheck(input,{normalizeUrl:checkWebUrl,...opts});
 const validateCheckPlan=(plan,opts={})=>rawValidateCheckPlan(plan,{normalizeUrl:checkWebUrl,...opts});
 const client={runAt:'client'},ico='27082440',other='00006947';
+// Committed reference sources, byte-identical to the given commit (verified by Git blob id),
+// so these comparisons also run in git archive / Docker builds without .git.
+function baselineSource(file,blobId){const bytes=readFileSync(new URL('../test-support/baselines/'+file,import.meta.url));assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),blobId,file+' must equal the reference blob');return bytes.toString('utf8');}
 const signature=p=>p.steps.map(s=>[s.checker,s.reason.ruleId,s.required,s.primary,s.runAt]);
 const firmSteps=p=>p.steps.filter(s=>s.checker==='firm');
 const webSteps=p=>p.steps.filter(s=>s.checker==='web');
@@ -164,8 +168,8 @@ test('S3.2a requires injected normalizer for text/URL, never for pure IČO',()=>
 
 test('injected normalizer keeps full original S3.1 plans byte-for-byte',()=>{
  // Run the committed original module with a redirected existing checker import.
- const original=spawnSync('git',['show','2dcf1ac64ee96af2792e37a80bbb0be2c8880798:public/check-plan.js'],{encoding:'utf8'});
- assert.equal(original.status,0);
+ // 2dcf1ac64ee96af2792e37a80bbb0be2c8880798:public/check-plan.js
+ const original={stdout:baselineSource('check-plan-2dcf1ac.js','ad8cc9d8d0c7fff0228171b6ee1615e89ae64439')};
  const moduleSource=original.stdout.replace("'./web-checker.js'",JSON.stringify(new URL('../public/web-checker.js',import.meta.url).href));
  const inputs=[{text:'Běžná zpráva'},{ico},{url:'EXAMPLE.COM'}, {text:'https://a.example https://b.example https://c.example IČO: '+ico}, {url:'example.com',ico,text:'https://example.com/ IČO: '+ico+' IČO: '+other}];
  const child=spawnSync(process.execPath,['--input-type=module','-e',`const {planCheck}=await import('data:text/javascript;base64,'+${JSON.stringify(Buffer.from(moduleSource).toString('base64'))});console.log(JSON.stringify(${JSON.stringify(inputs)}.map(input=>planCheck(input,{runAt:'client'}))));`],{encoding:'utf8'});
