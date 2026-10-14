@@ -507,3 +507,31 @@ body[data-flow="loan"] .hint{font-size:1rem;line-height:1.65;color:#3a4664}
  .welcome-characters { grid-area:characters; }
  .welcome-team { grid-area:team; margin:0; }
 }
+
+/* Responsive polish: preserve content instead of clipping oversized labels or links. */
+main, .panel, .tool-card, .choice-card, .result-card, .flow-navigation { min-width:0; }
+main h1, main h2, main h3, .choice-card p, .notice, .hint, .flow-navigation a { overflow-wrap:anywhere; }
+button { max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+input[type=text], input[type=number], input[type=email], input[type=tel] { max-width:100%; min-width:0; }
+.flow-navigation { padding-inline:0; }
+.choice-link { align-items:center; min-height:48px; }
+.result-heading > h1, .result-heading > h2, .character-heading > h2, .character-heading > h3 { min-width:0; flex:1; }
+fieldset { min-inline-size:0; }
+@media(min-width:601px) and (max-width:960px){
+ .site-header { flex-wrap:wrap; gap:12px 24px; }
+ .site-header nav { flex-wrap:wrap; gap:12px 20px; }
+}
+@media(max-width:600px){
+ .check-choice { padding-inline:0; }
+ .choice-card { padding:22px; gap:12px; }
+ .choice-card h3 { font-size:1.4rem; }
+ .flow-navigation { margin-top:16px; gap:8px 16px; }
+ .flow-navigation a { flex:0 1 auto; }
+ footer nav { gap:8px 16px; }
+}
+@media(max-width:359px){
+ .site-header { padding-inline:12px; gap:8px; }
+ .site-header .brand-logo { width:28px; height:28px; }
+ .site-header .nav-happened { padding-inline:8px; font-size:.8rem; }
+ .site-header .wordmark { font-size:1.05rem; }
+}
