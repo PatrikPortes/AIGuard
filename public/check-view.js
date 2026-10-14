@@ -25,9 +25,9 @@ export const REGISTRY_FOUND_HEADLINE='Firma nalezena v registrech';
 export const REGISTRY_CONTEXT=Object.freeze({
  investment:Object.freeze({row:'Zápis v obchodním rejstříku neznamená oprávnění k investičním službám ani bezpečnost investice.',neutral:'Zápis firmy v registru nepotvrzuje oprávnění poskytovat investiční služby ani bezpečnost nabídky.'}),
  loan:Object.freeze({row:'Zápis v obchodním rejstříku neznamená oprávnění poskytovat spotřebitelské úvěry ani bezpečnost půjčky.',neutral:'Zápis firmy v registru nepotvrzuje oprávnění poskytovat spotřebitelské úvěry ani výhodnost nabídky.'}),
- // Prepared for S5.3 (no contract step can be planned yet).
- contract:Object.freeze({row:'Údaje z registru se týkají firmy s tímto IČO. Neověřují, že smlouvu uzavírá právě ona, ani obsah smlouvy.',neutral:'Údaje z registru se týkají firmy s tímto IČO. Neověřují, že smlouvu uzavírá právě ona, ani obsah smlouvy.'})
+ contract:Object.freeze({row:'Firmu jste vybrali vy. Neověřili jsme, že smlouvu uzavírá právě tato firma. Kontrola firmy nenahrazuje právní posouzení smlouvy.',neutral:'Firma s tímto IČO existuje v registrech. Neověřuje to, že smlouvu uzavírá právě ona, ani obsah smlouvy.'})
 });
+export const CONTRACT_LEGAL_NOTE='Kontrola smlouvy ani firmy nenahrazuje právní posouzení.';
 export const LOAN_AUTHORISATION_NOTE='Oprávnění poskytovat spotřebitelské úvěry (ČNB) jsme automaticky neověřili.';
 const registryContext=plan=>['investment','loan','contract'].find(c=>plan.steps.some(s=>s.checker===c));
 function presentRegistryNeutral(detail,note){
@@ -64,6 +64,7 @@ export function renderCombinedResult(container,result,{normalizeUrl,focus=true,r
   const sources=done?outcome.result.sources.map(s=>s.label+' — '+SOURCE_STATUS[s.status]).join('; '):'Výsledek zdrojů není k dispozici.';
   summary.append(el('span','Zdroje: '+(sources||'Žádné uvedené zdroje.'),'check-step-sources'));
   if(step.checker==='loan')summary.append(el('span',LOAN_AUTHORISATION_NOTE,'check-step-sources'));
+  if(step.checker==='contract')summary.append(el('span',CONTRACT_LEGAL_NOTE,'check-step-sources'));
   summary.append(el('span','Podrobnosti kontroly ▾','check-detail-label'));row.append(summary);
   if(!done)row.append(el('p',outcome.status==='skipped'?SKIP[outcome.skipReason]:'Kontrola nevrátila platný dokončený výsledek.'));
   if(outcome.sourcesContacted.length)row.append(el('p','Zdroje vykázané kontrolou: '+outcome.sourcesContacted.map(s=>SOURCE[s]).join(', ')));

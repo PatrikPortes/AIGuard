@@ -17,7 +17,9 @@ export const CHECKER_REGISTRY=freeze({
  // Stage 4 (P8): investment offer text is evaluated only in the browser.
  investment:{entityKinds:['investment_offer'],runAt:'client',requiredDefault:true},
  // Stage 5 (P9): loan communication; the step adopts the existing /api/analyze (topic loan) result.
- loan:{entityKinds:['loan_text'],runAt:'server',requiredDefault:true}
+ loan:{entityKinds:['loan_text'],runAt:'server',requiredDefault:true},
+ // Stage 5 (P10): contract text stays in the browser; the step adopts the local contract result.
+ contract:{entityKinds:['contract_text'],runAt:'client',requiredDefault:true}
 });
 const REASONS=Object.freeze({
  P1:'Vložili jste text zprávy.',P2:'Vložili jste adresu webu.',
@@ -25,7 +27,8 @@ const REASONS=Object.freeze({
  P5:'IČO uvedené v textu zprávy. Vztah k odesílateli jsme neověřili.',
  P6:'Duplicitní kontrolu neplánujeme.',P7:'Další kontrolu nelze jednoznačně naplánovat nebo přesahuje limit.',
  P8:'Vložili jste text investiční nabídky.',
- P9:'Vložili jste text nabídky půjčky.'
+ P9:'Vložili jste text nabídky půjčky.',
+ P10:'Vložili jste text smlouvy.'
 });
 const ORDER=(a,b)=>a<b?-1:a>b?1:0;
 const MAX_URL_CANDIDATES=50;
@@ -55,12 +58,12 @@ const draft=(checker,kind,ref,ruleId,trigger,required,primary,runAt)=>({
  checker,input:{kind,ref},trigger,reason:{ruleId,text:REASONS[ruleId]},required,primary,runAt
 });
 const skip=(kind,value,reason)=>({kind,value,reason});
-function extract(text,normalizeUrl){
+function extract(text,normalizeUrl,{withUrls=true}={}){
  const urls=new Map(),icos=new Set(),ignored=[],notPlanned=[];
  // The full match must also fit the existing normalizer's 2048-character cap.
  // Never truncate an overlong URL into a different, seemingly valid address.
  let count=0;
- for(const match of text.matchAll(/\b(?:https?:\/\/|www\.)[^\s<>"']{1,2048}/giu)){
+ for(const match of withUrls?text.matchAll(/\b(?:https?:\/\/|www\.)[^\s<>"']{1,2048}/giu):[]){
   if(count++===MAX_URL_CANDIDATES){ignored.push({kind:'url',reason:'limit'});notPlanned.push(skip('url','','limit'));break;}
   const candidate=match[0],next=text[match.index+candidate.length];
   if(candidate.length>2048||next!==undefined&&/[^\s<>"']/u.test(next)){
@@ -104,7 +107,7 @@ function deduplicate(steps){
  return{steps:[...unique.values()],notPlanned};
 }
 function limit(steps){
- const selected=[],notPlanned=[],counts={message:0,web:0,firm:0,investment:0,loan:0};
+ const selected=[],notPlanned=[],counts={message:0,web:0,firm:0,investment:0,loan:0,contract:0};
  for(const step of steps){
   const max=step.checker==='web'?BUDGET.maxUrls:1;
   if(selected.length>=BUDGET.maxSteps||counts[step.checker]>=max)notPlanned.push(skip(step.input.kind,step.input.ref,'limit'));
@@ -117,26 +120,29 @@ function limit(steps){
 export const PLANNER_RULES=freeze([
  {id:'P1',when:c=>c.input.text!==null,steps:c=>[draft('message','text','text','P1','user_field',true,!c.input.urlField,'server')]},
  {id:'P2',when:c=>c.input.urlField!==null,steps:c=>[draft('web','url',c.input.urlField.normalized,'P2','user_field',true,true,'client')]},
- {id:'P3',when:c=>c.input.icoField!==null,steps:c=>[draft('firm','ico',c.input.icoField,'P3','user_field',true,!c.input.text&&!c.input.urlField&&!c.input.offer&&!c.input.loan,'server')]},
+ {id:'P3',when:c=>c.input.icoField!==null,steps:c=>[draft('firm','ico',c.input.icoField,'P3','user_field',true,!c.input.text&&!c.input.urlField&&!c.input.offer&&!c.input.loan&&!c.input.contract,'server')]},
  {id:'P4',when:c=>c.input.extracted.urls.length>0,steps:c=>c.input.extracted.urls.map(u=>draft('web','url',u.normalized,'P4','extracted_from_text',true,false,c.runAt))},
- {id:'P5',when:c=>!c.input.icoField&&c.input.extracted.icos.length===1,steps:c=>[draft('firm','ico',c.input.extracted.icos[0],'P5','extracted_from_text',false,false,'server')]},
+ {id:'P5',when:c=>!c.input.icoField&&!c.input.contract&&c.input.extracted.icos.length===1,steps:c=>[draft('firm','ico',c.input.extracted.icos[0],'P5','extracted_from_text',false,false,'server')]},
  {id:'P6',when:()=>true,steps:c=>deduplicate(c.steps)},
  {id:'P7',when:()=>true,steps:c=>limit(c.steps)},
  // Stage 4: the offer is the required primary step (unless a URL field is primary), browser only.
  {id:'P8',when:c=>Boolean(c.input.offer),steps:c=>[draft('investment','text','offer','P8','user_field',true,!c.input.urlField,'client')]},
  // Stage 5: loan communication is the required primary step (unless a URL field is primary).
  // runAt server: the page adopts its existing /api/analyze result; nothing is requested again.
- {id:'P9',when:c=>Boolean(c.input.loan),steps:c=>[draft('loan','text','loan','P9','user_field',true,!c.input.urlField,'server')]}
+ {id:'P9',when:c=>Boolean(c.input.loan),steps:c=>[draft('loan','text','loan','P9','user_field',true,!c.input.urlField,'server')]},
+ // Stage 5: the contract is the required primary step, browser only. No links are checked (D2)
+ // and no party is assumed: a firm is checked only for an IČO the user chose (P3).
+ {id:'P10',when:c=>Boolean(c.input.contract),steps:c=>[draft('contract','text','contract','P10','user_field',true,true,'client')]}
 ]);
 // Candidate rules in step order (P8 right after P1, so the limit never drops it); then transforms.
-const CANDIDATE_RULES=['P1','P8','P9','P2','P3','P4','P5'],TRANSFORM_RULES=['P6','P7'];
+const CANDIDATE_RULES=['P1','P8','P9','P10','P2','P3','P4','P5'],TRANSFORM_RULES=['P6','P7'];
 const rulesById=ids=>ids.map(id=>PLANNER_RULES.find(r=>r.id===id));
 export function planCheck(input={},opts={}){
- if(!keys(input,['text','ico','url','offer','loan']))throw Error('INVALID_INPUT');
+ if(!keys(input,['text','ico','url','offer','loan','contract']))throw Error('INVALID_INPUT');
  if(!keys(opts,['runAt','normalizeUrl'])||opts.runAt!==undefined&&!['server','client'].includes(opts.runAt))throw Error('INVALID_OPTIONS');
  const {normalizeUrl}=opts;
  if(normalizeUrl!==undefined&&typeof normalizeUrl!=='function')throw Error('INVALID_OPTIONS');
- const runAt=opts.runAt||'server';let text=null,icoField=null,urlField=null,offer=null,loan=null;
+ const runAt=opts.runAt||'server';let text=null,icoField=null,urlField=null,offer=null,loan=null,contract=null;
  if(input.text!==undefined){
   if(typeof input.text!=='string')throw Error('INVALID_TEXT');text=input.text.trim();
   if(text.length<1||text.length>20000)throw Error('INVALID_TEXT');
@@ -155,19 +161,29 @@ export function planCheck(input={},opts={}){
   if(loan.length<1||loan.length>20000)throw Error('INVALID_LOAN');
   if(runAt!=='client')throw Error('LOAN_NOT_ALLOWED');
  }
+ if(input.contract!==undefined){
+  // Stage 5: contract text (up to the page's 40 000 characters) is planned only in the browser.
+  if(input.text!==undefined||input.offer!==undefined||input.loan!==undefined||input.url!==undefined)throw Error('INVALID_INPUT');
+  if(typeof input.contract!=='string')throw Error('INVALID_CONTRACT');contract=input.contract.trim();
+  if(contract.length<1||contract.length>40000)throw Error('INVALID_CONTRACT');
+  if(runAt!=='client')throw Error('CONTRACT_NOT_ALLOWED');
+ }
  if(input.ico!==undefined){if(!validIco(input.ico))throw Error('INVALID_ICO');icoField=input.ico;}
  if((text!==null||offer!==null||loan!==null)&&typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
  if(input.url!==undefined){if(runAt!=='client')throw Error('URL_NOT_ALLOWED');urlField=urlRecord(input.url,normalizeUrl);}
- if(text===null&&offer===null&&loan===null&&!icoField&&!urlField)throw Error('EMPTY_INPUT');
- const extracted=extract(text??offer??loan??'',normalizeUrl);
+ if(text===null&&offer===null&&loan===null&&contract===null&&!icoField&&!urlField)throw Error('EMPTY_INPUT');
+ const extracted=extract(text??offer??loan??contract??'',normalizeUrl,{withUrls:contract===null});
  const planInput={text:text===null?null:{present:true,chars:text.length},urlField,icoField,
   extracted:{urls:extracted.urls,icos:extracted.icos,ignored:extracted.ignored},
   // Key only present for an offer, so plans without an offer stay byte-identical.
   ...(offer===null?{}:{offer:{present:true,chars:offer.length}}),
-  ...(loan===null?{}:{loan:{present:true,chars:loan.length}})};
+  ...(loan===null?{}:{loan:{present:true,chars:loan.length}}),
+  ...(contract===null?{}:{contract:{present:true,chars:contract.length}})};
  const context={input:planInput,runAt,steps:[]},notPlanned=[...extracted.notPlanned];
  for(const rule of rulesById(CANDIDATE_RULES))if(rule.when(context))context.steps.push(...rule.steps(context));
- if(extracted.icos.length>1){for(const ico of extracted.icos)notPlanned.push(skip('ico',ico,'ambiguous'));}
+ // A contract names several parties: an IČO the user did not choose is never assumed to be one.
+ if(contract!==null){for(const ico of extracted.icos)notPlanned.push(skip('ico',ico,ico===icoField?'duplicate':'ambiguous'));}
+ else if(extracted.icos.length>1){for(const ico of extracted.icos)notPlanned.push(skip('ico',ico,'ambiguous'));}
  else if(icoField&&extracted.icos.length){
   const ico=extracted.icos[0];notPlanned.push(skip('ico',ico,ico===icoField?'duplicate':'limit'));
  }
@@ -190,12 +206,13 @@ export function validateCheckPlan(plan,opts={}){
  require(plan.schema===1&&plan.planner===PLANNER_VERSION&&keys(plan.budget,Object.keys(BUDGET),true));
  require(Object.keys(BUDGET).every(k=>plan.budget[k]===BUDGET[k]));
  const input=plan.input;
- const hasOffer=own(input||{},'offer'),hasLoan=own(input||{},'loan');
- require(!(hasOffer&&hasLoan));
- require(keys(input,['text','urlField','icoField','extracted',...(hasOffer?['offer']:[]),...(hasLoan?['loan']:[])],true));
+ const hasOffer=own(input||{},'offer'),hasLoan=own(input||{},'loan'),hasContract=own(input||{},'contract');
+ require([hasOffer,hasLoan,hasContract].filter(Boolean).length<=1);
+ require(keys(input,['text','urlField','icoField','extracted',...(hasOffer?['offer']:[]),...(hasLoan?['loan']:[]),...(hasContract?['contract']:[])],true));
  require(input.text===null||keys(input.text,['present','chars'],true)&&input.text.present===true&&Number.isInteger(input.text.chars)&&input.text.chars>=1&&input.text.chars<=20000);
  require(!hasOffer||input.text===null&&keys(input.offer,['present','chars'],true)&&input.offer.present===true&&Number.isInteger(input.offer.chars)&&input.offer.chars>=1&&input.offer.chars<=20000);
  require(!hasLoan||input.text===null&&keys(input.loan,['present','chars'],true)&&input.loan.present===true&&Number.isInteger(input.loan.chars)&&input.loan.chars>=1&&input.loan.chars<=20000);
+ require(!hasContract||input.text===null&&input.urlField===null&&keys(input.contract,['present','chars'],true)&&input.contract.present===true&&Number.isInteger(input.contract.chars)&&input.contract.chars>=1&&input.contract.chars<=40000);
  const validateUrl=record=>{
   require(keys(record,['host','normalized'],true));let canonical;
   if(typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');
@@ -204,17 +221,18 @@ export function validateCheckPlan(plan,opts={}){
  };
  if(input.urlField!==null)validateUrl(input.urlField);
  require(input.icoField===null||validIco(input.icoField));
- require(input.text!==null||hasOffer||hasLoan||input.urlField!==null||input.icoField!==null);
+ require(input.text!==null||hasOffer||hasLoan||hasContract||input.urlField!==null||input.icoField!==null);
  require(keys(input.extracted,['urls','icos','ignored'],true));
  const {urls,icos,ignored}=input.extracted;
  require(Array.isArray(urls)&&urls.length<=MAX_URL_CANDIDATES&&Array.isArray(icos)&&icos.length<=MAX_ICO_CANDIDATES&&Array.isArray(ignored)&&ignored.length<=MAX_ICO_CANDIDATES+MAX_URL_CANDIDATES+1);
  urls.forEach(validateUrl);require(new Set(urls.map(u=>u.normalized)).size===urls.length);
  require(icos.every(validIco)&&new Set(icos).size===icos.length);
  require(ignored.every(x=>keys(x,['kind','reason'],true)&&['url','ico'].includes(x.kind)&&['invalid','limit'].includes(x.reason)));
- if(input.text===null&&!hasOffer&&!hasLoan)require(urls.length===0&&icos.length===0&&ignored.length===0);
+ if(input.text===null&&!hasOffer&&!hasLoan&&!hasContract)require(urls.length===0&&icos.length===0&&ignored.length===0);
+ if(hasContract)require(urls.length===0&&ignored.every(x=>x.kind==='ico'));
  require(Array.isArray(plan.steps)&&plan.steps.length>=1&&plan.steps.length<=BUDGET.maxSteps);
  require(Array.isArray(plan.notPlanned)&&plan.notPlanned.length<=MAX_ICO_CANDIDATES+2*MAX_URL_CANDIDATES+2);
- const unique=new Set(),counts={message:0,web:0,firm:0,investment:0,loan:0};let primaries=0;
+ const unique=new Set(),counts={message:0,web:0,firm:0,investment:0,loan:0,contract:0};let primaries=0;
  for(const [index,step]of plan.steps.entries()){
   require(keys(step,['id','checker','input','trigger','reason','required','primary','runAt'],true));
   require(step.id==='s'+(index+1)&&own(CHECKER_REGISTRY,step.checker));counts[step.checker]++;
@@ -226,14 +244,16 @@ export function validateCheckPlan(plan,opts={}){
   require(!unique.has(key));unique.add(key);if(step.primary)primaries++;
   if(rule==='P1')require(step.checker==='message'&&step.input.kind==='text'&&step.input.ref==='text'&&input.text!==null&&step.trigger==='user_field'&&step.required&&step.primary===!input.urlField&&step.runAt==='server');
   else if(rule==='P2')require(step.checker==='web'&&step.input.kind==='url'&&step.input.ref===input.urlField?.normalized&&step.trigger==='user_field'&&step.required&&step.primary&&step.runAt==='client');
-  else if(rule==='P3')require(step.checker==='firm'&&step.input.kind==='ico'&&step.input.ref===input.icoField&&step.trigger==='user_field'&&step.required&&step.primary===(!input.text&&!input.urlField&&!hasOffer&&!hasLoan)&&step.runAt==='server');
+  else if(rule==='P3')require(step.checker==='firm'&&step.input.kind==='ico'&&step.input.ref===input.icoField&&step.trigger==='user_field'&&step.required&&step.primary===(!input.text&&!input.urlField&&!hasOffer&&!hasLoan&&!hasContract)&&step.runAt==='server');
   else if(rule==='P4')require(step.checker==='web'&&step.input.kind==='url'&&urls.some(u=>u.normalized===step.input.ref)&&step.input.ref!==input.urlField?.normalized&&step.trigger==='extracted_from_text'&&step.required&&!step.primary&&(!input.urlField&&!hasOffer&&!hasLoan||step.runAt==='client'));
+  else if(rule==='P10')require(step.checker==='contract'&&step.input.kind==='text'&&step.input.ref==='contract'&&hasContract&&step.trigger==='user_field'&&step.required&&step.primary&&step.runAt==='client');
   else if(rule==='P9')require(step.checker==='loan'&&step.input.kind==='text'&&step.input.ref==='loan'&&hasLoan&&step.trigger==='user_field'&&step.required&&step.primary===!input.urlField&&step.runAt==='server');
   else if(rule==='P8')require(step.checker==='investment'&&step.input.kind==='text'&&step.input.ref==='offer'&&hasOffer&&step.trigger==='user_field'&&step.required&&step.primary===!input.urlField&&step.runAt==='client');
-  else if(rule==='P5')require(step.checker==='firm'&&step.input.kind==='ico'&&icos.length===1&&step.input.ref===icos[0]&&!input.icoField&&step.trigger==='extracted_from_text'&&!step.required&&!step.primary&&step.runAt==='server');
+  else if(rule==='P5')require(step.checker==='firm'&&step.input.kind==='ico'&&icos.length===1&&step.input.ref===icos[0]&&!input.icoField&&!hasContract&&step.trigger==='extracted_from_text'&&!step.required&&!step.primary&&step.runAt==='server');
   else require(false); // P6/P7 remove/limit steps; they never create checker executions.
  }
- require(primaries===1&&counts.message<=1&&counts.web<=2&&counts.firm<=1&&counts.investment<=1&&counts.loan<=1&&counts.message+counts.investment+counts.loan<=1);
+ require(primaries===1&&counts.message<=1&&counts.web<=2&&counts.firm<=1&&counts.investment<=1&&counts.loan<=1&&counts.contract<=1&&counts.message+counts.investment+counts.loan+counts.contract<=1);
+ if(hasContract)require(plan.steps.some(s=>s.reason.ruleId==='P10')&&!plan.steps.some(s=>s.checker==='web'));
  if(hasLoan)require(plan.steps.some(s=>s.reason.ruleId==='P9'));
  if(hasOffer)require(plan.steps.some(s=>s.reason.ruleId==='P8'));
  if(input.text!==null)require(plan.steps.some(s=>s.reason.ruleId==='P1'));
@@ -243,7 +263,7 @@ export function validateCheckPlan(plan,opts={}){
   require(keys(omission,['kind','value','reason'],true)&&['url','ico'].includes(omission.kind)&&typeof omission.value==='string'&&omission.value.length<=2048&&['limit','ambiguous','duplicate','invalid'].includes(omission.reason));
   if(omission.kind==='ico')require(/^\d{8}$/.test(omission.value));
   else if(omission.value!==''){if(typeof normalizeUrl!=='function')throw Error('URL_NORMALIZER_REQUIRED');try{urlRecord(omission.value,normalizeUrl);}catch{throw Error('INVALID_PLAN');}}
-  if(omission.reason==='ambiguous')require(omission.kind==='ico'&&icos.length>1&&icos.includes(omission.value));
+  if(omission.reason==='ambiguous')require(omission.kind==='ico'&&(icos.length>1||hasContract)&&icos.includes(omission.value));
  }
  return plan;
 }
@@ -310,7 +330,7 @@ export function aggregate(steps,outcomes){
  else if((decisive=rows.find(r=>r.step.required&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')))){level='attention';ruleId='A3';}
  else if((decisive=find('attention'))){level='attention';ruleId='A4';}
  // A completed optional incomplete result cannot satisfy A6 (all completed none_found).
- else if((decisive=find('not_assessable'))||(decisive=find('incomplete'))||(decisive=rows.find(r=>['message','web','investment','loan'].includes(r.step.checker)))){level='not_assessable';ruleId='A5';}
+ else if((decisive=find('not_assessable'))||(decisive=find('incomplete'))||(decisive=rows.find(r=>['message','web','investment','loan','contract'].includes(r.step.checker)))){level='not_assessable';ruleId='A5';}
  else{level='none_found';ruleId='A6';}
  const influential=ruleId==='A3'?rows.filter(r=>r.step.required&&(r.outcome.status!=='done'||r.outcome.result.level==='incomplete')):[decisive];
  const reasons=influential.map(r=>({ruleId,stepId:r?.step.id||null,text:AGGREGATE_COPY[ruleId]}));

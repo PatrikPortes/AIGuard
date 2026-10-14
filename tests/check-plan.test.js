@@ -105,7 +105,7 @@ test('deterministic 100 repeats, canonical sorted URL selection and stable order
  assert.equal(JSON.stringify(input),before);deepFrozen(expected);deepFrozen(BUDGET);deepFrozen(CHECKER_REGISTRY);
  const p=planCheck({text:'Zpráva https://a.example https://z.example IČO: '+ico});assert.deepEqual(p.steps,expected.steps);
  const a=planCheck({text:'https://c.example https://b.example https://a.example'}),b=planCheck({text:'https://a.example https://c.example https://b.example'});assert.deepEqual(a.steps,b.steps);
- assert.equal(PLANNER_VERSION,'p1');assert.deepEqual(PLANNER_RULES.map(r=>r.id),['P1','P2','P3','P4','P5','P6','P7','P8','P9']); // S4.3: P8, S5.2: P9 appended
+ assert.equal(PLANNER_VERSION,'p1');assert.deepEqual(PLANNER_RULES.map(r=>r.id),['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']); // S4.3: P8, S5.2: P9, S5.3: P10 appended
 });
 
 test('1000 seeded plans respect all budgets, validity, checker compatibility and one primary',()=>{

@@ -38,7 +38,7 @@ const leaks=(calls,text)=>calls.some(c=>(c.url+' '+(c.body||'')).includes(text.s
 
 test('P9: registry entry and rule are additive; loan is a required primary step adopted from the server analysis', () => {
  assert.deepEqual(CHECKER_REGISTRY.loan,{entityKinds:['loan_text'],runAt:'server',requiredDefault:true});
- assert.deepEqual(PLANNER_RULES.map(r=>r.id),['P1','P2','P3','P4','P5','P6','P7','P8','P9']);
+ assert.deepEqual(PLANNER_RULES.map(r=>r.id),['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']);
  const p=planCheck({loan:'  '+SAFE+'  '},client);
  assert.deepEqual(sig(p),[['loan','P9',true,true,'server']]);
  assert.deepEqual(p.steps[0].input,{kind:'text',ref:'loan'});assert.equal(p.steps[0].reason.text,'Vložili jste text nabídky půjčky.');

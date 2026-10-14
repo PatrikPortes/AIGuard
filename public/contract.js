@@ -77,7 +77,7 @@ if(typeof document!=='undefined'){
     timers=[setTimeout(()=>{$('contract-status-text').textContent='Robo ještě kontroluje citace.';},8000),setTimeout(()=>{$('contract-status-text').textContent='Delší smlouva potřebuje více času. Můžete počkat nebo kontrolu zrušit.';},20000)];
     const response=await fetch('/api/analyze-contract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.any([signal,AbortSignal.timeout(50000)])});if(!response.ok)throw Error('AI kontrola není dostupná.');return response.json();};
    let result;try{result=await runContractCheck({original,contractType:type(),aiConsent:consent,previewApproved:$('contract-preview-approved').checked,sent:redacted?.sent,map:redacted?.map||[],botToken:token,transport,catalog});}catch(e){if(signal.aborted)throw e;result={...rulesForContract(original,type()),mode:'rules_fallback',fallback_reason:'AI_UNAVAILABLE'};}
-   if(signal.aborted)throw Error('Kontrola byla zrušena.');render(result);entry.hidden=true;resultEl.hidden=false;resultEl.focus({preventScroll:true});resultEl.scrollIntoView({block:'start'});$('contract-robo').src=characterAssets['robo-success'];
+   if(signal.aborted)throw Error('Kontrola byla zrušena.');render(result);showParties(original,result);entry.hidden=true;resultEl.hidden=false;resultEl.focus({preventScroll:true});resultEl.scrollIntoView({block:'start'});$('contract-robo').src=characterAssets['robo-success'];
   }catch(e){showError(e.message);$('contract-robo').src=characterAssets['robo-error'];}finally{timers.forEach(clearTimeout);doneBusy();}
  });
  function render(result){
@@ -94,6 +94,37 @@ if(typeof document!=='undefined'){
  }
  $('contract-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(questions.join('\n'));$('contract-copy-status').textContent='Otázky byly zkopírovány.';}catch{$('contract-copy-status').textContent='Otázky můžete označit a zkopírovat ručně.';}});
  $('contract-print').addEventListener('click',()=>window.print());
- function clearSecrets(){active?.abort();parseActive?.abort();original='';redacted=null;manual=[];previewSource='';questions=[];input.value='';$('contract-file').value='';$('contract-preview').replaceChildren();$('contract-findings').replaceChildren();$('contract-preview-approved').checked=false;}
+ // S5.3 Contract → Firm. The user chooses which party (IČO) to check; nothing is assumed and
+ // nothing is sent before that choice. Only {"ico"} goes to /api/firm (via check-flow.js); the
+ // contract text and the local result are adopted in this browser (no second evaluation).
+ let partyFlow,partyContract='',partyResult=null,partyBusy=false;
+ const loadParty=()=>Promise.all([import('/check-flow.js'),import('/web-checker.js'),import('/eshop-checker.js')]);
+ async function showParties(contract,result){
+  partyContract=contract;partyResult=result;const section=$('contract-party'),options=$('contract-party-options');
+  $('contract-party-error').hidden=true;$('contract-party-ico').value='';options.replaceChildren();
+  try{const [flow]=await loadParty();partyFlow=flow;}catch{section.hidden=true;return;}
+  if(partyContract!==contract)return;
+  const {candidates,invalid}=partyFlow.contractParties(contract);
+  $('contract-party-intro').textContent=candidates.length>1?'Ve smlouvě jsme našli více IČO. Nevíme, které patří které smluvní straně. Vyberte firmu, kterou chcete prověřit.':candidates.length===1?'Ve smlouvě jsme našli jedno IČO. Nevíme, které smluvní straně patří. Můžete ho prověřit nebo zadat jiné IČO.':'Ve smlouvě jsme nenašli platné IČO s označením. Pokud IČO smluvní strany znáte, můžete ho zadat ručně.';
+  const bad=$('contract-party-invalid');bad.hidden=!invalid.length;bad.textContent=invalid.length?'Údaj '+invalid.join(', ')+' u označení IČO nemá platný kontrolní součet. Zkontrolujte ho ve smlouvě a případně zadejte správné IČO ručně.':'';
+  for(const value of [...candidates,'manual']){
+   const label=document.createElement('label'),radio=document.createElement('input');radio.type='radio';radio.name='contract_party';radio.value=value;
+   label.append(radio,document.createTextNode(value==='manual'?'Zadat IČO ručně':'IČO '+value));options.append(label);
+  }
+  section.hidden=false;
+ }
+ function resetParties(){partyFlow?.resetWebFirmCheck($('check-combined'));$('check-combined').replaceChildren();$('check-combined').hidden=true;$('contract-party').hidden=true;$('contract-party-options').replaceChildren();$('contract-party-ico').value='';partyContract='';partyResult=null;}
+ $('contract-party-ico').addEventListener('input',()=>{const manual=$('contract-party-options').querySelector('input[value="manual"]');if(manual&&$('contract-party-ico').value.trim())manual.checked=true;});
+ $('contract-party-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(partyBusy||!partyFlow||!partyResult)return;
+  const error=$('contract-party-error'),chosen=$('contract-party-options').querySelector('input:checked');error.hidden=true;
+  const ico=!chosen?'':chosen.value==='manual'?$('contract-party-ico').value.trim():chosen.value;
+  if(!chosen||!ico){error.textContent='Vyberte firmu ze smlouvy nebo zadejte IČO ručně. Nic jsme neodeslali.';error.hidden=false;(chosen?$('contract-party-ico'):$('contract-party-options').querySelector('input'))?.focus();return;}
+  if(!partyFlow.isValidIco(ico)){error.textContent='IČO musí mít 8 číslic a platný kontrolní součet. Nic jsme neodeslali.';error.hidden=false;$('contract-party-ico').focus();return;}
+  partyBusy=true;$('contract-party-submit').disabled=true;
+  try{const [,web,eshop]=await loadParty();await partyFlow.startContractFirmCheck($('check-combined'),{contract:partyContract,ico,contractResult:partyResult,checkWebUrl:web.checkWebUrl,coiResult:eshop.coiResult});}
+  finally{partyBusy=false;$('contract-party-submit').disabled=false;}
+ });
+ function clearSecrets(){resetParties();active?.abort();parseActive?.abort();original='';redacted=null;manual=[];previewSource='';questions=[];input.value='';$('contract-file').value='';$('contract-preview').replaceChildren();$('contract-findings').replaceChildren();$('contract-preview-approved').checked=false;}
  $('contract-again').addEventListener('click',()=>{clearSecrets();resultEl.hidden=true;entry.hidden=false;input.focus();});window.addEventListener('pagehide',clearSecrets);
 }

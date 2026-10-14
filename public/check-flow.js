@@ -1,6 +1,6 @@
 import {planCheck,aggregate,createCombinedResult,validIco} from './check-plan.js';
 import {validateCheckResult} from './verdict-model.js';
-import {fromWeb,fromMessage,fromLoan} from './verdict-adapters.js';
+import {fromWeb,fromMessage,fromLoan,fromContract} from './verdict-adapters.js';
 import {renderCheckProgress,renderCombinedResult} from './check-view.js';
 
 // S3.6/S3.7 client runner. URLs are planned and checked only in this browser
@@ -72,7 +72,24 @@ export async function runLoanCheck({loan,ico,analysis,analysisMs=0}={},{checkWeb
  return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,loanAdoption});
 }
 
-async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message,investment,loanAdoption}){
+// S5.3: contract (P10) + the firm the user chose. The contract text never leaves the browser;
+// `contractResult` is the page's completed local contract check, adopted with fromContract.
+export function planContractFirm({contract,ico}={}){
+ return planCheck({contract,...(ico===undefined||ico===''?{}:{ico})},{runAt:'client'});
+}
+// Candidate parties for the user to choose from: labelled IČO with a valid checksum, plus
+// labelled numbers that fail the checksum (shown for manual confirmation). Nothing is assumed.
+export function contractParties(contract){
+ const plan=planContractFirm({contract});
+ return {candidates:[...plan.input.extracted.icos],invalid:plan.notPlanned.filter(n=>n.kind==='ico'&&n.reason==='invalid').map(n=>n.value)};
+}
+export async function runContractFirmCheck({contract,ico,contractResult}={},{checkWebUrl,coiResult,coiData=null,fetchImpl=globalThis.fetch,clock=Date.now,signal}={}){
+ if(typeof checkWebUrl!=='function'||typeof coiResult!=='function'||typeof fetchImpl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
+ const plan=planContractFirm({contract,ico});
+ return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,contractAdoption:{result:contractResult}});
+}
+
+async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message,investment,loanAdoption,contractAdoption}){
  const opts={normalizeUrl:checkWebUrl};
  const elapsed=begin=>Math.max(0,Math.floor(clock()-begin));
  const deadline=AbortSignal.timeout(plan.budget.deadlineMs);
@@ -112,6 +129,12 @@ async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signa
  const outcomes=await Promise.all(plan.steps.map(async step=>{
   const begin=clock();
   try{
+   if(step.checker==='contract'&&contractAdoption){
+    // Adopts the local contract result (no second evaluation); an invalid one fails the step.
+    const candidate={stepId:step.id,status:'done',sourcesContacted:['none'],durationMs:0,result:fromContract(contractAdoption.result,{checkedAt:new Date(clock()).toISOString()})};
+    aggregate(plan.steps,plan.steps.map(s=>s.id===step.id?candidate:failed(s)));
+    return candidate;
+   }
    if(step.checker==='loan'&&loanAdoption){
     // Adopts the existing loan analysis; an invalid one fails this required step.
     const candidate={stepId:step.id,status:'done',sourcesContacted:['none'],durationMs:loanAdoption.durationMs,result:fromLoan(loanAdoption.analysis,undefined,{checkedAt:new Date(clock()).toISOString()})};
@@ -208,6 +231,24 @@ export async function startLoanCheck(container,{loan,ico,analysis,analysisMs,che
   if(controller.signal.aborted)return;
   const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
   p.textContent='Společné prověření poskytovatele se nepodařilo dokončit. Výsledek kontroly půjčky výše zůstává platný; firmu ani oprávnění jsme neověřili.';
+  container.replaceChildren(p);container.setAttribute('aria-busy','false');
+ }
+}
+
+// S5.3: started by the user's explicit choice of a party, so focus moves to the new verdict.
+export async function startContractFirmCheck(container,{contract,ico,contractResult,checkWebUrl,coiResult}){
+ resetWebFirmCheck(container);
+ const controller=new AbortController();current=controller;
+ container.hidden=false;renderCheckProgress(container);
+ try{
+  const result=await runContractFirmCheck({contract,ico,contractResult},{checkWebUrl,coiResult,signal:controller.signal});
+  if(controller.signal.aborted)return;
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,registryNeutral:true});
+  return result;
+ }catch{
+  if(controller.signal.aborted)return;
+  const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
+  p.textContent='Prověření vybrané firmy se nepodařilo dokončit. Výsledek kontroly smlouvy výše zůstává platný; firmu jsme neověřili.';
   container.replaceChildren(p);container.setAttribute('aria-busy','false');
  }
 }

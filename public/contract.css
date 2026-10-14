@@ -14,3 +14,8 @@
  #contract-result-verka{width:128px;left:-24px;top:-40px}
 }
 @media print{#contract-result-verka{position:static;width:96px}#contract-result>.contract-card-heading{min-height:0;grid-template-columns:96px minmax(0,1fr)}}
+/* S5.3 contract party choice: same option style, 48 px targets. */
+.contract-party{margin-top:1.5rem}
+.contract-party-options label{min-height:48px}
+#contract-party-ico{display:block;box-sizing:border-box;width:100%;min-height:48px;padding:.65rem;font:inherit;border:2px solid #8b87a8;border-radius:.75rem}
+.contract-party button{min-height:48px}
