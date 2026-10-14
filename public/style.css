@@ -476,3 +476,15 @@ body[data-flow="loan"] .hint{font-size:1rem;line-height:1.65;color:#3a4664}
 .function-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.function-grid .choice-card{display:flex;flex-direction:column;min-width:0}.function-grid .choice-link{margin-top:auto;display:block;min-height:48px;padding:12px;border-radius:12px;background:var(--brand-action);color:#fff;text-decoration:none}.coming-soon{background:var(--cool-background);border-style:dashed}.feature-status{display:inline-block;padding:5px 12px;border-radius:20px;background:var(--brand-soft);color:var(--brand-action);font-weight:750}.web-entry{margin:32px 0}.web-entry input{display:block;width:100%;min-height:52px;padding:12px;border:2px solid var(--border);border-radius:12px;font:inherit}.web-entry button{min-height:52px;margin-top:12px}.web-entry label{font-weight:750}#web-domain{overflow-wrap:anywhere}.function-grid .choice-card:focus-within{outline:3px solid var(--brand-action);outline-offset:4px}@media(max-width:900px){.function-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.function-grid{grid-template-columns:1fr}.flow-navigation{flex-wrap:wrap;gap:12px}}
 
 .eshop-source{padding:1rem;margin-top:1rem;border:1px solid #e2e1ef;border-radius:1rem;overflow-wrap:anywhere}.eshop-source a{display:block;margin:.7rem 0;min-height:44px}.eshop-source[data-status="VAROVÁNÍ"]{border:3px solid #be7100;background:#fff4d7}.eshop-source input{max-width:100%;min-height:48px}.eshop-source button{min-height:48px;margin:.5rem 0}
+
+/* Stage 0: logo, wordmark and recovery CTA share one row on phones. */
+@media(max-width:600px){
+ .site-header{flex-wrap:nowrap;align-items:center;gap:12px;padding:16px}
+ .site-header>.brand{flex:1 1 auto;min-width:0;gap:8px}
+ .site-header .brand-logo{width:32px;height:32px}
+ .site-header .wordmark{font-size:clamp(1.05rem,4.7vw,1.3rem);white-space:nowrap}
+ .site-header .tagline{display:none}
+ .site-header nav{width:auto;flex:0 0 auto;flex-wrap:nowrap;gap:0}
+ .site-header .nav-secondary{display:none}
+ .site-header .nav-happened{min-height:48px;padding:8px 10px;font-size:.875rem;white-space:nowrap}
+}
