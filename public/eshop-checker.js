@@ -34,9 +34,11 @@ export async function startEshop(host){
  resetEshop();currentController=new AbortController();const signal=currentController.signal;
  document.querySelector('#operator-result').replaceChildren();document.querySelector('#operator-ico').value='';
  renderEshop(host,null);document.querySelector('#eshop-coi').append(text('p','Načítáme místní kopii seznamu ČOI…'));
- try{const r=await fetch('/eshop-coi.json',{signal:AbortSignal.any([signal,AbortSignal.timeout(5000)]),cache:'no-store',credentials:'omit'});if(!r.ok)throw Error('Unavailable');const data=await r.json();if(!signal.aborted)renderEshop(host,data);}catch{if(!signal.aborted)renderEshop(host,null);}
+ // Returns the one loaded local snapshot so the page can reuse it (no second fetch).
+ try{const r=await fetch('/eshop-coi.json',{signal:AbortSignal.any([signal,AbortSignal.timeout(5000)]),cache:'no-store',credentials:'omit'});if(!r.ok)throw Error('Unavailable');const data=await r.json();if(!signal.aborted)renderEshop(host,data);return data;}catch{if(!signal.aborted)renderEshop(host,null);return null;}
 }
-if(typeof document!=='undefined'){
+// Wires the Web page operator form only; elsewhere coiResult is imported as a pure function.
+if(typeof document!=='undefined'&&document.querySelector('#operator-form')){
  document.querySelector('#operator-form').addEventListener('submit',async event=>{
   event.preventDefault();operatorController?.abort();operatorController=new AbortController();const signal=operatorController.signal,output=document.querySelector('#operator-result'),button=event.currentTarget.querySelector('button');output.replaceChildren(text('p','Ověřujeme IČO v ARES…'));button.disabled=true;
   try{const session=await fetch('/api/session',{signal});if(!session.ok)throw Error('Session unavailable');const r=await fetch('/api/eshop-operator',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ico:document.querySelector('#operator-ico').value}),signal:AbortSignal.any([signal,AbortSignal.timeout(7000)])});if(!r.ok)throw Error('Invalid or unavailable');const data=await r.json();if(signal.aborted)return;output.replaceChildren(text('strong','NEOVĚŘENO'),text('p',data.registryFinding),text('p',data.limitation),text('p','Zdroj: ARES. Datum kontroly: '+new Date(data.checkedAt).toLocaleString('cs-CZ')));if(data.entity){const e=data.entity;output.append(text('p','IČO: '+e.ico),text('p','Název: '+e.name),text('p','Sídlo: '+(e.address||'údaj nedostupný')),text('p','Právní forma – kód ARES: '+(e.legalFormCode||'údaj nedostupný')),text('p','Registrace – kódy uvedené ARES: '+Object.entries(e.registrations).map(([k,v])=>k+': '+v).join('; ')));}}
