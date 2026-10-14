@@ -17,7 +17,7 @@ Základ: c5e8ea2f87aa7225b86d025d34c4d3fb3e071c8c. Větev feat/firm-stage2-2026-
 
 ## Ověření
 
-107 relevantních Node testů prošlo před závěrečnými doplňky; finální počty jsou v závěrečném reportu. 20 browser scénářů skutečné stránky (5 výsledků × 320/375/390/430 px) prošlo v in-app browseru. Primární akce nejvýše 408,625 px od vrchu viewportu, fokus na verdiktu, žádný overflow, všechny viditelné cíle nejméně 48 px. Vložení HTML do názvu nepřidalo aktivní element. Neplatné IČO bylo odmítnuto v prohlížeči.
+109/109 relevantních Node testů PASS. Strict security gate 16/16 PASS (původní TODO značky zachované), npm run check PASS. 20 browser scénářů skutečné stránky (5 výsledků × 320/375/390/430 px) prošlo v in-app browseru. Primární akce nejvýše 408,625 px od vrchu viewportu, fokus na verdiktu, žádný overflow, všechny viditelné cíle nejméně 48 px. Vložení HTML do názvu nepřidalo aktivní element. Neplatné IČO bylo odmítnuto v prohlížeči.
 
 Browser síť byla prověřena místním serverovým záznamem požadavků, same-origin CSP a DOM assety; samostatný Playwright síťový spy skript je připraven, ale samostatný launcher se v tomto běhu nepoužil. Žádné živé registry ani produkční VPS nebyly při testech kontaktovány.
 
@@ -29,3 +29,11 @@ Browser síť byla prověřena místním serverovým záznamem požadavků, same
 - Po schválení samostatně push/review/merge. Release musí stavět web i relay ze stejného SHA existujícím runbookem a zachovat rollback.
 - Před produkčním nasazením ověřit skutečný egress relay na dokumentovaný DPH /dpr/ endpoint a přetrvávající blokaci přímého web egressu (D1). To zde neprovádíme.
 - Dokončená Stage 0 je předkem této větve. Cizí F5a worktree ani jeho změny jsme neupravovali.
+
+## Čistý Git archive a širší sada
+
+Kompletní automatický discovery běh z čistého Git archivu: 309 testů, 298 PASS, 11 FAIL. Všech 11 stejných selhání bylo reprodukováno i na výchozím Stage 1 c5e8ea2 cíleným spuštěním pouze dotčených tří skupin: admin/tests/dashboard.test.js (nenainstalované jose), tests/deploy-scripts.test.js (8 selhání, chybějící linuxový flock) a tests/ingress.test.js (2 selhání, EADDRNOTAVAIL 127.0.0.2 na Macu). Nejde o novou regresi. Prahy a testy jsme nezměnili.
+
+Z čistého archivu strict gate 16/16 PASS a npm run check PASS. Nové fixture soubory jsou všechny v Gitu i jmenovitě v .dockerignore pro validační build; nic se nebere ze starého prototypu nebo /tmp závislostí. Skutečný Docker build nebyl spuštěn. Standardní linuxový release/build gate je proto stále nutný před produkčním nasazením; širší sadu neoznačujeme za plně zelenou.
+
+Místní browser wire záznam: 22 kontrolních POSTů (20 scénářů + samostatné ověření a screenshot) mělo pouze klíč ico na /api/firm. Neplatné IČO 27082441 neodešlo. 20 automatických mobilních kontrol PASS; žádné konzolové chyby.
