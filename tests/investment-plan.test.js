@@ -27,7 +27,7 @@ const combined=(p,outcomes)=>createCombinedResult({plan:p,outcomes,checkedAt},{n
 
 test('P8 registry entry, reason and rule id are additive', () => {
  assert.deepEqual(CHECKER_REGISTRY.investment,{entityKinds:['investment_offer'],runAt:'client',requiredDefault:true});
- assert.deepEqual(PLANNER_RULES.map(r=>r.id),['P1','P2','P3','P4','P5','P6','P7','P8']);
+ assert.deepEqual(PLANNER_RULES.map(r=>r.id),['P1','P2','P3','P4','P5','P6','P7','P8','P9']);
 });
 
 test('offer without IČO: one required, primary, browser-only investment step; no raw text in the plan', () => {
@@ -119,7 +119,7 @@ test('A5 covers investment on its own: even a hypothetical all-unknown completed
  const r=combined(p,[done(p.steps[0],investmentResult(SAFE))]);
  assert.deepEqual([r.aggregate.level,r.aggregate.reasons[0].ruleId],['not_assessable','A5']);
  // The A5 checker list itself includes investment (defence in depth beside the model invariant).
- assert.match(aggregate.toString(),/\['message','web','investment'\]\.includes\(r\.step\.checker\)/);
+ assert.match(aggregate.toString(),/\['message','web','investment','loan'\]\.includes\(r\.step\.checker\)/);
 });
 
 test('failed investment step never looks like a completed check', () => {

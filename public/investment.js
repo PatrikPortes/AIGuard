@@ -7,30 +7,8 @@ import {fromInvestment} from './investment-verdict.js';
 import {checkWebUrl} from './web-checker.js';
 import {coiResult} from './eshop-checker.js';
 
-export const REGISTRY_FOUND_HEADLINE='Firma nalezena v registrech';
-export const REGISTRY_FOUND_NOTE='Zápis firmy v registru nepotvrzuje oprávnění poskytovat investiční služby ani bezpečnost nabídky.';
-
-// Investment page only: a clean firm sub-result (level none_found) is shown neutrally as
-// "found in registers", never as a green safety signal. Presentation only: the CheckResult,
-// /api/firm, the combined verdict and other pages are unchanged; findings are untouched
-// because a none_found result has none.
-export function presentRegistryNeutral(container,result){
- const rows=container.querySelectorAll('.check-step');
- result.plan.steps.forEach((step,i)=>{
-  const outcome=result.outcomes[i];
-  if(step.checker!=='firm'||outcome?.status!=='done'||outcome.result.level!=='none_found')return;
-  const root=rows[i]?.querySelector('.check-detail .verdict-result[data-level="none_found"]');
-  if(!root)return;
-  root.dataset.presentation='registry-found';
-  const headline=root.querySelector('.verdict-headline'),symbol=headline?.querySelector('.verdict-symbol');
-  if(!headline||!symbol)return;
-  symbol.textContent='⚪';
-  headline.replaceChildren(symbol,container.ownerDocument.createTextNode(REGISTRY_FOUND_HEADLINE));
-  const note=container.ownerDocument.createElement('p');note.className='verdict-limitation registry-found-note';note.textContent=REGISTRY_FOUND_NOTE;
-  headline.closest('.verdict-heading')?.after(note);
- });
-}
-
+// The neutral clean-firm presentation is shared in check-view.js (S5.2) and enabled by
+// startInvestmentCheck; this page no longer post-processes the rendered result.
 export function validateOfferInput(offer,ico){
  const text=typeof offer==='string'?offer.trim():'';
  if(!text)return 'Vložte text investiční nabídky. Nic jsme neodeslali.';
@@ -79,8 +57,7 @@ if(typeof document!=='undefined'&&document.querySelector('#investment-form')){
   busy=true;submit.disabled=true;submit.setAttribute('aria-busy','true');
   entry.hidden=true;result.hidden=false;checklist.hidden=true;
   try{
-   const outcome=await startInvestmentCheck(combined,{offer:offer.value,ico:icoValue||undefined,evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData});
-   if(outcome)presentRegistryNeutral(combined,outcome);
+   await startInvestmentCheck(combined,{offer:offer.value,ico:icoValue||undefined,evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData});
    checklist.hidden=false;
   }finally{busy=false;submit.disabled=false;submit.removeAttribute('aria-busy');}
  });

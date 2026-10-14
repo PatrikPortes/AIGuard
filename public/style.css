@@ -452,7 +452,7 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
 body[data-flow="loan"] .hint{font-size:1rem;line-height:1.65;color:#3a4664}
 .not-found{max-width:760px;margin:32px auto;padding:32px}.not-found .character-avatar{width:120px;height:auto}.not-found-actions{display:flex;flex-wrap:wrap;gap:12px}.not-found-actions a{min-height:48px;padding:12px 18px;border:2px solid var(--brand-action);border-radius:14px;display:inline-flex;align-items:center;text-decoration:none;font-weight:700}
 
-#sender,#offer-ico{box-sizing:border-box;width:100%;min-height:48px;padding:12px 14px;font:inherit;color:var(--ink);background:var(--surface);border:2px solid #8b87a8;border-radius:12px}#sender:focus-visible,#offer-ico:focus-visible{outline:3px solid var(--brand-action);outline-offset:3px}.result-now.is-phishing-warning{padding:20px;border:2px solid #bd7300;border-left-width:6px;border-radius:16px;background:#fff4d8}.result-now.is-phishing-warning .primary-action{font-size:1.2rem;font-weight:800;line-height:1.6}
+#sender,#offer-ico,#loan-ico{box-sizing:border-box;width:100%;min-height:48px;padding:12px 14px;font:inherit;color:var(--ink);background:var(--surface);border:2px solid #8b87a8;border-radius:12px}#sender:focus-visible,#offer-ico:focus-visible,#loan-ico:focus-visible{outline:3px solid var(--brand-action);outline-offset:3px}.result-now.is-phishing-warning{padding:20px;border:2px solid #bd7300;border-left-width:6px;border-radius:16px;background:#fff4d8}.result-now.is-phishing-warning .primary-action{font-size:1.2rem;font-weight:800;line-height:1.6}
 
 /* The guides lead the result, with a small overlap above their cards. */
 .result-lead, .result-card:has(> .character-heading) { overflow: visible; }

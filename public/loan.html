@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Prověřit nabídku půjčky · Věřím tomu?</title>
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/verdict.css">
 <script src="/app.js" type="module"></script>
 <script src="/loan-cost.js" type="module"></script>
 <link rel="stylesheet" href="/loan-cost.css">
@@ -44,6 +45,9 @@
         <label for="content">Text nabídky půjčky</label>
         <textarea id="content" rows="4" maxlength="10000" required spellcheck="false" autocomplete="off" placeholder="Sem vložte text nabídky půjčky…" aria-describedby="content-help"></textarea>
         <p class="hint" id="content-help">Text nabídky nebo odkaz, nejvýše 10 000 znaků. Nepotřebné osobní údaje smažte.</p>
+        <label for="loan-ico">IČO poskytovatele (nepovinné)</label>
+        <input id="loan-ico" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="off" spellcheck="false" aria-describedby="loan-ico-help">
+        <p class="hint" id="loan-ico-help">Pokud IČO znáte, prověříme firmu v ARES a Registru DPH. Odešleme pouze IČO. Oprávnění poskytovat úvěry u ČNB automaticky neověřujeme.</p>
         <p class="hint">Pravidla můžete použít bez AI. Pokud zvolíte pomoc AI, text odešleme OpenAI. Limit je 3 AI kontroly za 24 hodin na anonymního návštěvníka. Odkazy neotevíráme.</p>
         <label class="consent" id="ai-consent" hidden><input type="checkbox" id="consent"><span id="consent-label">Souhlasím s odesláním vloženého textu AI poskytovateli. Před odesláním odstraním nepotřebné osobní údaje.</span></label>
         <button id="submit" type="submit" disabled><span id="submit-label">Prověřit zprávu</span> <span aria-hidden="true">→</span></button>
@@ -77,6 +81,7 @@
   <p id="summary" class="result-takeaway"></p>
   <p id="engine-note" class="hint" hidden></p>
 </div>
+<section id="check-combined" class="check-combined" aria-live="polite" hidden></section>
 <section class="result-card" aria-labelledby="signals-title"><div class="character-heading"><img id="signals-character" class="character-avatar" src="/assets/characters/optimized/robo-default.f64c5d6d87350e4eb1fa8dfc7bdca42d41b00de19ad8415e053051bbd1cb1000.webp" width="320" height="384" alt="" aria-hidden="true" loading="lazy" decoding="async"><h3 id="signals-title">Co si zaslouží pozornost</h3></div><h4 id="rules-signals-label" class="signal-group" hidden>Našla naše pravidla</h4><ul id="signals"></ul><div id="ai-signals-group" hidden><h4 class="signal-group">Doplnila AI</h4><ul id="ai-signals"></ul></div></section>
 <section id="loan-followup" class="result-card loan-followup" aria-labelledby="loan-followup-title" hidden><h3 id="loan-followup-title">Jde o nabídku půjčky?</h3><p>Odpovězte na dvě krátké otázky a výsledek upřesníme. Nemusíte odpovídat.</p><button type="button" id="loan-followup-open" class="secondary-action">Odpovědět na otázky</button></section>
 <section id="ai-card" class="result-card ai-card" aria-labelledby="ai-card-title" hidden><h3 id="ai-card-title">Co k tomu přidala AI</h3><p id="ai-uncertainty" class="ai-uncertainty"></p><ul id="ai-notes"></ul></section>

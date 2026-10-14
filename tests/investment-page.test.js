@@ -3,7 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createServer} from '../src/server.js';
-import {validateOfferInput,REGISTRY_FOUND_HEADLINE,REGISTRY_FOUND_NOTE} from '../public/investment.js';
+import {validateOfferInput} from '../public/investment.js';
+import {REGISTRY_FOUND_HEADLINE,REGISTRY_CONTEXT} from '../public/check-view.js';
+const REGISTRY_FOUND_NOTE=REGISTRY_CONTEXT.investment.neutral;
 import {isSafeCopy} from '../public/verdict-model.js';
 
 const read=f=>readFileSync(new URL('../public/'+f,import.meta.url),'utf8');
@@ -65,10 +67,16 @@ test('page script: existing modules only, no orchestrator, the only own request 
  assert.match(src,/startInvestmentCheck\(combined,\{offer:offer\.value,ico:icoValue\|\|undefined,evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData\}\)/);
 });
 
-test('neutral clean-firm presentation is scoped to the investment page (CSS attribute rule only)', () => {
+test('neutral clean-firm presentation: shared in check-view (S5.2), opt-in for investment/loan, never on Web or Message', () => {
  const css=read('verdict.css');
  assert.match(css,/\.verdict-result\[data-level=none_found\]\[data-presentation=registry-found\] \.verdict-lead\{background:#f4f5f9;border-color:#657089\}/);
- for(const f of ['verdict-view.js','check-view.js','check-flow.js','web-checker.js','web.html','firm.js'])assert.doesNotMatch(read(f),/registry-found|data-presentation|Firma nalezena v registrech/,f);
+ const view=read('check-view.js'),flow=read('check-flow.js');
+ assert.match(view,/export function renderCombinedResult\(container,result,\{normalizeUrl,focus=true,registryNeutral=false\}=\{\}\)/);
+ // Enabled only by the investment and loan starters; Web (S3.6) and Message (S3.7) keep the default.
+ assert.equal((flow.match(/registryNeutral:true/g)||[]).length,2);
+ assert.match(flow,/renderCombinedResult\(container,result,\{normalizeUrl:checkWebUrl\}\);/,'Web + Firma default');
+ assert.match(flow,/renderCombinedResult\(container,result,\{normalizeUrl:checkWebUrl,focus:false\}\);/,'Message default');
+ for(const f of ['verdict-view.js','web-checker.js','web.html','firm.js','investment.js'])assert.doesNotMatch(read(f),/registry-found|data-presentation|Firma nalezena v registrech/,f);
 });
 
 test('S4.7 (D5): homepage card is active and links to the page; the page is in the sitemap', () => {
@@ -84,6 +92,6 @@ test('S4.7 (D5): homepage card is active and links to the page; the page is in t
 
 test('S4.6 regression: the IČO field reuses the existing #sender field style (48px, full width, focus ring)', () => {
  const css=read('style.css');
- assert.match(css,/#sender,#offer-ico\{box-sizing:border-box;width:100%;min-height:48px;/);
- assert.match(css,/#sender:focus-visible,#offer-ico:focus-visible\{outline:3px solid var\(--brand-action\);outline-offset:3px\}/);
+ assert.match(css,/#sender,#offer-ico,#loan-ico\{box-sizing:border-box;width:100%;min-height:48px;/);
+ assert.match(css,/#sender:focus-visible,#offer-ico:focus-visible,#loan-ico:focus-visible\{outline:3px solid var\(--brand-action\);outline-offset:3px\}/);
 });

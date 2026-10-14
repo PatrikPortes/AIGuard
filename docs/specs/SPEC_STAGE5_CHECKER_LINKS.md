@@ -1,6 +1,6 @@
 # Stage 5 – Propojit checkery
 
-*Inventura a specifikace (S5.1). Nic není implementováno.*
+*Stav 2026-10-14: S5.1 specifikace; S5.2 (Půjčka → Firma) implementováno ve větvi `feat/stage5-s5.2-loan-firm`, rozhodnutí D1–D5 potvrzena podle doporučení. Další kroky nejsou implementovány.*
 *Produkce: `289f27389e75957ba3f2135bde35b8bf2bc3b031` (Stage 0–4), větev `release/web-checker-2-2026-10-13`.*
 *Navazuje na `SPEC_STAGE3_ORCHESTRATOR.md` (planner P1–P7, agregace A1–A6, kap. 12) a `SPEC_STAGE4_INVESTMENT.md` (P8, neutrální firma).*
 

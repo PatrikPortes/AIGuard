@@ -118,9 +118,16 @@ try{
   assert.match(await page.locator('#check-combined .check-steps').innerText(),/Web · banka-priklad\.invalid/);
   assert.equal(await page.locator('#check-combined .check-omitted').count(),0);
   assert.deepEqual(errors,[]);await page.close();scenarios++;}
- // 10) Loan page shares app.js: no combined flow, no errors.
- {const page=await browser.newPage({viewport:{width:375,height:740}});const errors=[];page.on('pageerror',e=>errors.push(String(e)));
-  await page.goto(base+'/proverit-pujcku',{waitUntil:'networkidle'});assert.equal(await page.locator('#check-combined').count(),0);
+ // 10) Loan page shares app.js. Since S5.2 it has its own Loan → Firm combined run (covered by
+ // loan-firm-browser.js); here: hidden on load, no errors, and a plain loan text (no IČO, no link)
+ // keeps the original single result with one /api/analyze and no orchestrator request.
+ {const page=await browser.newPage({viewport:{width:375,height:740}});const errors=[],requests=[];page.on('pageerror',e=>errors.push(String(e)));page.on('request',r=>requests.push(r.url()));
+  await page.goto(base+'/proverit-pujcku',{waitUntil:'networkidle'});assert.equal(await page.locator('#check-combined').isHidden(),true);
+  await page.locator('#submit:not([disabled])').waitFor();posts.length=0;requests.length=0;
+  await page.locator('#content').fill('Nabídka půjčky 20 000 Kč na 12 měsíců.');await page.locator('#submit').click();
+  await page.locator('#result').waitFor({state:'visible'});await page.waitForTimeout(300);
+  assert.equal(await page.locator('#check-combined').isHidden(),true);assert.deepEqual(posts.map(p=>p.url),['/api/analyze']);
+  assert(!requests.some(u=>/check-flow|\/api\/firm/.test(u)));
   assert.deepEqual(errors,[]);await page.close();scenarios++;}
  console.log(`Zpráva + Web + Firma browser: PASS (${scenarios} scenarios at 320/375/430 px; F5a first action kept, URL never sent by the orchestrator, only {"ico"} to /api/firm, no /api/check, limits, invalid IČO, outage, serious, XSS, timeout, loan page)`);
 }finally{await browser.close();server.close();}

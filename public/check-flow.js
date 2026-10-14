@@ -1,6 +1,6 @@
 import {planCheck,aggregate,createCombinedResult,validIco} from './check-plan.js';
 import {validateCheckResult} from './verdict-model.js';
-import {fromWeb,fromMessage} from './verdict-adapters.js';
+import {fromWeb,fromMessage,fromLoan} from './verdict-adapters.js';
 import {renderCheckProgress,renderCombinedResult} from './check-view.js';
 
 // S3.6/S3.7 client runner. URLs are planned and checked only in this browser
@@ -58,7 +58,21 @@ export async function runInvestmentCheck({offer,ico,url}={},{evaluateInvestment,
  return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,investment});
 }
 
-async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message,investment}){
+// S5.2: loan communication (P9) on /proverit-pujcku, optionally with the provider's IČO.
+// `analysis` is the completed /api/analyze (topic loan) response for exactly this text;
+// it is adopted with fromLoan and never re-requested.
+export function planLoanCheck({loan,ico}={},{checkWebUrl}={}){
+ if(typeof checkWebUrl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
+ return planCheck({loan,...(ico===undefined||ico===''?{}:{ico})},{runAt:'client',normalizeUrl:checkWebUrl});
+}
+export async function runLoanCheck({loan,ico,analysis,analysisMs=0}={},{checkWebUrl,coiResult,coiData=null,fetchImpl=globalThis.fetch,clock=Date.now,signal}={}){
+ if(typeof checkWebUrl!=='function'||typeof coiResult!=='function'||typeof fetchImpl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
+ const plan=planLoanCheck({loan,ico},{checkWebUrl});
+ const loanAdoption={analysis,durationMs:Number.isSafeInteger(analysisMs)&&analysisMs>=0?analysisMs:0};
+ return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,loanAdoption});
+}
+
+async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message,investment,loanAdoption}){
  const opts={normalizeUrl:checkWebUrl};
  const elapsed=begin=>Math.max(0,Math.floor(clock()-begin));
  const deadline=AbortSignal.timeout(plan.budget.deadlineMs);
@@ -98,6 +112,12 @@ async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signa
  const outcomes=await Promise.all(plan.steps.map(async step=>{
   const begin=clock();
   try{
+   if(step.checker==='loan'&&loanAdoption){
+    // Adopts the existing loan analysis; an invalid one fails this required step.
+    const candidate={stepId:step.id,status:'done',sourcesContacted:['none'],durationMs:loanAdoption.durationMs,result:fromLoan(loanAdoption.analysis,undefined,{checkedAt:new Date(clock()).toISOString()})};
+    aggregate(plan.steps,plan.steps.map(s=>s.id===step.id?candidate:failed(s)));
+    return candidate;
+   }
    if(step.checker==='message'&&message){
     const candidate={stepId:step.id,status:'done',sourcesContacted:['none'],durationMs:message.durationMs,result:adoptMessage(new Date(clock()).toISOString()).result};
     aggregate(plan.steps,plan.steps.map(s=>s.id===step.id?candidate:failed(s)));
@@ -164,12 +184,30 @@ export async function startInvestmentCheck(container,{offer,ico,url,evaluateInve
  try{
   const result=await runInvestmentCheck({offer,ico,url},{evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData,signal:controller.signal});
   if(controller.signal.aborted)return;
-  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl});
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,registryNeutral:true});
   return result;
  }catch{
   if(controller.signal.aborted)return;
   const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
   p.textContent='Prověření nabídky se nepodařilo dokončit. Nic jsme neodeslali kromě případného IČO. Zkuste to prosím znovu.';
+  container.replaceChildren(p);container.setAttribute('aria-busy','false');
+ }
+}
+
+// S5.2: rendered below the F5a loan result (focus stays there); clean firm shown neutrally.
+export async function startLoanCheck(container,{loan,ico,analysis,analysisMs,checkWebUrl,coiResult,coiData}){
+ resetWebFirmCheck(container);
+ const controller=new AbortController();current=controller;
+ container.hidden=false;renderCheckProgress(container);
+ try{
+  const result=await runLoanCheck({loan,ico,analysis,analysisMs},{checkWebUrl,coiResult,coiData,signal:controller.signal});
+  if(controller.signal.aborted)return;
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl,focus:false,registryNeutral:true});
+  return result;
+ }catch{
+  if(controller.signal.aborted)return;
+  const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
+  p.textContent='Společné prověření poskytovatele se nepodařilo dokončit. Výsledek kontroly půjčky výše zůstává platný; firmu ani oprávnění jsme neověřili.';
   container.replaceChildren(p);container.setAttribute('aria-busy','false');
  }
 }
