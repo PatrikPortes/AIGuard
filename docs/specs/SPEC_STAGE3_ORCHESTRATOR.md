@@ -59,6 +59,16 @@ public/check-flow.js        klientský runner pro stránky, kde vstup nesmí na 
 public/check-view.js        „Co jsme prověřili“ – rozšíření rendereru (používá renderVerdict pro dílčí výsledky).
 ```
 
+**Architektonické pravidlo (závazné):**
+- `public/check-plan.js` **nesmí importovat žádný checker**: `web-checker.js`, `eshop-checker.js`, `contract-*.js`, `loan*.js`, `firm*.js`, `src/*`. Smí importovat nejvýš `./verdict-model.js` (modul bez importů a bez DOM).
+- **URL normalizér `checkWebUrl` předává volající jako parametr** (dependency injection):
+  - `planCheck(input, {runAt, normalizeUrl})`;
+  - `validateCheckPlan(plan, {normalizeUrl})`.
+- Volající:
+  - serverový runner (S3.3) předává `checkWebUrl` z `../public/web-checker.js` (v Node bezpečné, DOM část se nespustí);
+  - Web stránka (S3.6) předává už načtený `checkWebUrl`.
+- Důvod: `web-checker.js` a transitivně `eshop-checker.js` při importu v prohlížeči připojují handlery k `#web-form` a `#operator-form`. Mimo stránku Web import padá (`TypeError … reading 'addEventListener'`, reprodukováno na `/proverit-firmu`).
+
 **Proč C:**
 - Planner a agregace musí být identické v prohlížeči i na serveru. Proto jsou v jednom čistém modulu, stejný vzor jako `verdict-model.js`.
 - Server smí spouštět jen to, co uživatel serveru stejně posílá: text zprávy, IČO. **URL zadaná do Web Checkeru se na server nikdy neposílá.** Proto má Web stránka klientský runner, který volá jen existující `/api/firm`.
@@ -240,6 +250,7 @@ CO JSME PROVĚŘILI
 | Krok | Obsah | Soubory (jen tyto) | Závisí na | Nesmí se měnit |
 |---|---|---|---|---|
 | **S3.1** | Model + planner (P1–P7) + validace plánu | `public/check-plan.js` (nový), `tests/check-plan.test.js` (nový) | — | vše ostatní |
+| **S3.2a** (povinný první krok S3.2) | Odstranit import `web-checker.js` z `check-plan.js`; normalizér URL jen parametrem `normalizeUrl` v `planCheck` a `validateCheckPlan`; `text`/`url` bez `normalizeUrl` → `throw Error('URL_NORMALIZER_REQUIRED')`, vstup jen s IČO ho nevyžaduje | `public/check-plan.js`, `tests/check-plan.test.js` | S3.1 | `public/web-checker.js`, `public/eshop-checker.js`, `src/server.js`, `web.html`, F5a soubory |
 | **S3.2** | Agregace A1–A6 + `validateCombinedResult` | `public/check-plan.js`, `tests/check-aggregate.test.js` (nový) | S3.1 | `verdict-model.js`, adaptéry |
 | **S3.3** | Serverový runner: in-process kroky (`message` = `analyze` + `fromMessage`; `web` = `checkWebUrl` + `coiResult(readCoiSnapshot)` + `fromWeb`; `firm` = sdílený `firmClient` + `evaluateFirm` + `fromFirm`), deadline, dedup, mapování limitů na `skipped` | `src/check-runner.js` (nový), `tests/check-runner.test.js` (nový, fake checkery + fake hodiny) | S3.1, S3.2 | checkery, `firm-sources.js`, relay |
 | **S3.4** | `POST /api/check` (přesné klíče, Origin/session, sdílené limitery a gate, 64 kB) | `src/server.js` (jen nová větev + předání sdílených instancí), `tests/check-api.test.js` (nový) | S3.3 | ostatní endpointy a jejich limity, CSP |
@@ -258,6 +269,12 @@ CO JSME PROVĚŘILI
 3. Limity: nikdy > 4 kroky, > 2 web, > 1 firm, > 1 message (property test 1 000 náhodných vstupů).
 4. Výstup neobsahuje surový text, jen `chars`.
 5. Výkon: text 20 000 znaků s 500 kandidáty URL/IČO naplánován < 20 ms CPU (`process.threadCpuUsage`).
+
+**S3.2a – planner bez importu checkeru**
+1. Statický test: `public/check-plan.js` importuje nejvýš `./verdict-model.js`, nic jiného.
+2. Všechny dosavadní testy S3.1 dávají shodné plány (`deepEqual` fixture) při předání `checkWebUrl` z `../public/web-checker.js`.
+3. `text` nebo `url` bez `normalizeUrl` → `URL_NORMALIZER_REQUIRED`. `{ico}` bez normalizéru → validní plán.
+4. Produkční `web-checker.js`, `eshop-checker.js`, `server.js` a `web.html` jsou beze změny (diff proti základu).
 
 **S3.2 – agregace**
 1. Generovaná pravdivostní tabulka levelů (5) × status (`done`, `failed`, `skipped`) × required (ano/ne) × primary pro 1–4 kroky. Výsledek odpovídá A1–A6.
@@ -345,7 +362,7 @@ VYTVOŘ POUZE:
 public/check-plan.js – čistý ES modul (žádný DOM, fetch, fs, process, Date.now bez injekce):
   import {validateRegistryInput} – NE (je v src/); implementuj vlastní validIco(ico) se stejným checksumem
   jako src/eshop-sources.js (8 číslic, vážený součet 8..2, mod 11 → kontrolní číslice).
-  import {checkWebUrl} from './web-checker.js'   // jen pro normalizaci URL; web-checker je čistý
+  import {checkWebUrl} from './web-checker.js'   // NAHRAZENO v S3.2a: check-plan.js nesmí importovat checker; normalizér předává volající (normalizeUrl)
   export const PLANNER_VERSION = 'p1';
   export const BUDGET = Object.freeze({maxSteps:4, maxUrls:2, maxIcos:1, deadlineMs:5000});
   export const CHECKER_REGISTRY = Object.freeze({
