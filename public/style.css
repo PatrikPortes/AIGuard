@@ -488,3 +488,22 @@ body[data-flow="loan"] .hint{font-size:1rem;line-height:1.65;color:#3a4664}
  .site-header .nav-secondary{display:none}
  .site-header .nav-happened{min-height:48px;padding:8px 10px;font-size:.875rem;white-space:nowrap}
 }
+
+/* Compact homepage introduction; existing guides and design tokens retained. */
+.welcome { grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:32px; padding:32px 0 28px; }
+.welcome-eyebrow { margin-bottom:14px; }
+.welcome h1 { font-size:clamp(2.8rem,5.2vw,4.6rem); margin-bottom:20px; }
+.welcome-intro { margin:0 0 18px; line-height:1.55; }
+.welcome-team { font-size:1rem; line-height:1.6; margin:18px 0 0; }
+.welcome-action { min-height:52px; box-sizing:border-box; margin-top:0; }
+.welcome-characters { min-width:0; }
+@media(max-width:760px) {
+ .welcome { grid-template-columns:minmax(0,1fr); grid-template-areas:"eyebrow" "title" "intro" "action" "note" "characters" "team"; gap:16px; padding:24px 0; }
+ .welcome-eyebrow { grid-area:eyebrow; margin:0; }
+ .welcome h1 { grid-area:title; font-size:clamp(2.3rem,9.5vw,3.4rem); margin:0; }
+ .welcome-intro { grid-area:intro; margin:0; }
+ .welcome-action { grid-area:action; margin:0; }
+ .welcome-note { grid-area:note; margin:0; text-align:center; }
+ .welcome-characters { grid-area:characters; }
+ .welcome-team { grid-area:team; margin:0; }
+}

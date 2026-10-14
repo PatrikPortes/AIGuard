@@ -12,8 +12,8 @@
 <meta property="og:image:alt" content="Věrka a Robo — Věřím tomu? Radši ověřit než litovat.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://verimtomu.fyi/assets/brand/share-v2.jpg">
-<meta name="description" content="Najděte ve smlouvě místa, která stojí za otázku před podpisem. Text a PDF zpracujeme místně; AI je volitelná. Nejde o právní posouzení.">
-<meta property="og:description" content="Najděte ve smlouvě místa, která stojí za otázku před podpisem. Text a PDF zpracujeme místně; AI je volitelná. Nejde o právní posouzení.">
+<meta name="description" content="Najděte ve smlouvě místa, která stojí za otázku před podpisem. Text i PDF s textovou vrstvou zpracujeme místně pomocí pravidel. Nejde o právní posouzení.">
+<meta property="og:description" content="Najděte ve smlouvě místa, která stojí za otázku před podpisem. Text i PDF s textovou vrstvou zpracujeme místně pomocí pravidel. Nejde o právní posouzení.">
 <meta property="og:url" content="https://verimtomu.fyi/proverit-smlouvu">
 <meta property="og:site_name" content="Věřím tomu?">
 <link rel="canonical" href="https://verimtomu.fyi/proverit-smlouvu">
@@ -33,7 +33,7 @@
   </nav>
 </header>
 <main><nav class="flow-navigation" aria-label="Výběr kontroly"><a href="/">← Zpět na úvod</a><a href="/overit-zpravu">Prověřit zprávu</a><a href="/proverit-web">Prověřit web</a><a href="/proverit-pujcku">Prověřit půjčku</a></nav>
-<section class="panel contract-entry" id="contract-entry"><div class="contract-card-heading"><img id="contract-verka" width="96" height="96" alt="Věrka, vaše průvodkyně"><h1>Prověřit smlouvu</h1></div><p>Pomůžu vám najít místa, na která se vyplatí zeptat, než smlouvu podepíšete. Nejde o právní posouzení.</p>
+<section class="panel contract-entry" id="contract-entry"><div class="contract-card-heading"><img id="contract-verka" width="96" height="96" alt="Věrka, vaše průvodkyně"><h1>Prověřit smlouvu</h1></div><p>Pomůžu vám najít místa, na která se vyplatí zeptat, než smlouvu podepíšete. Nejde o právní posouzení.</p><p class="contract-help">Kontrola smlouvy nyní běží pomocí pravidel bez AI. Text i PDF zůstávají ve vašem prohlížeči.</p>
 <form id="contract-form"><fieldset><legend>Typ smlouvy</legend><div id="contract-types" class="contract-type-options"></div></fieldset>
 <label for="contract-text">Text smlouvy</label><textarea id="contract-text" maxlength="40000" required aria-describedby="contract-limit"></textarea><p class="contract-help" id="contract-limit">Nejvýše 40 000 znaků, zhruba 15 stran. Nepotřebné osobní údaje můžete smazat. Bez AI text nikam neodesíláme.</p><p id="contract-count" aria-live="polite"></p>
 <label for="contract-file">Nebo vyberte PDF s textovou vrstvou</label><input id="contract-file" type="file" accept=".pdf,application/pdf" aria-describedby="contract-pdf-help"><p class="contract-help" id="contract-pdf-help">Soubor zůstane ve vašem prohlížeči. Nejvýše 10 MB a 40 stran. Skeny, šifrované PDF, DOCX ani fotografie zatím nečteme.</p><button type="button" id="contract-cancel-pdf" hidden>Zrušit čtení PDF</button>
