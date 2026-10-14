@@ -8,6 +8,8 @@ import {renderCheckProgress,renderCombinedResult} from './check-view.js';
 // existing /api/firm with the IČO (P3/P5); a URL, host or path is never sent.
 // The message step (P1) adopts the result the page already received from the
 // existing /api/analyze. Checkers are injected by the page (no checker import, no fan-out).
+// S4.4: the investment step (P8) runs the injected S4.1 rules + S4.2 adapter in this
+// browser; the offer text is never sent anywhere (only {"ico"} to /api/firm).
 const failed=(step,durationMs=0)=>({stepId:step.id,status:'failed',sourcesContacted:[],durationMs,result:null});
 const skipped=(step,reason,durationMs=0)=>({...failed(step,durationMs),status:'skipped',skipReason:reason});
 class Skip extends Error {constructor(reason){super(reason);this.reason=reason;}}
@@ -43,7 +45,20 @@ export async function runMessageCheck({text,analysis,analysisMs=0}={},{checkWebU
  return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message});
 }
 
-async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message}){
+// S4.4: investment offer (+ optional IČO field, optional URL field), planned with P8.
+export function planInvestmentCheck({offer,ico,url}={},{checkWebUrl}={}){
+ if(typeof checkWebUrl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
+ return planCheck({offer,...(ico===undefined||ico===''?{}:{ico}),...(url===undefined||url===''?{}:{url})},{runAt:'client',normalizeUrl:checkWebUrl});
+}
+export async function runInvestmentCheck({offer,ico,url}={},{evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData=null,fetchImpl=globalThis.fetch,clock=Date.now,signal}={}){
+ if(typeof evaluateInvestment!=='function'||typeof fromInvestment!=='function'||typeof checkWebUrl!=='function'||typeof coiResult!=='function'||typeof fetchImpl!=='function')throw Error('INVALID_FLOW_DEPENDENCIES');
+ const plan=planInvestmentCheck({offer,ico,url},{checkWebUrl});
+ // The raw offer stays in this closure; the plan and the result carry only quotes/chars.
+ const investment={offer,ico:plan.input.icoField??undefined,evaluateInvestment,fromInvestment};
+ return runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,investment});
+}
+
+async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signal,message,investment}){
  const opts={normalizeUrl:checkWebUrl};
  const elapsed=begin=>Math.max(0,Math.floor(clock()-begin));
  const deadline=AbortSignal.timeout(plan.budget.deadlineMs);
@@ -70,6 +85,11 @@ async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signa
    return {result,sourcesContacted:[]};
   }catch(e){if(all.aborted&&!(e instanceof Skip&&e.reason!=='deadline'))throw new Skip('deadline');throw e;}
  }
+ // Local investment rules (S4.1) → CheckResult (S4.2). ČNB is never checked automatically.
+ function evaluateOffer(checkedAt){
+  const evaluation=investment.evaluateInvestment(investment.offer,investment.ico===undefined?{}:{ico:investment.ico});
+  return {result:investment.fromInvestment(evaluation,{checkedAt}),sourcesContacted:['none']};
+ }
  // Adopts the already completed server analysis; an invalid one fails this step.
  function adoptMessage(checkedAt){
   return {result:fromMessage(message.analysis,{checkedAt}),sourcesContacted:['none']};
@@ -85,7 +105,7 @@ async function runPlan(plan,{checkWebUrl,coiResult,coiData,fetchImpl,clock,signa
    }
    if(all.aborted)throw new Skip('deadline');
    const checkedAt=new Date(clock()).toISOString();
-   const data=step.checker==='web'&&step.runAt==='client'?await web(step,checkedAt):step.checker==='firm'?await firm(step):null;
+   const data=step.checker==='web'&&step.runAt==='client'?await web(step,checkedAt):step.checker==='firm'?await firm(step):step.checker==='investment'&&step.runAt==='client'&&investment?evaluateOffer(checkedAt):null;
    if(!data)return skipped(step,'budget');
    if(all.aborted)throw new Skip('deadline');
    const candidate={stepId:step.id,status:'done',sourcesContacted:data.sourcesContacted,durationMs:elapsed(begin),result:data.result};
@@ -132,6 +152,24 @@ export async function startMessageCheck(container,{text,analysis,analysisMs,chec
   if(controller.signal.aborted)return;
   const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
   p.textContent='Společné prověření odkazů a firmy se nepodařilo dokončit. Výsledek kontroly zprávy výše zůstává platný; odkazy ani firmu jsme neověřili.';
+  container.replaceChildren(p);container.setAttribute('aria-busy','false');
+ }
+}
+
+// S4.4: dedicated investment page. Focus moves to the combined headline (S3.5 rule).
+export async function startInvestmentCheck(container,{offer,ico,url,evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData}){
+ resetWebFirmCheck(container);
+ const controller=new AbortController();current=controller;
+ container.hidden=false;renderCheckProgress(container);
+ try{
+  const result=await runInvestmentCheck({offer,ico,url},{evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData,signal:controller.signal});
+  if(controller.signal.aborted)return;
+  renderCombinedResult(container,result,{normalizeUrl:checkWebUrl});
+  return result;
+ }catch{
+  if(controller.signal.aborted)return;
+  const p=container.ownerDocument.createElement('p');p.setAttribute('role','alert');
+  p.textContent='Prověření nabídky se nepodařilo dokončit. Nic jsme neodeslali kromě případného IČO. Zkuste to prosím znovu.';
   container.replaceChildren(p);container.setAttribute('aria-busy','false');
  }
 }

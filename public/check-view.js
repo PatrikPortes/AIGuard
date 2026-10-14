@@ -2,7 +2,7 @@ import {validateCombinedResult} from './check-plan.js';
 import {renderVerdict} from './verdict-view.js';
 import {characterAssets} from './character-assets.js';
 const SYMBOL={serious:'🔴',attention:'🟠',none_found:'🟢',incomplete:'⚪',not_assessable:'⚪'};
-const CHECKER={message:'Zpráva',web:'Web',firm:'Firma',loan:'Půjčka',contract:'Smlouva'};
+const CHECKER={message:'Zpráva',web:'Web',firm:'Firma',loan:'Půjčka',contract:'Smlouva',investment:'Investice'};
 const SOURCE={ARES:'ARES',ARES_VR:'Veřejný rejstřík přes ARES',ARES_RES:'RES přes ARES',DPH:'Registr DPH',COI:'Místní kopie seznamu ČOI',none:'Pravidla bez externího zdroje'};
 const SOURCE_STATUS={checked:'kontrola proběhla',not_found:'kontrola proběhla, záznam nenalezen',unavailable:'nedostupné, neověřeno',skipped:'neprovedeno',not_applicable:'nevztahuje se'};
 const SKIP={rate_limited:'Vyčerpán limit služby.',deadline:'Vypršel čas pro kontrolu.',duplicate:'Duplicitní kontrola.',budget:'Kontrola přesahuje rozpočet plánu.'};
@@ -46,6 +46,8 @@ export function renderCombinedResult(container,result,{normalizeUrl,focus=true}=
   if(outcome.sourcesContacted.length)row.append(el('p','Zdroje vykázané kontrolou: '+outcome.sourcesContacted.map(s=>SOURCE[s]).join(', ')));
   else row.append(el('p','Přesné kontakty se zdroji kontrola nevykázala. Neodvozujeme je z výsledku ani z cache.'));
   if(step.reason.ruleId==='P5')row.append(el('p','Neověřili jsme, že zprávu poslala tato firma.'));
+  // S4.4: a registry record of the provider is not an investment authorisation or a safety signal.
+  if(step.checker==='firm'&&result.plan.steps.some(s=>s.checker==='investment'))row.append(el('p','Zápis v obchodním rejstříku neznamená oprávnění k investičním službám ani bezpečnost investice.'));
   if(done){const detail=el('div',undefined,'check-detail');renderVerdict(detail,outcome.result,{focus:false});row.append(detail);}checks.append(row);
  }
  if(result.plan.notPlanned.length){const omitted=el('section',undefined,'check-omitted');omitted.append(el('h3','Co jsme neprověřili'));for(const n of result.plan.notPlanned)omitted.append(el('p',(n.kind==='ico'?'IČO':'Odkaz')+(n.value?' · '+n.value:'')+' — '+OMIT[n.reason]));checks.append(omitted);}
