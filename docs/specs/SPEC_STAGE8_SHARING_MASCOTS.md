@@ -1,6 +1,6 @@
 # Stage 8 – Sdílení výsledků a Věrka s Robem: inventura a specifikace (S8.1)
 
-*Stav 2026-10-14: pouze S8.1 (inventura a návrh). Nic není implementováno. Soutěžní deadline 26. 10. 2026.*
+*Stav 2026-10-14: S8.1 schválena; S8.2–S8.4 a S8.6 implementovány ve větvi `feat/stage8-sharing` (review `docs/reviews/STAGE8.md`). Animace jsou mimo Stage 8.*
 
 - **Produkční baseline:** `a961078dddc40e0743ab50e80a120c8aa116ccd1` (Stage 7.1). Ověřeno 2026-10-14: HEAD `release/web-checker-2-2026-10-13` = `a961078`, fast-forward z Stage 7 `6980bc5`.
 - **Stage 7.1** (`fix/stage7-growmate-links-layout`) mění jen odkazy GrowMate, zarovnání kontaktních údajů a patičku. Neovlivňuje ilustrace ani výsledkové komponenty, takže inventura níže platí beze změny. Tato specifikace je založená na `a961078`; implementace Stage 8 vznikne ze stejné revize.
