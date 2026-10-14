@@ -41,7 +41,7 @@ export class AdmissionGate {
   }
 }
 
-export function readJson(req, { maxBytes = 65536, timeoutMs = 5000, signal }) {
+export function readJson(req, { maxBytes = 65536, timeoutMs = 5000, signal, validateText }) {
   if (req.headers['content-encoding'] && req.headers['content-encoding'] !== 'identity') return Promise.reject(new ServiceError('UNSUPPORTED_ENCODING', 415));
   if (Number(req.headers['content-length']) > maxBytes) return Promise.reject(new ServiceError('BODY_TOO_LARGE', 413));
   return new Promise((resolve, reject) => {
@@ -61,7 +61,7 @@ export function readJson(req, { maxBytes = 65536, timeoutMs = 5000, signal }) {
     };
     const end = () => {
       cleanup();
-      try { resolve(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)))); }
+      try { const text=new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks));if(validateText&&!validateText(text))throw Error('Invalid wire input');resolve(JSON.parse(text)); }
       catch { reject(new ServiceError('INVALID_JSON', 400)); }
     };
     const timer = setTimeout(abort, timeoutMs);

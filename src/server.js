@@ -1,3 +1,6 @@
+import {createFirmSources} from './firm-sources.js';
+import {evaluateFirm} from './firm-rules.js';
+import {fromFirm} from '../public/firm-verdict.js';
 import {createContractRuntime}from'./ai/contract-pipeline.js';
 import{validateContractInput}from'../public/contract-core.js';
 import {readCoiSnapshot,validateRegistryInput,lookupAres,aresRelayFromEnv}from'./eshop-sources.js';
@@ -19,6 +22,16 @@ import { characterAssetFiles } from '../public/character-assets.js';
 import { AdmissionGate, checkBrowserRequest, checkRequestHeaders, readJson, requestPath } from './http-security.js';
 
 const assets = new Map([
+  ['/proverit-firmu',['firm.html','text/html; charset=utf-8']],
+  ['/firm.js',['firm.js','text/javascript; charset=utf-8']],
+  ['/firm.css',['firm.css','text/css; charset=utf-8']],
+  ['/firm-verdict.js',['firm-verdict.js','text/javascript; charset=utf-8']],
+  ['/verdict-model.js',['verdict-model.js','text/javascript; charset=utf-8']],
+  ['/verdict-catalog.js',['verdict-catalog.js','text/javascript; charset=utf-8']],
+  ['/verdict-adapters.js',['verdict-adapters.js','text/javascript; charset=utf-8']],
+  ['/verdict-view.js',['verdict-view.js','text/javascript; charset=utf-8']],
+  ['/verdict.css',['verdict.css','text/css; charset=utf-8']],
+
   ['/proverit-smlouvu', ['smlouva.html', 'text/html; charset=utf-8']],
   ['/contract.js', ['contract.js', 'text/javascript; charset=utf-8']],
   ['/contract.css', ['contract.css', 'text/css; charset=utf-8']],
@@ -123,7 +136,7 @@ function serviceError(res, error) {
   send(res, status, { code, error: messages[code] || 'AI ověření je dočasně nedostupné. Zkuste to později. Výsledek nebyl vytvořen.' });
 }
 export function createServer({
-  contractPipeline=createContractRuntime(), registryRelay=aresRelayFromEnv(),
+  contractPipeline=createContractRuntime(), registryRelay=aresRelayFromEnv(), firmSources,
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
   usageStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
@@ -142,6 +155,10 @@ export function createServer({
   const staticLimiter = new WindowLimiter({ limit: staticRateLimit, windowMs: 60000, clock: limiterClock });
   const staticByteLimiter = new WindowLimiter({ limit: staticBytesPerMinute, windowMs: 60000, clock: limiterClock });
   const requests = new AdmissionGate(maxActiveRequests);
+  const firmClient=firmSources||createFirmSources({relay:registryRelay,clock:limiterClock});
+  const firmRequests=new AdmissionGate(2);
+  const firmLimiter=new WindowLimiter({limit:20,windowMs:60000,clock:limiterClock,maxKeys:1});
+  const firmSessionLimiter=new WindowLimiter({limit:10,windowMs:60000,clock:limiterClock});
   const registryRequests = new AdmissionGate(2);
   const registryLimiter = new WindowLimiter({limit:20,windowMs:60000,clock:limiterClock,maxKeys:1});
   const analyses = new AdmissionGate(maxConcurrentAnalyses);
@@ -179,7 +196,7 @@ export function createServer({
       releaseRequest = requests.enter();
       checkRequestHeaders(req);
       const path = requestPath(req.url);
-      const allowedMethod = ['/api/analyze','/api/eshop-operator','/api/analyze-contract'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session','/api/contract-status'].includes(path) ? 'GET' : null;
+      const allowedMethod = ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm'].includes(path) ? 'POST' : assets.has(path) || ['/api/health', '/api/session','/api/contract-status'].includes(path) ? 'GET' : null;
       if (allowedMethod && req.method !== allowedMethod) {
         rejectBody(); res.setHeader('Allow', allowedMethod);
         return send(res, 405, { code: 'METHOD_NOT_ALLOWED', error: 'Tato metoda není podporována.' });
@@ -194,7 +211,7 @@ export function createServer({
         sessions.get(req, res);
         return send(res, 200, pipeline.status());
       }
-      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator','/api/analyze-contract'].includes(path)) {
+      if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm'].includes(path)) {
         // Resolve only the explicitly configured ingress; never trust X-Forwarded-For.
         const clientIp = resolveClientIp(req);
         checkBrowserRequest(req, publicOrigin);
@@ -215,9 +232,9 @@ export function createServer({
           bodyReleases.push(prefix48Bodies.enter(sessions.hashIp(clientIdentity(clientIp, 48))));
         }
         bodyReleases.push(bodyRequests.enter());
-        const input = await readJson(req, { maxBytes:path === '/api/analyze-contract'?262144:path === '/api/eshop-operator'?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal });
+        const input = await readJson(req, { maxBytes:path === '/api/analyze-contract'?262144:['/api/eshop-operator','/api/firm'].includes(path)?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal, validateText:path==='/api/firm'?text=>/^\s*\{\s*"ico"\s*:\s*"\d{8}"\s*\}\s*$/.test(text):undefined });
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
-        const preparedInput = path === '/api/analyze-contract' ? (()=>{try{return validateContractInput(input);}catch(e){throw new ServiceError(e.message,400);}})() : path === '/api/eshop-operator' ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
+        const preparedInput = path === '/api/analyze-contract' ? (()=>{try{return validateContractInput(input);}catch(e){throw new ServiceError(e.message,400);}})() : ['/api/eshop-operator','/api/firm'].includes(path) ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
         if (clientIdentity(clientIp).startsWith('ipv6:')) {
           prefix56Limiter.check(sessions.hashIp(clientIdentity(clientIp, 56)));
@@ -239,6 +256,12 @@ export function createServer({
           });
           const verified = await Promise.race([botVerifier({ token: typeof input?.bot_token === 'string' ? input.bot_token.slice(0, 4096) : '', ip: clientIp, signal: checkSignal }), rejected]);
           if (!verified) throw new ServiceError('BOT_CHECK_REQUIRED', 403);
+        }
+        if(path==='/api/firm'){
+          globalLimiter.check('analysis');firmSessionLimiter.check(sessionId);firmLimiter.check('firm');
+          try{releaseAnalysis=firmRequests.enter();}catch{throw new ServiceError('RATE_LIMITED',429);}
+          const profile=await firmClient.profile({ico:preparedInput},{signal:controller.signal});
+          if(!controller.signal.aborted)return send(res,200,fromFirm(profile,evaluateFirm(profile,{now:limiterClock()})));return;
         }
         if(path === '/api/eshop-operator'){
           globalLimiter.check('analysis');registryLimiter.check('registry');
