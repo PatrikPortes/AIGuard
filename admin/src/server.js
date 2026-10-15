@@ -40,7 +40,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const seo={configured:false,setupError:'not_configured'};let scheduler=null;
  if(settings.gsc.credentialsFile){
   try{const account=await loadGoogleCredentials(settings.gsc.credentialsFile);const client=new GscClient({siteUrl:settings.gsc.siteUrl,account});
-   seo.configured=true;seo.setupError=null;scheduler=createGscScheduler({run:async()=>{const r=await syncGsc({client,db:store.db});if(r.status!=='ok')console.log('Search Console sync failed: '+r.error+'.');return r;}});}
+   seo.configured=true;seo.setupError=null;scheduler=createGscScheduler({run:async()=>{const r=await syncGsc({client,db:store.db});if(r.status!=='ok')console.log('Search Console sync failed: '+r.error+' (request='+(r.request??'-')+', detail='+(r.detail??'-')+', calls='+r.calls+').');return r;}});}
   catch(e){seo.setupError=e instanceof GscError?e.code:'invalid_credentials';console.log('Search Console disabled: '+seo.setupError+'.');}
  }
  const app=createDashboard({settings,store,seo,verify:accessVerifier(settings),analytics:new CloudflareAnalytics(settings)});

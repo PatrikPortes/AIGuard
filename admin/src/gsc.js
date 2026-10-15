@@ -11,7 +11,11 @@ export const SCOPE='https://www.googleapis.com/auth/webmasters.readonly';
 export const SITE_URLS=Object.freeze(['sc-domain:verimtomu.fyi','https://verimtomu.fyi/']);
 const TOKEN_MAX=65536,QUERY_MAX=1048576,TIMEOUT=15000;
 
-export class GscError extends Error{constructor(code){super(code);this.code=code;}}
+// `detail` is a fixed diagnostic label (phase and reason, e.g. "token.expires_in", "api.http_500"):
+// never a value, body, token or secret. It is safe to log and is not part of the message.
+export class GscError extends Error{constructor(code,detail=null){super(code);this.code=code;this.detail=detail;}}
+// Network failure label from the error cause code only (e.g. ENOTFOUND, UND_ERR_CONNECT_TIMEOUT, TimeoutError).
+const netDetail=(phase,e)=>{const c=e?.cause?.code??e?.name;return phase+'.network'+(typeof c==='string'&&/^[A-Za-z_]{2,40}$/.test(c)?'_'+c:'');};
 
 async function readCredentials(path){
  let raw;try{raw=await readFile(path);}catch{throw new GscError('not_configured');}
@@ -49,12 +53,12 @@ async function serviceAccount(data){
  return Object.freeze({kind:'service_account',email:data.client_email,key});
 }
 
-async function boundedJson(response,limit){
- const reader=response.body?.getReader();if(!reader)throw new GscError('invalid_response');
+async function boundedJson(response,limit,phase='api'){
+ const reader=response.body?.getReader();if(!reader)throw new GscError('invalid_response',phase+'.body_missing');
  const parts=[];let size=0;
- try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit)throw new GscError('invalid_response');parts.push(value);}}
+ try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit)throw new GscError('invalid_response',phase+'.body_too_large');parts.push(value);}}
  finally{await reader.cancel().catch(()=>{});}
- try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new GscError('invalid_response');}
+ try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new GscError('invalid_response',phase+'.json_parse');}
 }
 const codeFor=status=>status===401?'auth':status===403?'permissions':status===429?'rate_limited':'upstream';
 
@@ -78,17 +82,21 @@ export class GscClient{
   let response;
   try{response=await this.fetcher(TOKEN_URL,{method:'POST',redirect:'error',headers:{'Content-Type':'application/x-www-form-urlencoded'},
    body:new URLSearchParams(form).toString(),signal:AbortSignal.timeout(TIMEOUT)});}
-  catch{throw new GscError('upstream');}
+  catch(e){throw new GscError('upstream',netDetail('token',e));}
   if(!response.ok){
    // A revoked, expired (6 months unused, Testing mode) or superseded refresh token is "invalid_grant":
    // only a new one-time authorization helps. Only the OAuth error code is read, never echoed.
-   if(oauth&&response.status===400){let error=null;try{error=(await boundedJson(response,TOKEN_MAX))?.error;}catch{}
-    throw new GscError(error==='invalid_grant'?'reauth_required':'auth');}
-   await response.body?.cancel().catch(()=>{});throw new GscError(response.status===400||response.status===401?'auth':codeFor(response.status));}
-  const data=await boundedJson(response,TOKEN_MAX);
-  if(typeof data.access_token!=='string'||!data.access_token||data.access_token.length>4096||!Number.isFinite(data.expires_in)||data.expires_in<=0)throw new GscError('invalid_response');
+   // Only Google's own OAuth error code (a fixed vocabulary) is kept as a diagnostic label.
+   if(oauth&&response.status===400){let error=null;try{error=(await boundedJson(response,TOKEN_MAX,'token'))?.error;}catch{}
+    const label=typeof error==='string'&&/^[a-z_]{3,40}$/.test(error)?error:'unknown';
+    throw new GscError(error==='invalid_grant'?'reauth_required':'auth','token.http_400_'+label);}
+   await response.body?.cancel().catch(()=>{});throw new GscError(response.status===400||response.status===401?'auth':codeFor(response.status),'token.http_'+response.status);}
+  const data=await boundedJson(response,TOKEN_MAX,'token');
+  if(!data||typeof data!=='object')throw new GscError('invalid_response','token.not_object');
+  if(typeof data.access_token!=='string'||!data.access_token||data.access_token.length>4096)throw new GscError('invalid_response','token.access_token');
+  if(!Number.isFinite(data.expires_in)||data.expires_in<=0)throw new GscError('invalid_response','token.expires_in');
   // The grant must stay read-only: any scope other than webmasters.readonly is refused.
-  if(oauth&&data.scope!==undefined&&(typeof data.scope!=='string'||data.scope.trim().split(/\s+/).some(s=>s!==SCOPE)))throw new GscError('invalid_scope');
+  if(oauth&&data.scope!==undefined&&(typeof data.scope!=='string'||data.scope.trim().split(/\s+/).some(s=>s!==SCOPE)))throw new GscError('invalid_scope','token.scope');
   this.cached={value:data.access_token,expires:now+Math.min(data.expires_in,3600)*1000};
   return this.cached.value;
  }
@@ -98,10 +106,11 @@ export class GscClient{
   let response;
   try{response=await this.fetcher(API_ORIGIN+'/webmasters/v3/sites/'+encodeURIComponent(this.siteUrl)+'/searchAnalytics/query',{method:'POST',redirect:'error',
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(TIMEOUT)});}
-  catch{throw new GscError('upstream');}
-  if(!response.ok){await response.body?.cancel().catch(()=>{});if(response.status===401)this.cached=null;throw new GscError(codeFor(response.status));}
-  const data=await boundedJson(response,QUERY_MAX);
-  if(!data||typeof data!=='object'||(data.rows!==undefined&&!Array.isArray(data.rows)))throw new GscError('invalid_response');
+  catch(e){throw new GscError('upstream',netDetail('api',e));}
+  if(!response.ok){await response.body?.cancel().catch(()=>{});if(response.status===401)this.cached=null;throw new GscError(codeFor(response.status),'api.http_'+response.status);}
+  const data=await boundedJson(response,QUERY_MAX,'api');
+  if(!data||typeof data!=='object'||Array.isArray(data))throw new GscError('invalid_response','api.not_object');
+  if(data.rows!==undefined&&!Array.isArray(data.rows))throw new GscError('invalid_response','api.rows_not_array');
   return data;
  }
 }

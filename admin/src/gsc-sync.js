@@ -8,8 +8,10 @@ const DAY=86400000;
 const iso=ms=>new Date(ms).toISOString().slice(0,10);
 const addDays=(day,n)=>iso(Date.parse(day+'T00:00:00Z')+n*DAY);
 const isDay=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&iso(Date.parse(s+'T00:00:00Z'))===s;
-const count=v=>{if(typeof v!=='number'||!Number.isFinite(v)||v<0||v>1e12)throw new GscError('invalid_response');return Math.round(v);};
-const position=v=>{if(v===undefined||v===null)return null;if(typeof v!=='number'||!Number.isFinite(v)||v<1||v>1000)throw new GscError('invalid_response');return v;};
+// Validation failures carry a fixed label of what was wrong ("check.<field>"), never the value.
+const bad=reason=>new GscError('invalid_response','check.'+reason);
+const count=(v,field)=>{if(typeof v!=='number'||!Number.isFinite(v)||v<0||v>1e12)throw bad(field);return Math.round(v);};
+const position=v=>{if(v===undefined||v===null)return null;if(typeof v!=='number'||!Number.isFinite(v)||v<1||v>1000)throw bad('position');return v;};
 
 // Our own pages only: any other host, unknown path or malformed URL is aggregated as "other".
 export function pagePath(url){
@@ -18,9 +20,9 @@ export function pagePath(url){
  catch{return OTHER_PATH;}
 }
 function rowsOf(data,dims){
- const rows=data.rows??[];if(rows.length>SYNC_LIMITS.pageRows)throw new GscError('invalid_response');
- return rows.map(r=>{if(!r||!Array.isArray(r.keys)||r.keys.length!==dims||!r.keys.every(k=>typeof k==='string'))throw new GscError('invalid_response');
-  return {keys:r.keys,clicks:count(r.clicks),impressions:count(r.impressions),position:position(r.position)};});
+ const rows=data.rows??[];if(rows.length>SYNC_LIMITS.pageRows)throw bad('row_count');
+ return rows.map(r=>{if(!r||!Array.isArray(r.keys)||r.keys.length!==dims||!r.keys.every(k=>typeof k==='string'))throw bad('keys');
+  return {keys:r.keys,clicks:count(r.clicks,'clicks'),impressions:count(r.impressions,'impressions'),position:position(r.position)};});
 }
 
 export async function syncGsc({client,db,now=Date.now(),sleep=ms=>new Promise(r=>setTimeout(r,ms))}){
@@ -32,12 +34,15 @@ export async function syncGsc({client,db,now=Date.now(),sleep=ms=>new Promise(r=
  if(from<retainFrom)from=retainFrom;
  const to=today;let calls=0;
  const id=startSyncRecord(db,now);
+ // Which request failed ("date", "date+page", "date+device", "query"): for diagnostics only.
+ let request=null;
  async function call(body){
+  request=body.dimensions.join('+');
   for(let attempt=1;;attempt++){
    if(++calls>SYNC_LIMITS.maxCalls)throw new GscError('budget');
    try{return await client.searchAnalytics(body);}
-   catch(e){const code=e instanceof GscError?e.code:'upstream';
-    if(!['rate_limited','upstream'].includes(code)||attempt>=SYNC_LIMITS.attempts)throw new GscError(code);
+   catch(e){const code=e instanceof GscError?e.code:'upstream',detail=e instanceof GscError?e.detail:null;
+    if(!['rate_limited','upstream'].includes(code)||attempt>=SYNC_LIMITS.attempts)throw new GscError(code,detail);
     await sleep(2000*2**(attempt-1));}
   }
  }
@@ -47,17 +52,17 @@ export async function syncGsc({client,db,now=Date.now(),sleep=ms=>new Promise(r=
   // Rows on/after firstIncompleteDate are preliminary; without metadata, treat the last 3 days as preliminary.
   const incomplete=isDay(daily.metadata?.firstIncompleteDate)?daily.metadata.firstIncompleteDate:addDays(today,-2);
   const fin=day=>day<incomplete;
-  const days=rowsOf(daily,1).map(r=>{const day=r.keys[0];if(!isDay(day)||day<from||day>to)throw new GscError('invalid_response');return {day,clicks:r.clicks,impressions:r.impressions,position:r.position,final:fin(day)};});
-  if(new Set(days.map(d=>d.day)).size!==days.length)throw new GscError('invalid_response');
+  const days=rowsOf(daily,1).map(r=>{const day=r.keys[0];if(!isDay(day))throw bad('day_format');if(day<from||day>to)throw bad('day_range');return {day,clicks:r.clicks,impressions:r.impressions,position:r.position,final:fin(day)};});
+  if(new Set(days.map(d=>d.day)).size!==days.length)throw bad('day_duplicate');
   const pages=[];
   for(let page=0;page<SYNC_LIMITS.maxPages;page++){
    const data=await call({...base,dimensions:['date','page'],rowLimit:SYNC_LIMITS.pageRows,startRow:page*SYNC_LIMITS.pageRows});
    const rows=rowsOf(data,2);
-   for(const r of rows){if(!isDay(r.keys[0])||r.keys[0]<from||r.keys[0]>to)throw new GscError('invalid_response');pages.push({day:r.keys[0],path:pagePath(r.keys[1]),clicks:r.clicks,impressions:r.impressions,position:r.position,final:fin(r.keys[0])});}
+   for(const r of rows){if(!isDay(r.keys[0]))throw bad('day_format');if(r.keys[0]<from||r.keys[0]>to)throw bad('day_range');pages.push({day:r.keys[0],path:pagePath(r.keys[1]),clicks:r.clicks,impressions:r.impressions,position:r.position,final:fin(r.keys[0])});}
    if(rows.length<SYNC_LIMITS.pageRows)break;
   }
   const devices=rowsOf(await call({...base,dimensions:['date','device'],rowLimit:SYNC_LIMITS.pageRows}),2).map(r=>{
-   const device=r.keys[1].toUpperCase();if(!isDay(r.keys[0])||!DEVICES.includes(device))throw new GscError('invalid_response');
+   const device=r.keys[1].toUpperCase();if(!isDay(r.keys[0]))throw bad('day_format');if(!DEVICES.includes(device))throw bad('device');
    return {day:r.keys[0],device,clicks:r.clicks,impressions:r.impressions,position:r.position,final:fin(r.keys[0])};});
   // Top queries per window, ending at the last day Google reported. Google omits anonymized queries.
   const lastDay=[stored,...days.map(d=>d.day)].filter(Boolean).sort().at(-1)??null;
@@ -77,8 +82,11 @@ export async function syncGsc({client,db,now=Date.now(),sleep=ms=>new Promise(r=
   return {status:'ok',from,to,lastDay,calls};
  }catch(e){
   const code=e instanceof GscError?e.code:'upstream';
+  // Diagnostic label: request + fixed reason. An unexpected exception is named by its class only.
+  const raw=e instanceof GscError?e.detail:'internal.'+(e?.name||'Error');
+  const detail=typeof raw==='string'&&/^[A-Za-z0-9_.]{1,64}$/.test(raw)?raw:'unknown';
   finishSyncRecord(db,id,{now:Date.now(),status:'error',error:code,from,to,lastDay:stored,calls});
-  return {status:'error',error:code,calls};
+  return {status:'error',error:code,calls,request,detail};
  }
 }
 
