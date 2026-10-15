@@ -1,6 +1,6 @@
 # SEO optimalizace – návrh implementace
 
-*Stav 2026-10-15: návrh. Nic není implementováno. Podklad: `docs/reviews/SEO_AUDIT_2026.md` (revize `dfd7c4f`, živý web ověřen).*
+*Stav 2026-10-15: SEO-1 a SEO-2 implementovány ve větvi `feat/seo-stage9` (review `docs/reviews/STAGE9_SEO.md`). SEO-3 až SEO-5 zatím ne.*
 
 ## 0. Zásady
 
