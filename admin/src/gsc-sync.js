@@ -11,7 +11,11 @@ const isDay=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&iso(Date.pars
 // Validation failures carry a fixed label of what was wrong ("check.<field>"), never the value.
 const bad=reason=>new GscError('invalid_response','check.'+reason);
 const count=(v,field)=>{if(typeof v!=='number'||!Number.isFinite(v)||v<0||v>1e12)throw bad(field);return Math.round(v);};
-const position=v=>{if(v===undefined||v===null)return null;if(typeof v!=='number'||!Number.isFinite(v)||v<1||v>1000)throw bad('position');return v;};
+// Google records a position only for impressions ("A link must get an impression for its position to be
+// recorded"); rows without impressions come back with position 0. That is "no position" (stored as null),
+// never a rank. With impressions the position must be a real rank of at least 1.
+const position=(v,impressions)=>{if(v===undefined||v===null)return null;if(impressions===0&&v===0)return null;
+ if(typeof v!=='number'||!Number.isFinite(v)||v<1||v>1000)throw bad('position');return v;};
 
 // Our own pages only: any other host, unknown path or malformed URL is aggregated as "other".
 export function pagePath(url){
@@ -22,7 +26,8 @@ export function pagePath(url){
 function rowsOf(data,dims){
  const rows=data.rows??[];if(rows.length>SYNC_LIMITS.pageRows)throw bad('row_count');
  return rows.map(r=>{if(!r||!Array.isArray(r.keys)||r.keys.length!==dims||!r.keys.every(k=>typeof k==='string'))throw bad('keys');
-  return {keys:r.keys,clicks:count(r.clicks,'clicks'),impressions:count(r.impressions,'impressions'),position:position(r.position)};});
+  const impressions=count(r.impressions,'impressions');
+  return {keys:r.keys,clicks:count(r.clicks,'clicks'),impressions,position:position(r.position,impressions)};});
 }
 
 export async function syncGsc({client,db,now=Date.now(),sleep=ms=>new Promise(r=>setTimeout(r,ms))}){
