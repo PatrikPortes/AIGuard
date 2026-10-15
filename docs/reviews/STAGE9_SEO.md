@@ -42,6 +42,23 @@
 - `tests/m9.test.js`: povolené cíle odkazů rozšířeny přesně o 6 interních cest checkerů. Zákaz externích zdrojů, skriptů a formulářů zůstává.
 - `scripts/stage7-browser.js`: počet odkazů v patičce 5 → 12. Kontrola rozměrů a hranic zůstává.
 
-## 4. Existující selhání mimo Stage 9 (na produkci `8b0370e` stejná)
-1. **`web-firm`**: časová past v testu. Testovací server použije snímek ČOI z repozitáře (`public/coi-snapshot.json`, staženo 2026-10-13 06:07 UTC), platný 48 h. Od 2026-10-15 06:07 UTC je „zastaralý“, takže výsledek je `attention` místo `not_assessable`. Selhává i na `dfd7c4f`, kde 14. 10. procházel. **Doporučení:** fixture s vlastním čerstvým snímkem (jako v unit testech).
-2. **`investment-qa`** (pořadí Tab) a **`firm`** (prvek pod 48 px): přinesl je produkční commit sdílení obrázků (`dd24ca6`–`8b0370e`), který přidal náhled obrázku před tlačítko sdílení. Na `dfd7c4f` oba procházejí. **Doporučení:** upravit test pořadí a velikost cíle v náhledu v rámci práce na sdílení.
+## 4. Regresní opravy (větev `fix/seo-stage9-regressions`)
+
+Tři selhání browser testů existovala už na produkci `8b0370e` a jsou opravená.
+
+1. **`web-firm` – snímek ČOI.**
+   - **Příčina:** test používal snímek seznamu ČOI z repozitáře (`public/coi-snapshot.json`, staženo 2026-10-13 06:07 UTC), platný 48 h. Po jeho vypršení test selhával.
+   - **Oprava (jen test):** test odpovídá na `/eshop-coi.json` stejnými záznamy s `fetchedAt` relativním k běhu testu.
+   - Produkční kontrola aktuálnosti (`eshop-checker.js`, okno 48 h) i server zůstávají beze změny.
+   - Nový scénář ověřuje, že kopie starší než 48 h se zobrazí jako „zastaralá“ a výsledek není zelený (14 scénářů PASS).
+2. **`investment-qa` – pořadí Tab.**
+   - Pořadí je **správné**: produkční sdílení obrázků přidalo nepovinné nastavení („Náhled obrázku a nepovinný popisek“) před tlačítko, které ho používá. DOM odpovídá vizuálnímu pořadí.
+   - Test teď ověřuje celé pořadí: nastavení → „Poslat výsledek blízkému“ → „Uložit obrázek výsledku“ → podrobnosti výsledku, vždy s viditelným fokusem.
+   - Čeká na povolení tlačítka, protože do připravení obrázku je zakázané a Tab by ho přeskočil.
+   - UI se nemění (16 scénářů PASS).
+3. **`firm` – dotykový cíl.**
+   - Zaškrtávací políčko souhlasu s popiskem mělo 24 px na výšku.
+   - **Oprava UI** (`verdict.css`): klikací plocha políčka je 24 × 48 px, políčko zůstává vizuálně 24 px a je vycentrované v popisku (který měl už ≥ 48 px).
+   - Limit 48 px se nemění (20 scénářů PASS).
+
+Po opravách: celá browser regrese PASS, `frontend` 100 / 34 / 0 regresí shodný s produkcí. Docker gate je v §5.

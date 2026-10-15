@@ -119,10 +119,18 @@ try{
   assert.deepEqual(posts.map(p=>p.body),['{"ico":"27082440"}']);mode='ok';await context.close();scenarios++;}
  // 8) Keyboard in the result: details open with Enter, focus visible, "Prověřit jinou nabídku" by keyboard.
  {const {context,page}=await open(375);await run(page,'Nabídka platí jen dnes!');
-  // Stage 8: the share button is the first result control (after "Co udělat teď"); then the details.
+  // Stage 8 sharing (image cards): the optional image/caption settings come first, then the share button
+  // that uses them (DOM order = visual order). The button is enabled once the local image is ready.
+  await page.locator('#check-combined .share-button:not([disabled])').waitFor();
+  const at=()=>page.evaluate(()=>({tag:document.activeElement.tagName,text:document.activeElement.textContent.trim(),outline:getComputedStyle(document.activeElement).outlineStyle}));
   await page.keyboard.press('Tab');
-  const share=await page.evaluate(()=>({tag:document.activeElement.tagName,text:document.activeElement.textContent,outline:getComputedStyle(document.activeElement).outlineStyle}));
+  const settings=await at();
+  assert.deepEqual([settings.tag,settings.text],['SUMMARY','Náhled obrázku a nepovinný popisek']);assert.notEqual(settings.outline,'none','visible focus on the image settings');
+  await page.keyboard.press('Tab');
+  const share=await at();
   assert.deepEqual([share.tag,share.text],['BUTTON','Poslat výsledek blízkému']);assert.notEqual(share.outline,'none','visible focus on the share button');
+  await page.keyboard.press('Tab');
+  assert.deepEqual(Object.values(await at()).slice(0,2),['BUTTON','Uložit obrázek výsledku'],'save image follows the share button');
   await page.keyboard.press('Tab');
   const first=await page.evaluate(()=>({tag:document.activeElement.tagName,outline:getComputedStyle(document.activeElement).outlineStyle}));
   assert.equal(first.tag,'SUMMARY');assert.notEqual(first.outline,'none','visible focus on the first result control');

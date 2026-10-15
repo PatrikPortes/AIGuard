@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import {createServer} from '../src/server.js';
 import {profile} from '../test-support/firm/profiles.js';
+import {readFileSync} from 'node:fs';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 
 let mode='ok';
@@ -28,8 +29,14 @@ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,he
 let scenarios=0,widthWithout;
 // Known, pre-existing (also on 87fed8b/production): h2#eshop-title overflows by ~40 px at 320 px.
 // S3.6 must not add overflow: the combined result is checked, and the page width may not grow.
-async function open(width){
+// The bundled public/coi-snapshot.json is a dated production fallback (valid 48 h). The test serves the
+// same records with a fetchedAt relative to the test run, so it does not expire; the page's own
+// freshness check (eshop-checker.js) is unchanged and is exercised with a stale copy below.
+const COI_SNAPSHOT=JSON.parse(readFileSync(new URL('../public/coi-snapshot.json',import.meta.url),'utf8'));
+const coiAt=ageMs=>JSON.stringify({...COI_SNAPSHOT,fetchedAt:new Date(Date.now()-ageMs).toISOString(),lastAttemptOk:true});
+async function open(width,{coiAgeMs=60000}={}){
  const page=await browser.newPage({viewport:{width,height:740}});
+ await page.route('**/eshop-coi.json',route=>route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:coiAt(coiAgeMs)}));
  const requests=[],errors=[];
  page.on('request',r=>requests.push({url:r.url(),body:r.postData()||''}));page.on('pageerror',e=>errors.push(String(e)));
  await page.goto(base+'/proverit-web',{waitUntil:'networkidle'});posts.length=0;requests.length=0;
@@ -89,5 +96,10 @@ try{
   await page.locator('#check-combined .check-headline').waitFor({state:'visible',timeout:9000});const took=Date.now()-t;
   assert(took<6500,'deadline '+took);assert.match(await page.locator('#check-combined .check-steps').innerText(),/Přeskočeno/);
   assert.notEqual(await page.locator('#check-combined .check-lead').getAttribute('data-level'),'none_found');await page.close();scenarios++;}
- console.log(`Web + Firma browser: PASS (${scenarios} scenarios at 320/375/430 px; URL never sent, only {"ico"} to /api/firm, fold, focus, 48px, XSS, outage, timeout)`);
+ // Freshness check unchanged: a ČOI copy older than 48 h is reported as stale and never makes the result green.
+ {mode='ok';const {page}=await open(375,{coiAgeMs:49*3600000});await submit(page,ICO);
+  await page.locator('#check-combined .check-headline').waitFor({state:'visible',timeout:9000});
+  assert.match(await page.locator('#web-result').innerText(),/zastaralá/);
+  assert.notEqual(await page.locator('#check-combined .check-lead').getAttribute('data-level'),'none_found');await page.close();scenarios++;}
+ console.log(`Web + Firma browser: PASS (${scenarios} scenarios at 320/375/430 px; URL never sent, only {"ico"} to /api/firm, fold, focus, 48px, XSS, outage, timeout, stale ČOI copy)`);
 }finally{await browser.close();server.close();}
