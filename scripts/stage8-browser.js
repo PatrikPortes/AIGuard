@@ -80,6 +80,7 @@ try{
  // 5) No share, clipboard denied → manual: visible, focused, selected, read-only; keyboard activation (Enter).
  {const {context,page,requests}=await open(320,'/proverit-firmu',{mode:'manual'});
   await page.locator('#firm-ico').fill('27082440');await page.locator('#firm-submit').click();await page.locator('#firm-result').waitFor({state:'visible'});
+  await page.locator('#firm-followup .share-button:not([disabled])').waitFor();
   const before=requests.length;await page.locator('#firm-followup .share-button').focus();await page.keyboard.press('Enter');
   await page.locator('#firm-followup .share-manual').waitFor({state:'visible'});
   const m=await page.evaluate(()=>{const t=document.querySelector('#firm-followup .share-manual');return{focus:document.activeElement===t,ro:t.readOnly,sel:t.value.slice(t.selectionStart,t.selectionEnd),val:t.value,name:t.name,inForm:Boolean(t.closest('form'))};});

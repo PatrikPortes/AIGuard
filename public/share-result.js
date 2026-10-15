@@ -62,7 +62,7 @@ export function createShareControl(doc,type,category,{nav}={}){
   const settings=doc.createElement('details'),summary=doc.createElement('summary');summary.textContent='Náhled obrázku a nepovinný popisek';
   const label=doc.createElement('label');label.textContent='Čeho se kontrola týká (nepovinné)';caption=doc.createElement('input');caption.type='text';caption.maxLength=64;caption.autocomplete='off';caption.placeholder='Například nájemní smlouva nebo název firmy';label.append(caption);
   const consent=doc.createElement('label');consent.className='share-caption-consent';approve=doc.createElement('input');approve.type='checkbox';consent.append(approve,doc.createTextNode('Chci tento popisek uvést na obrázku a sdílet ho s příjemcem.'));
-  const warning=doc.createElement('p');warning.textContent='Popisek se nikam neposílá při přípravě. Po sdílení bude součástí obrázku. Nepište hesla, kontakty ani jiné citlivé údaje. Název firmy nepřebíráme automaticky.';
+  const warning=doc.createElement('p');warning.textContent='Popisek se nikam neposílá při přípravě. Po sdílení bude součástí obrázku. Nepište hesla, kontakty ani jiné citlivé údaje. Popisek uvádíte vy; jeho správnost neověřujeme. Název firmy nepřebíráme automaticky.';
   preview=doc.createElement('canvas');preview.width=1200;preview.height=1200;preview.className='share-preview';preview.setAttribute('role','img');preview.setAttribute('aria-label','Náhled obrázku výsledku');
   settings.append(summary,label,consent,warning,preview);root.append(settings);
  }
@@ -98,7 +98,7 @@ export async function renderShareCard(type,category,{doc=globalThis.document,cap
  const text=(value,x,y,width,size=34,weight=500)=>{ctx.fillStyle='#0f1b3d';ctx.font=`${weight} ${size}px system-ui, sans-serif`;let line='';for(const word of value.split(' ')){const next=line?line+' '+word:word;if(ctx.measureText(next).width>width&&line){ctx.fillText(line,x,y,width);y+=size*1.35;line=word;}else line=next;}if(line){ctx.fillText(line,x,y,width);y+=size*1.35;}return y;};
  ctx.fillStyle='#fffce5';ctx.fillRect(0,0,1200,1200);image(logo,56,40,92,100);text('Věřím tomu?',166,100,950,60,800);text('Radši ověřit než litovat.',166,149,900,28,600);
  ctx.fillStyle='#ffffff';ctx.beginPath();ctx.roundRect(48,204,1104,794,32);ctx.fill();
- text(SHARE_TYPES[type].title.toLocaleUpperCase('cs'),84,263,720,25,700);
+ text(SHARE_TYPES[type].title.toLocaleUpperCase('cs')+(context?' · POPISEK OD UŽIVATELE':''),84,263,1000,25,700);
  const headline={serious:'Závažné varovné signály',attention:'Stojí za pozornost',none_found:'Bez výrazných varovných signálů',incomplete:'Nedokončeno / nelze posoudit',neutral:'Co jsme zjistili'}[category];
  let font=38;if(context){for(;font>12;font--){ctx.font=`800 ${font}px system-ui, sans-serif`;let lines=1,line='';for(const word of context.split(' ')){const next=line?line+' '+word:word;if(ctx.measureText(next).width>700&&line){lines++;line=word;}else line=next;}if(lines<=2)break;}}let y=context?text(context,84,334,700,font,800):334;if(context)y=text(headline,84,y+20,700,32,750);else y=text(headline,84,y,700,51,800);y=text(SHARE_CATEGORIES[category],84,y+24,680,context?25:32,500);text(SHARE_TYPES[type].note,84,y+20,680,context?24:27,500);
  image(verka,800,294,310,370);image(robo,830,651,260,270);
