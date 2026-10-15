@@ -1,6 +1,6 @@
 # Stage 10 – Google Search Console v administraci (inventura a návrh)
 
-*Stav 2026-10-15: pouze inventura a návrh. Nic není implementováno ani nasazeno.*
+*Stav 2026-10-15: návrh schválen; S10.1–S10.4 implementovány a S10.6 připraveno ve větvi `feat/stage10-gsc-dashboard` (review a runbook `docs/reviews/STAGE10_GSC.md`). S10.5 vynecháno. Nenasazeno.*
 
 - **Produkční základ:** `4ea91103479995b9e80f24df3b5c610d635b9141` (HEAD `release/web-checker-2-2026-10-13`, ověřeno).
 - **Cíl:** rozšířit **existující** administraci na `https://staging.verimtomu.fyi` o sekci „SEO & Návštěvnost“. Data budou z Google Search Console pro property `verimtomu.fyi`.

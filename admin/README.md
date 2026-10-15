@@ -54,3 +54,7 @@ Oddělené moduly access, cloudflare, store a server. Připravená daily_totals 
 ## Cílené ověření
 
 `npm ci && npm test` uvnitř admin/. Šest testů: podpis/claims/algoritmus JWT, fail-closed config, SQLite cache, pevný GraphQL endpoint a whitelist metrik, selhání oprávnění/dat, ochrana všech HTTP cest a stale-cache chování.
+
+## Stage 10 — Google Search Console (volitelné)
+
+Sekce „SEO & Návštěvnost“ čte Google Search Console přes service account (read-only). Bez `GSC_CREDENTIALS_FILE` dashboard funguje jako dosud. Návrh: `docs/specs/STAGE10_GSC_DASHBOARD.md`; nasazení, rollback a kontrola Access: `docs/reviews/STAGE10_GSC.md`; klíč ukládat jen přes `store-gsc-key.sh`.
