@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stage 10: deploy the Search Console (OAuth) admin dashboard to staging.verimtomu.fyi only.
+# Stage 10/11: deploy the admin dashboard (Search Console OAuth, Stage 11 tabs) to staging.verimtomu.fyi only.
 # Run manually on the VPS as root from a clean checkout. Phases (in this order):
 #   preflight  read-only checks of the running staging container, backups, egress to Google
 #   build      build the new admin image from this checkout; offline tests and start-up smoke
@@ -28,7 +28,7 @@ NETWORK=verimtomu-admin-stage1
 IP=172.30.42.2
 VOLUME=verimtomu-admin-stage1-data
 PRE_IMAGE=verimtomu-admin:pre-stage10
-COMMIT=6fcf04a852c6d55e77c6a50b67daf3ecd7cc2456
+COMMIT=0ca85592882bc00a0226a8a36a6475fca711f6f6
 NEW_IMAGE=verimtomu-admin:stage10-${COMMIT:0:7}
 TOKEN=/opt/verimtomu/admin-secrets/gsc-oauth.json
 TOKEN_MOUNT=/run/secrets/gsc-oauth.json
