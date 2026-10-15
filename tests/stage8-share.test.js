@@ -134,3 +134,11 @@ test('boundaries: no network, storage, cookies or tracking; static styles; one s
  const apis=[...new Set(server.match(/'\/api\/[a-z-]+'/g))].sort();
  assert.deepEqual(apis,["'/api/analyze'","'/api/analyze-contract'","'/api/check'","'/api/contract-status'","'/api/eshop-operator'","'/api/firm'","'/api/firm-search'","'/api/health'","'/api/session'"]);
 });
+
+test('image sharing refuses untrusted supplied files; cancellation remains final',async()=>{
+ const file={name:'verimtomu-firm-attention.png',type:'image/png'};let payload,copied=0;
+ const nav={canShare:({files})=>files[0]===file,share:async d=>{payload=d;},clipboard:{writeText:async()=>copied++}};
+ assert.equal((await shareResult('firm','attention',{nav,file})).outcome,'shared');assert.equal(payload.files,undefined);assert.equal(payload.url,buildShare('firm','attention').url);assert.equal(copied,0);
+ nav.share=async()=>{throw Object.assign(Error('cancel'),{name:'AbortError'});};assert.equal((await shareResult('firm','attention',{nav,file})).outcome,'cancelled');assert.equal(copied,0);
+ nav.canShare=()=>false;nav.share=async d=>{payload=d;};await shareResult('firm','attention',{nav,file});assert.equal(payload.files,undefined);
+});
