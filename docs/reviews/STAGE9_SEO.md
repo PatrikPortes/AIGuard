@@ -62,3 +62,13 @@ Tři selhání browser testů existovala už na produkci `8b0370e` a jsou oprave
    - Limit 48 px se nemění (20 scénářů PASS).
 
 Po opravách: celá browser regrese PASS, `frontend` 100 / 34 / 0 regresí shodný s produkcí. Docker gate je v §5.
+
+## 5. Release gate (strom `2225bd1`)
+| Test | Výsledek |
+|---|---|
+| Docker gate (Node 24.21, čistý `git archive`, bez sítě) | **511/511 PASS**, produkční image sestaven |
+| Claude strict gate | 16/16 PASS |
+| `npm run check` | PASS |
+| Otisk planneru | `d695a2b8…` beze změny |
+
+Release SHA = HEAD `fix/seo-stage9-regressions` (commit s touto sekcí, jen `docs/`). Fast-forward vůči produkci `8b0370e` je možný.
