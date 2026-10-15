@@ -1,6 +1,6 @@
 # Stage 12 – analytika chování návštěvníků (technický návrh)
 
-- **Stav:** návrh. Nic není implementováno ani nasazeno.
+- **Stav:** návrh; **varianta A schválena**. Závazná upřesnění (právní posouzení, bezpečnostní úpravy, ochrana malých hodnot, acceptance criteria A0–A5, pravidla proti dvojímu započítání) jsou v `docs/STAGE12A_REVIEW.md` a mají přednost před tímto dokumentem. Nic není implementováno ani nasazeno.
 - **Datum:** 2026-10-15
 - **Výchozí kód:** `feat/stage11-admin-tabs` @ `465cf96`. Veřejný web je shodný s produkcí `4ea9110`; Stage 10 a 11 mění jen `admin/` a `docs/`.
 - **Rozsah návrhu:** veřejný web `verimtomu.fyi` (měření) a staging administrace (zobrazení).
