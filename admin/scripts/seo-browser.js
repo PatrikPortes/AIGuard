@@ -35,7 +35,7 @@ let checks=0;
 try{
  for(const [state,expected] of [['not_configured',/Google Search Console zatím není připojeno\.[\s\S]*Přihlašovací údaje Google chybí, jsou neplatné nebo nečitelné\./],['pending',/Probíhá první synchronizace/],['unavailable',/Autorizovaný účet Google nemá v Google Search Console přístup/],['reauth',/Přístup ke Google Search Console vypršel nebo byl odvolán\. Je potřeba jednorázově znovu autorizovat/],['no_data',/Google zatím neposkytuje dostatek dat\./]]){
   const d=await dashboard(state);const page=await browser.newPage({extraHTTPHeaders:{'cf-access-jwt-assertion':jwt}});
-  await page.goto(d.url+'/');await page.locator('#seo').filter({hasText:expected}).waitFor({timeout:5000});
+  await page.goto(d.url+'/#google');await page.locator('#seo').filter({hasText:expected}).waitFor({timeout:5000});
   assert.equal(await page.locator('#seo .seo-kpi').count(),0,'no numbers without data');
   await page.close();await d.close();checks++;
  }
@@ -45,7 +45,7 @@ try{
   const external=[],errors=[];page.on('request',r=>{if(!r.url().startsWith(d.url))external.push(r.url());});page.on('pageerror',e=>errors.push(String(e)));
   const notFound=[];page.on('response',r=>{if(r.status()===404)notFound.push(new URL(r.url()).pathname);});
   page.on('console',m=>{if(m.type()==='error'&&!/status of 404/.test(m.text()))errors.push(m.text());});
-  await page.goto(d.url+'/');await page.locator('#seo .seo-kpi').first().waitFor({timeout:5000});
+  await page.goto(d.url+'/#google');await page.locator('#seo .seo-kpi').first().waitFor({timeout:5000});
   assert.equal(await page.locator('#seo .seo-kpi').count(),4);
   const t=await page.locator('#seo').innerText();
   for(const s of ['Kliknutí z Google','Zobrazení ve vyhledávání','Průměrné CTR','Průměrná pozice','Předchozích 28 dní','Výkon jednotlivých kontrol','Zpráva','Web','Firma','Půjčka','Investice','Smlouva','Ostatní stránky','Nejvýkonnější stránky','/overit-zpravu','Nejčastější vyhledávací dotazy','jak poznat podvodnou sms','Google neuvádí všechny dotazy','Obsahuje předběžná data','Mobil','Nižší číslo znamená lepší pozici'])assert(t.includes(s),width+': missing '+s);
@@ -60,8 +60,10 @@ try{
   await page.locator('.seo-periods button[data-days="7"][aria-pressed="true"]').waitFor();assert.match(await page.locator('#seo').innerText(),/Předchozích 7 dní/);
   await page.locator('.seo-periods button[data-days="90"]').focus();await page.keyboard.press('Space');
   await page.locator('.seo-periods button[data-days="90"][aria-pressed="true"]').waitFor();assert.match(await page.locator('#seo').innerText(),/z 90 dní/);
-  // The existing dashboard sections are still there.
-  for(const h of ['Přehled návštěvnosti','Používání aplikace','AI statistiky','Provozní stav'])assert.equal(await page.getByRole('heading',{name:h}).count(),1,h);
+  // Stage 11: the SEO section lives in the Google tab; the other sections are still there in their own tabs.
+  assert.equal(await page.locator('#tab-google').getAttribute('aria-selected'),'true');
+  for(const h of ['Přehled návštěvnosti','Používání aplikace','AI statistiky'])assert.equal(await page.locator('[role=tabpanel] h2',{hasText:h}).count(),1,h);
+  assert.match(await page.locator('.statusbar').innerText(),/Dashboard odpovídá/,'operations moved to the status line');
   // The dashboard has never served a favicon; the browser's automatic request is the only 404.
   assert(notFound.every(p=>p==='/favicon.ico'),'unexpected 404: '+notFound.join(','));
   assert.deepEqual(external,[],'no external requests');assert.deepEqual(errors,[],'no console/CSP errors');
