@@ -7,6 +7,7 @@ import{validateContractInput}from'../public/contract-core.js';
 import {readCoiSnapshot,validateRegistryInput,lookupAres,aresRelayFromEnv}from'./eshop-sources.js';
 import http from 'node:http';
 import {createUsageStats,countOnFinish}from'./usage-stats.js';
+import {behaviorStatsFromEnv}from'./behavior-stats.js';import {OUTCOME_CODE}from'./behavior-stats-model.js';
 import { readFileSync } from 'node:fs';
 import { VisitorQuota } from './visitor-quota.js';
 import { readFile } from 'node:fs/promises';
@@ -128,6 +129,7 @@ function serviceError(res, error) {
   const known = error instanceof ServiceError;
   const code = known ? error.code : 'AI_UNAVAILABLE';
   const status = known ? error.status : 503;
+  res[OUTCOME_CODE] = code; // Stage 12: fixed error code for the optional behaviour statistics.
   const messages = {
     AI_CONSENT_REQUIRED: 'Před AI analýzou potvrďte odeslání textu poskytovateli.',
     INVALID_INPUT: 'Vložte text do 10 000 znaků nebo platnou HTTP(S) URL bez přihlašovacích údajů.',
@@ -160,7 +162,7 @@ export function createServer({
   contractPipeline=createContractRuntime(), registryRelay=aresRelayFromEnv(), firmSources,
   checkAdapters, checkClock=Date.now, checkTimers,
   rateLimit = 20, sessionRateLimit = 10, windowMs = 60000,
-  usageStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
+  usageStats, behaviorStats, visitorQuota, pipeline = createRuntime(), sessions = new AnonymousSessions(),
   requireBotCheck = false, botVerifier,
   clientIpMode = 'socket', trustedProxyIp,
   publicOrigin, globalApiRateLimit = 600, maxActiveRequests = 64,
@@ -237,6 +239,7 @@ export function createServer({
         return send(res, 200, pipeline.status());
       }
       if (req.method === 'POST' && ['/api/analyze','/api/eshop-operator','/api/analyze-contract','/api/firm','/api/firm-search','/api/check'].includes(path)) {
+        const behaviorCheck = behaviorStats?.beginCheck(res, path);
         // Resolve only the explicitly configured ingress; never trust X-Forwarded-For.
         const clientIp = resolveClientIp(req);
         checkBrowserRequest(req, publicOrigin);
@@ -258,12 +261,14 @@ export function createServer({
         }
         bodyReleases.push(bodyRequests.enter());
         const input = await readJson(req, { maxBytes:path === '/api/analyze-contract'?262144:path==='/api/firm-search'?1024:['/api/eshop-operator','/api/firm'].includes(path)?256:65536, timeoutMs: bodyTimeoutMs, signal: controller.signal, validateText:path==='/api/firm-search'?text=>/^\s*\{\s*"name"\s*:\s*"(?:[^"\\]|\\.)*"\s*(?:,\s*"start"\s*:\s*\d+\s*)?\}\s*$/.test(text):path==='/api/check'?validCheckWire:path==='/api/firm'?text=>/^\s*\{\s*"ico"\s*:\s*"\d{8}"\s*\}\s*$/.test(text):undefined }).catch(error=>{if(path==='/api/check'&&error.code==='BODY_TOO_LARGE')throw new ServiceError('BODY_TOO_LARGE',400);throw error;});
+        behaviorCheck?.parsed(input);
         // Pure bounded validation before scarce CPU/worker slots/global tokens.
         if(path==='/api/check'&&input.text!==undefined&&(typeof input.text!=='string'||!input.text.trim()||input.text.length>10000)){
           rejectBody();return send(res,400,{code:'INVALID_INPUT',error:'Text musí mít 1 až 10 000 znaků. Delší text nezkracujeme.'});
         }
         const preparedInput = path === '/api/firm-search' ? (()=>{try{return validateFirmSearch(input);}catch{throw new ServiceError('INVALID_INPUT',400);}})() : path === '/api/check' ? (()=>{try{return checkRunner.prepare(input);}catch{throw new ServiceError('INVALID_INPUT',400);}})() : path === '/api/analyze-contract' ? (()=>{try{return validateContractInput(input);}catch(e){throw new ServiceError(e.message,400);}})() : ['/api/eshop-operator','/api/firm'].includes(path) ? validateRegistryInput(input) : pipeline.validate ? pipeline.validate(input) : validateInput(input);
         releaseBody(); releaseBody = undefined;
+        behaviorCheck?.submitted(input, preparedInput);
         if (clientIdentity(clientIp).startsWith('ipv6:')) {
           prefix56Limiter.check(sessions.hashIp(clientIdentity(clientIp, 56)));
           prefix48Limiter.check(sessions.hashIp(clientIdentity(clientIp, 48)));
@@ -381,6 +386,7 @@ export function createServer({
         if(pdfAssets.has(path)){const key=sessions.hashIp(clientIdentity(resolveClientIp(req)));staticLimiter.check(key);if(!notModified)staticByteLimiter.check(key,limiterClock(),encoded?compressed.length:bytes.length);}
         if (compressed) cacheHeaders.Vary = 'Accept-Encoding';
         if (encoded) cacheHeaders['Content-Encoding'] = 'gzip';
+        if (type.startsWith('text/html')) behaviorStats?.observePage(req, res, path);
         return send(res, notModified ? 304 : path === '/404.html' ? 404 : 200, notModified ? '' : encoded ? compressed : bytes, type, cacheHeaders);
       }
       if (req.method === 'GET' && path !== '/api' && !path.startsWith('/api/')
@@ -388,6 +394,7 @@ export function createServer({
           && (req.headers['sec-fetch-dest'] === 'document' || /(?:^|,)\s*text\/html(?:[;,]|$)/i.test(req.headers.accept || ''))) {
         if (!staticFiles.has('404.html')) staticFiles.set('404.html', readFile(new URL('../public/404.html', import.meta.url)).then(bytes => ({ bytes })).catch(error => { staticFiles.delete('404.html'); throw error; }));
         const { bytes } = await staticFiles.get('404.html');
+        behaviorStats?.observePage(req, res, '/404.html');
         return send(res, 404, bytes, 'text/html; charset=utf-8');
       }
       rejectBody();
@@ -417,7 +424,7 @@ export function createServer({
     force.unref();
     return new Promise(resolve => server.close(() => { clearTimeout(force); resolve(); }));
   };
-  server.on('close', () => { visitorQuota?.close(); pipeline.close();contractPipeline.close(); usageStats?.close(); });
+  server.on('close', () => { visitorQuota?.close(); pipeline.close();contractPipeline.close(); usageStats?.close(); behaviorStats?.close(); });
   return server;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -427,7 +434,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const secret = process.env.GUARD_SESSION_SECRET_FILE ? readFileSync(process.env.GUARD_SESSION_SECRET_FILE) : undefined;
   const visitorQuota = process.env.AI_MODE === 'ai' ? new VisitorQuota({path:process.env.AI_VISITOR_DB,secret}) : undefined;
   const usageStats=createUsageStats({db:process.env.USAGE_DB_PATH,snapshot:process.env.USAGE_SNAPSHOT_PATH});
-  const server = createServer({ pipeline, visitorQuota, usageStats,
+  // Stage 12: off unless BEHAVIOR_STATS=1 with its own BEHAVIOR_DB_PATH and BEHAVIOR_SNAPSHOT_PATH.
+  const behaviorStats=behaviorStatsFromEnv(process.env);
+  const server = createServer({ pipeline, visitorQuota, usageStats, behaviorStats,
     rateLimit: Number(process.env.GUARD_IP_RATE_LIMIT ?? 20),
     sessionRateLimit: Number(process.env.GUARD_SESSION_RATE_LIMIT ?? 10),
     sessions: new AnonymousSessions({ secret, lifetimeMs:86400000, secure: process.env.GUARD_COOKIE_SECURE === 'true' }),
