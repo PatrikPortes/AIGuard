@@ -7,5 +7,8 @@ export function config(env=process.env) {
  const zone=env.CF_ZONE_ID||'';if(zone&&!/^[a-f0-9]{32}$/.test(zone))throw Error('Invalid zone');
  const token=env.CF_API_TOKEN_FILE?readFileSync(env.CF_API_TOKEN_FILE,'utf8').trim():'';
  if(token&&(!/^[A-Za-z0-9_-]{20,256}$/.test(token)))throw Error('Invalid analytics token file');
- return {issuer,audience,host,port,bind:env.HOST||'0.0.0.0',db:env.ADMIN_DB_PATH||'/data/admin.sqlite',zone,token,publicHostname:'verimtomu.fyi',usageSnapshot:env.USAGE_SNAPSHOT_PATH||''};
+ // Stage 10: Search Console is optional. Without a credentials file the dashboard works as before;
+ // an invalid file or site disables only the SEO section (validated when loaded, never fatal here).
+ const gsc={credentialsFile:env.GSC_CREDENTIALS_FILE||'',siteUrl:env.GSC_SITE_URL||'sc-domain:verimtomu.fyi'};
+ return {issuer,audience,host,port,bind:env.HOST||'0.0.0.0',db:env.ADMIN_DB_PATH||'/data/admin.sqlite',zone,token,publicHostname:'verimtomu.fyi',usageSnapshot:env.USAGE_SNAPSHOT_PATH||'',gsc};
 }
