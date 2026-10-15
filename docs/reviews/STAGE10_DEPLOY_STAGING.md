@@ -110,3 +110,67 @@ Kontroly Access a `verimtomu.fyi` šly proti skutečnému internetu (jen čtení
 | neplatný token při deploy | automatický rollback; staging běží dál na `pre-stage10` |
 
 Simulace nemohla ověřit: skutečný egress a firewall VPS, skutečný souhlas Google a první synchronizaci s Googlem, `cloudflared.service` a build s Docker Hubem (v sandboxu nahrazeno lokální kopií závislostí z lockfile; na VPS běží normální `npm ci`).
+
+## 6. Chyba synchronizace `invalid_response` (po nasazení `ea64080`)
+
+**Stav na VPS:**
+- `verify` hlásí `error invalid_response 1 -`;
+- log hlásí `Search Console sync failed: invalid_response.`;
+- infrastruktura, Access a produkce jsou OK, OAuth autorizace je hotová.
+
+**Rozbor:** `calls=1` znamená, že selhal hned první požadavek, tedy obnova access tokenu nebo denní dotaz `date` a jeho validace. Kód vyvolá `invalid_response` na 13 místech:
+- **token:** chybí tělo, tělo je delší než 64 kB, nejde o JSON, chybí nebo je neplatný `access_token`, chybí nebo je neplatný `expires_in`;
+- **API:** chybí tělo, tělo je delší než 1 MB, nejde o JSON, `rows` není pole;
+- **validace řádků:** `keys`, `clicks`, `impressions`, `position` (1–1000), formát data, data mimo rozsah, duplicitní data, neznámé zařízení, příliš mnoho řádků.
+
+Žádná z kontrol neodmítne odpověď ve tvaru, který Google dokumentuje (test „a valid Google answer … syncs“). **Příčinu proto nelze určit bez skutečné odpovědi Googlu.** Verze `ea64080` navíc nezaznamenávala, které místo selhalo.
+
+**Oprava `e4efe71` (diagnostika, beze změny chování):**
+- každá chyba nese pevný štítek fáze a důvodu, např. `token.expires_in`, `api.json_parse`, `check.position` nebo `token.http_400_invalid_client`;
+- log uvede požadavek a štítek, např. `Search Console sync failed: invalid_response (request=date, detail=check.position, calls=1).`;
+- štítky jsou konstanty, případně kód OAuth chyby Googlu omezený na `[a-z_]`; nikdy hodnota, tělo odpovědi ani token;
+- kódy chyb, opakování, UI, schéma ani bezpečnostní limity se nemění.
+
+### 6.1 Jeden bezpečný diagnostický krok (hned, bez nasazení)
+Na VPS v existujícím checkoutu:
+```
+cd /root/verimtomu-stage10
+git fetch origin fix/stage10-gsc-sync
+git show FETCH_HEAD:admin/tools/gsc-diagnose.mjs | docker exec -i verimtomu-admin-staging node --input-type=module -
+```
+- Nástroj běží v nasazeném kontejneru s jeho vlastním kódem `ea64080` a tokenem. Dělá stejnou synchronizaci, ale do **databáze v paměti**, takže `/data/admin.sqlite` neotevře.
+- Vypíše jen strukturu odpovědí Googlu: klíče, typy, počty, rozsahy čísel, rozsah dat, `firstIncompleteDate`, výčtové hodnoty zařízení.
+- **Nikdy** nevypíše token, secret, URL stránek ani texty dotazů. Výstup tedy můžete bezpečně poslat k vyhodnocení.
+- Provede nejvýš 10 čtecích dotazů na Google.
+
+Jak číst výstup:
+
+| Výstup | Význam |
+|---|---|
+| `{"step":"token","ok":false,"code":"invalid_response"…}` | Selhala obnova access tokenu. S novým image ukáže `detail` přesné pole. |
+| `"step":"request","request":"date","ok":true,"shape":{…}` a pak `"step":"sync","error":"invalid_response"` | Odpověď přišla, ale neprošla validací. `shape` ukáže pole mimo očekávání, např. `position.below1>0`, `date.afterEnd>0`, `date.duplicates>0` nebo typy jiné než `number`. |
+| `"request":"date","ok":false,"code":"invalid_response"` | Tělo odpovědi API není JSON nebo nemá očekávaný tvar |
+
+### 6.2 Nasazení opravy jen do staging administrace
+Kontejner s `ea64080` se nahradí image z `e4efe71` stejným odvozením (síť, IP, volume, mounty, limity, prostředí, token). Zastavený `pre10` zůstává cílem rollbacku.
+```
+cd /root/verimtomu-stage10
+git fetch origin fix/stage10-gsc-sync && git checkout --detach FETCH_HEAD
+bash admin/stage10-staging.sh preflight     # info: pre10 existuje → upgrade
+bash admin/stage10-staging.sh build         # verimtomu-admin:stage10-e4efe71, 34/34 testů v image
+bash admin/stage10-staging.sh upgrade       # předchozí kontejner zůstane jako verimtomu-admin-staging-prev
+bash admin/stage10-staging.sh verify        # při chybě vypíše řádek logu se štítkem
+bash admin/stage10-staging.sh diagnose      # volitelně: struktura odpovědí Googlu
+```
+**Rollback:**
+- `bash admin/stage10-staging.sh rollback-upgrade` vrátí `ea64080`;
+- `bash admin/stage10-staging.sh rollback` vrátí `pre-stage10`;
+- `finalize` odstraní zastavené kontejnery `-prev` a `-pre10`.
+
+**Ověřeno v simulaci VPS:**
+- výchozí stav jako na VPS: nasazený `ea64080`, zastavený `pre10`;
+- `preflight` → `diagnose` na `ea64080` → `build` (34/34) → `upgrade` → `verify`;
+- `verify` čeká na synchronizaci nového kontejneru; starý chybový záznam ignoruje;
+- `rollback-upgrade` → opakovaný `upgrade` → `rollback` na `pre10` → `finalize`;
+- produkce se v žádném kroku nezměnila;
+- štítek v logu ze simulace: `upstream (request=date, detail=token.network_SELF_SIGNED_CERT_IN_CHAIN, calls=3)`. Sandbox má TLS proxy; na VPS se zobrazí skutečná příčina.

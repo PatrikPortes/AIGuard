@@ -7,8 +7,12 @@
 #   deploy     replace ONLY verimtomu-admin-staging, keeping network, IP, volume, mounts and limits;
 #              the old container is kept stopped as verimtomu-admin-staging-pre10 (instant rollback)
 #   verify     container, Access, dashboard, Search Console sync, production untouched
+#   upgrade    replace an already deployed Stage 10 container with the image of $COMMIT (same
+#              derivation); the previous one is kept stopped as verimtomu-admin-staging-prev
+#   diagnose   read-only Search Console diagnostics inside the running container (structure only)
 #   rollback   back to the old container (or, if it was removed, to verimtomu-admin:pre-stage10)
-#   finalize   remove the stopped old container (the pre-stage10 image is kept)
+#   rollback-upgrade  back to the container replaced by `upgrade`
+#   finalize   remove the stopped old containers (the pre-stage10 image is kept)
 # The new container is derived from `docker inspect` of the running one, so nothing of its real
 # configuration is retyped; unexpected settings stop the script instead of being dropped.
 # Never prints environment values, the OAuth client or the refresh token. Production web, its
@@ -19,11 +23,12 @@ umask 077
 
 CONTAINER=verimtomu-admin-staging
 OLD=$CONTAINER-pre10
+PREV=$CONTAINER-prev
 NETWORK=verimtomu-admin-stage1
 IP=172.30.42.2
 VOLUME=verimtomu-admin-stage1-data
 PRE_IMAGE=verimtomu-admin:pre-stage10
-COMMIT=ea64080f75bec9dd10cc5b29de25468243c3792a
+COMMIT=e4efe71d4944c99c513d5cf862135cea3ac85562
 NEW_IMAGE=verimtomu-admin:stage10-${COMMIT:0:7}
 TOKEN=/opt/verimtomu/admin-secrets/gsc-oauth.json
 TOKEN_MOUNT=/run/secrets/gsc-oauth.json
@@ -140,7 +145,7 @@ checkout_ok(){
 }
 
 snapshot_production(){ # every container except the admin staging ones: name, id, start time
-  { docker ps -a --format '{{.Names}}' | grep -vE "^($CONTAINER|$OLD|$CONTAINER-failed-.*|verimtomu-gsc-oauth|verimtomu-admin-s10-smoke)$" || true; } | sort | while read -r n; do
+  { docker ps -a --format '{{.Names}}' | grep -vE "^($CONTAINER|$OLD|$PREV|$CONTAINER-failed-.*|verimtomu-gsc-oauth|verimtomu-admin-s10-smoke)$" || true; } | sort | while read -r n; do
     docker container inspect -f '{{.Name}} {{.Id}} {{.State.StartedAt}} {{.State.Status}}' "$n"; done
   systemctl is-active cloudflared.service 2>/dev/null | sed 's/^/cloudflared.service /' || true
 }
@@ -156,7 +161,8 @@ preflight(){
   for c in docker python3 git curl; do command -v $c >/dev/null || fail "chybí $c"; done
   checkout_ok
   running "$CONTAINER" || fail "$CONTAINER neběží"
-  ! exists "$OLD" || fail "$OLD už existuje (předchozí nasazení?): použijte rollback nebo finalize"
+  if exists "$OLD"; then say "  info  $OLD existuje (Stage 10 už nasazen): pro novou verzi použijte upgrade, rollback vede na $OLD"; fi
+  ! exists "$PREV" || fail "$PREV už existuje (předchozí upgrade): nejdřív finalize nebo rollback-upgrade"
   mkdir -p "$STATE"; chmod 0700 "$BACKUPS" "$STATE"
   docker container inspect "$CONTAINER" > "$STATE/preflight.inspect.json"
   py check "$STATE/preflight.inspect.json" || fail 'konfigurace kontejneru neodpovídá očekávání (viz PROBLEM)'
@@ -282,8 +288,9 @@ deploy(){
   say 'Deploy OK. Pokračujte: verify (první synchronizace začne 15 s po startu).'
 }
 
-sync_state(){
-  docker exec "$CONTAINER" node -e "const {DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('/data/admin.sqlite',{readOnly:true});try{const r=d.prepare('SELECT status,error,calls,last_day FROM gsc_sync ORDER BY id DESC LIMIT 1').get();console.log(r?[r.status,r.error||'-',r.calls,r.last_day||'-'].join(' '):'none')}catch{console.log('none')}" 2>/dev/null
+sync_state(){ # latest finished sync of THIS container run (older rows from a replaced container are ignored)
+  local since; since=$(docker container inspect -f '{{.State.StartedAt}}' "$CONTAINER")
+  docker exec -e SINCE="$since" "$CONTAINER" node -e "const {DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('/data/admin.sqlite',{readOnly:true});try{const r=d.prepare('SELECT status,error,calls,last_day FROM gsc_sync WHERE started>=? AND finished IS NOT NULL ORDER BY id DESC LIMIT 1').get(Date.parse(process.env.SINCE)-1000);console.log(r?[r.status,r.error||'-',r.calls,r.last_day||'-'].join(' '):'none')}catch{console.log('none')}" 2>/dev/null
 }
 
 verify(){
@@ -319,25 +326,79 @@ PY
   say "  paměť: $(docker stats --no-stream --format '{{.MemUsage}}' "$CONTAINER")"
   say '  čekám na první synchronizaci (max 3 min)…'
   st=none; for _ in $(seq 1 36); do st=$(sync_state); [[ $st == ok\ * || $st == error\ * ]] && break; sleep 5; done
+  [[ $st == ok\ * ]] || docker logs "$CONTAINER" 2>&1 | grep 'Search Console sync failed' | tail -1 | sed 's/^/  log: /'
   case $st in
     ok\ *) ok "Search Console synchronizace: $st (status, chyba, volání, poslední den)";;
     error\ reauth_required*) fail 'Google odmítl refresh token (reauth_required): zopakujte authorize (runbook §8)';;
     error\ permissions*) fail 'účet nemá v Search Console přístup k property (permissions) nebo GSC_SITE_URL neodpovídá typu property';;
     error\ upstream*) fail 'Google nedosažitelný z kontejneru (upstream): egress';;
-    *) fail "synchronizace: $st";;
+    *) fail "synchronizace: $st (diagnostika: bash admin/stage10-staging.sh diagnose)";;
   esac
   say 'Verify OK. Zbývá ruční kontrola v prohlížeči po přihlášení přes Access (runbook).'
+}
+
+upgrade_back(){ # stop the upgraded container, bring the previous Stage 10 container back
+  local ts; ts=$(date +%Y%m%d%H%M%S)
+  exists "$PREV" || fail "$PREV neexistuje"
+  if exists "$CONTAINER"; then docker stop -t 10 "$CONTAINER" >/dev/null || true; docker rename "$CONTAINER" "$CONTAINER-failed-$ts"; docker update --restart=no "$CONTAINER-failed-$ts" >/dev/null; fi
+  docker rename "$PREV" "$CONTAINER"
+  docker update --restart="$(cat "$STATE/prev.restart")" "$CONTAINER" >/dev/null
+  docker start "$CONTAINER" >/dev/null
+  wait_started "$CONTAINER" 30 && ok "návrat: $CONTAINER běží ($(docker container inspect -f '{{.Config.Image}}' "$CONTAINER")), bez JWT 403" || fail 'návrat: kontejner nenastartoval'
+}
+
+upgrade(){
+  say "== Upgrade na $NEW_IMAGE (mění jen verimtomu-admin-staging)"
+  [[ $(id -u) -eq 0 ]] || fail 'spusťte jako root'
+  [[ -s $STATE/production.before ]] || fail 'nejdřív preflight'
+  docker image inspect "$NEW_IMAGE" >/dev/null 2>&1 || fail 'nejdřív build'
+  [[ $(docker image inspect -f '{{index .Config.Labels "org.verimtomu.commit"}}' "$NEW_IMAGE") == "$COMMIT" ]] || fail 'image není z očekávaného commitu'
+  token_ok
+  running "$CONTAINER" || fail "$CONTAINER neběží"; ! exists "$PREV" || fail "$PREV už existuje"
+  local cur; cur=$(docker container inspect -f '{{.Config.Image}}' "$CONTAINER")
+  [[ -n $(docker image inspect -f '{{index .Config.Labels "org.verimtomu.commit"}}' "$cur" 2>/dev/null) ]] || fail "běžící $cur není nasazení Stage 10 (použijte deploy)"
+  [[ $cur != "$NEW_IMAGE" ]] || fail "už běží $NEW_IMAGE"
+  docker container inspect "$CONTAINER" > "$STATE/prev.inspect.json"
+  py check "$STATE/prev.inspect.json" >/dev/null || fail 'konfigurace běžícího kontejneru neodpovídá očekávání'
+  docker container inspect -f '{{.HostConfig.RestartPolicy.Name}}' "$CONTAINER" > "$STATE/prev.restart"
+  docker image inspect -f '{{json .Config.Env}}' "$(docker container inspect -f '{{.Image}}' "$CONTAINER")" > "$STATE/image.env.json"
+  mapfile -d '' args < <(py args "$STATE/prev.inspect.json" "$STATE/image.env.json" new "$STATE/new.env" "$TOKEN" "$SITE_URL")
+  [[ ${#args[@]} -gt 10 ]] || fail 'nelze odvodit parametry kontejneru'
+  ok "parametry odvozeny z běžícího kontejneru $cur (${#args[@]} argumentů)"
+  docker stop -t 20 "$CONTAINER" >/dev/null
+  docker rename "$CONTAINER" "$PREV"
+  docker update --restart=no "$PREV" >/dev/null
+  ts=$(date +%Y%m%d%H%M%S); docker cp "$PREV:/data" "$STATE/data-pre-upgrade-$ts" && ok "kopie /data: $STATE/data-pre-upgrade-$ts"
+  if ! docker run -d --name "$CONTAINER" "${args[@]}" "$NEW_IMAGE" >/dev/null; then
+    shred -u "$STATE/new.env" 2>/dev/null || true; say '  start selhal → návrat'; upgrade_back; fail 'upgrade vrácen'
+  fi
+  shred -u "$STATE/new.env" 2>/dev/null || rm -f "$STATE/new.env"
+  if ! wait_started "$CONTAINER" 60 || docker logs "$CONTAINER" 2>&1 | grep -q 'Search Console disabled' || ! docker logs "$CONTAINER" 2>&1 | grep -q 'Admin dashboard started.'; then
+    docker logs --tail 20 "$CONTAINER" 2>&1 | sed 's/^/  log: /'; say '  nový kontejner neběží správně → návrat'; upgrade_back; fail 'upgrade vrácen'
+  fi
+  ok "běží $NEW_IMAGE, bez JWT 403; předchozí kontejner zastaven jako $PREV"
+  say 'Upgrade OK. Pokračujte: verify.'
+}
+
+diagnose(){
+  say '== Diagnostika Search Console (jen čtení; databáze v paměti; vypisuje jen strukturu odpovědí)'
+  running "$CONTAINER" || fail "$CONTAINER neběží"
+  docker exec -i "$CONTAINER" node --input-type=module - < "$repo/admin/tools/gsc-diagnose.mjs" 2>&1 | grep -v -e ExperimentalWarning -e trace-warnings
 }
 
 rollback(){ say '== Rollback'; [[ $(id -u) -eq 0 ]] || fail 'spusťte jako root'; swap_back; say 'Rollback hotový. Refresh token zůstal na VPS (odvolání: runbook §7).'; }
 
 finalize(){
-  exists "$OLD" || { ok "$OLD neexistuje"; return; }
-  running "$OLD" && fail "$OLD běží"
-  docker rm "$OLD" >/dev/null && ok "$OLD odstraněn; rollback dál možný z $PRE_IMAGE (uložený inspect: $STATE/pre10.inspect.json)"
+  for c in "$PREV" "$OLD"; do
+    exists "$c" || { ok "$c neexistuje"; continue; }
+    running "$c" && fail "$c běží"
+    docker rm "$c" >/dev/null && ok "$c odstraněn"
+  done
+  say "  rollback dál možný z $PRE_IMAGE (uložený inspect: $STATE/pre10.inspect.json)"
 }
 
 case ${1:-} in
-  preflight) preflight;; build) build;; authorize) authorize "${2:-}";; deploy) deploy;; verify) verify;; rollback) rollback;; finalize) finalize;;
-  *) say 'Použití: bash admin/stage10-staging.sh preflight|build|authorize <client.json>|deploy|verify|rollback|finalize'; exit 1;;
+  preflight) preflight;; build) build;; authorize) authorize "${2:-}";; deploy) deploy;; upgrade) upgrade;; verify) verify;; diagnose) diagnose;;
+  rollback) rollback;; rollback-upgrade) say '== Návrat před upgrade'; upgrade_back;; finalize) finalize;;
+  *) say 'Použití: bash admin/stage10-staging.sh preflight|build|authorize <client.json>|deploy|upgrade|verify|diagnose|rollback|rollback-upgrade|finalize'; exit 1;;
 esac
