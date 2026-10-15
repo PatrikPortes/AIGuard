@@ -28,7 +28,7 @@ NETWORK=verimtomu-admin-stage1
 IP=172.30.42.2
 VOLUME=verimtomu-admin-stage1-data
 PRE_IMAGE=verimtomu-admin:pre-stage10
-COMMIT=e4efe71d4944c99c513d5cf862135cea3ac85562
+COMMIT=6fcf04a852c6d55e77c6a50b67daf3ecd7cc2456
 NEW_IMAGE=verimtomu-admin:stage10-${COMMIT:0:7}
 TOKEN=/opt/verimtomu/admin-secrets/gsc-oauth.json
 TOKEN_MOUNT=/run/secrets/gsc-oauth.json
@@ -162,7 +162,7 @@ preflight(){
   checkout_ok
   running "$CONTAINER" || fail "$CONTAINER neběží"
   if exists "$OLD"; then say "  info  $OLD existuje (Stage 10 už nasazen): pro novou verzi použijte upgrade, rollback vede na $OLD"; fi
-  ! exists "$PREV" || fail "$PREV už existuje (předchozí upgrade): nejdřív finalize nebo rollback-upgrade"
+  if exists "$PREV"; then running "$PREV" && fail "$PREV běží"; say "  info  $PREV existuje (zastavený po předchozím upgrade); upgrade ho nahradí"; fi
   mkdir -p "$STATE"; chmod 0700 "$BACKUPS" "$STATE"
   docker container inspect "$CONTAINER" > "$STATE/preflight.inspect.json"
   py check "$STATE/preflight.inspect.json" || fail 'konfigurace kontejneru neodpovídá očekávání (viz PROBLEM)'
@@ -354,7 +354,8 @@ upgrade(){
   docker image inspect "$NEW_IMAGE" >/dev/null 2>&1 || fail 'nejdřív build'
   [[ $(docker image inspect -f '{{index .Config.Labels "org.verimtomu.commit"}}' "$NEW_IMAGE") == "$COMMIT" ]] || fail 'image není z očekávaného commitu'
   token_ok
-  running "$CONTAINER" || fail "$CONTAINER neběží"; ! exists "$PREV" || fail "$PREV už existuje"
+  running "$CONTAINER" || fail "$CONTAINER neběží"
+  if exists "$PREV" && running "$PREV"; then fail "$PREV běží"; fi
   local cur; cur=$(docker container inspect -f '{{.Config.Image}}' "$CONTAINER")
   [[ -n $(docker image inspect -f '{{index .Config.Labels "org.verimtomu.commit"}}' "$cur" 2>/dev/null) ]] || fail "běžící $cur není nasazení Stage 10 (použijte deploy)"
   [[ $cur != "$NEW_IMAGE" ]] || fail "už běží $NEW_IMAGE"
@@ -365,6 +366,8 @@ upgrade(){
   mapfile -d '' args < <(py args "$STATE/prev.inspect.json" "$STATE/image.env.json" new "$STATE/new.env" "$TOKEN" "$SITE_URL")
   [[ ${#args[@]} -gt 10 ]] || fail 'nelze odvodit parametry kontejneru'
   ok "parametry odvozeny z běžícího kontejneru $cur (${#args[@]} argumentů)"
+  # A stopped container of an earlier upgrade is superseded by the one replaced now (pre10 stays untouched).
+  if exists "$PREV"; then docker rm "$PREV" >/dev/null; ok "starší zastavený $PREV odstraněn (rollback na $OLD zůstává)"; fi
   docker stop -t 20 "$CONTAINER" >/dev/null
   docker rename "$CONTAINER" "$PREV"
   docker update --restart=no "$PREV" >/dev/null

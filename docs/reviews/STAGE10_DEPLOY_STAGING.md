@@ -174,3 +174,33 @@ bash admin/stage10-staging.sh diagnose      # volitelně: struktura odpovědí G
 - `rollback-upgrade` → opakovaný `upgrade` → `rollback` na `pre10` → `finalize`;
 - produkce se v žádném kroku nezměnila;
 - štítek v logu ze simulace: `upstream (request=date, detail=token.network_SELF_SIGNED_CERT_IN_CHAIN, calls=3)`. Sandbox má TLS proxy; na VPS se zobrazí skutečná příčina.
+
+### 6.3 Zjištěná příčina a oprava `6fcf04a`
+**Diagnostika na VPS:**
+- OAuth funguje: access token se získal a API odpovídá;
+- první dotaz `request=date` vrátil 4 řádky s `clicks=0`, `impressions=0` a `position=0` (`position.below1 = 4`);
+- validace přijímala jen pozici 1–1000, a tak odmítla celou odpověď (`check.position`).
+
+**Význam dat:** podle nápovědy Search Console („Average position“) platí: *„A link must get an impression for its position to be recorded. If a result does not get an impression … its position is not recorded“*. Pozice existuje jen pro zobrazení. API vrací `position` jako průměrnou pozici a u řádku bez zobrazení dává `0`, což znamená „pozice nezaznamenána“, nikoli pořadí 0.
+
+**Oprava** (`admin/src/gsc-sync.js`):
+- `position = 0` je povolená **jen při `impressions = 0`** a ukládá se jako `null` (neznámá), nikdy jako 0;
+- při `impressions > 0` dál platí `1 ≤ position ≤ 1000`, jinak `invalid_response` / `check.position`;
+- stejné pravidlo platí pro řádky dnů, stránek, zařízení i dotazů;
+- report počítá pozici dál váženou zobrazeními, takže nulové řádky průměr nemění;
+- dny s nulami jsou nahlášené nuly, ne mezery; CTR a pozice se u nich zobrazí jako „—“.
+
+**Testy:** `admin/tests/gsc-zero.test.js` (přesné řádky ze stagingu, matice povoleno/odmítnuto, nulové řádky spolu s daty).
+
+**Upgrade jen stagingu** (z `e4efe71` i z `ea64080`; zastavený `-prev` ze starší verze se nahradí, `-pre10` zůstává):
+```
+cd /root/verimtomu-stage10
+git fetch origin fix/stage10-gsc-sync && git checkout --detach FETCH_HEAD
+bash admin/stage10-staging.sh preflight
+bash admin/stage10-staging.sh build      # verimtomu-admin:stage10-6fcf04a, 37/37 testů v image
+bash admin/stage10-staging.sh upgrade
+bash admin/stage10-staging.sh verify     # očekáváno: „Search Console synchronizace: ok …“
+```
+**Rollback:**
+- `rollback-upgrade` vrátí předchozí verzi Stage 10;
+- `rollback` vrátí `pre-stage10`.
