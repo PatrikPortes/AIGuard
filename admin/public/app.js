@@ -1,6 +1,29 @@
 const notice=document.querySelector('#notice');
 function text(parent,tag,value){const e=document.createElement(tag);e.textContent=value;parent.append(e);}
-async function load(){try{const response=await fetch('/api/dashboard',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error();const data=await response.json();const traffic=document.querySelector('#traffic');traffic.replaceChildren();if(['available','stale'].includes(data.traffic.status)){for(const [label,key]of [['HTTP požadavky za 24 hodin','requests24h'],['HTTP požadavky za 7 dní','requests7d'],['Blokované HTTP požadavky za 24 hodin','blocked24h'],['Blokované HTTP požadavky za 7 dní','blocked7d']]){text(traffic,'p',label);text(traffic,'strong',data.traffic[key]==null?'Data zatím nejsou dostupná':new Intl.NumberFormat('cs-CZ').format(data.traffic[key]));}text(traffic,'p','Pouze verimtomu.fyi. Blokované požadavky odpovídají akci block; nejde o počet všech bezpečnostních událostí. Počet návštěvníků neměříme.');text(traffic,'p','Samostatné bezpečnostní události: data zatím nejsou dostupná.');text(traffic,'p','Aktualizováno '+new Date(data.traffic.updated).toLocaleString('cs-CZ'));if(data.traffic.status==='stale')text(traffic,'p','Poslední obnovení se nepodařilo. Zobrazujeme dříve získaná data.');}else{text(traffic,'p','Data zatím nejsou dostupná');text(traffic,'p',data.traffic.issue==='not_configured'?'Cloudflare API ještě není připojeno.':'Cloudflare data se nepodařilo načíst.');}renderUsage(data.usage);const op=document.querySelector('#operations');op.replaceChildren();text(op,'p','Dashboard odpovídá');text(op,'p','Běží '+Math.floor(data.operations.uptimeSeconds/60)+' minut');notice.textContent='Přehled je načtený.';}catch{notice.textContent='Přehled se nepodařilo načíst. Obnovte stránku nebo se znovu přihlaste přes Cloudflare Access.';}}
+async function load(){try{const response=await fetch('/api/dashboard',{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error();const data=await response.json();const traffic=document.querySelector('#traffic');traffic.replaceChildren();if(['available','stale'].includes(data.traffic.status)){const stats=document.createElement('div');stats.className='stats';for(const [label,key]of [['HTTP požadavky za 24 hodin','requests24h'],['HTTP požadavky za 7 dní','requests7d'],['Blokované HTTP požadavky za 24 hodin','blocked24h'],['Blokované HTTP požadavky za 7 dní','blocked7d']]){const stat=document.createElement('div');stat.className='stat';text(stat,'p',label);text(stat,'strong',data.traffic[key]==null?'Data zatím nejsou dostupná':new Intl.NumberFormat('cs-CZ').format(data.traffic[key]));stats.append(stat);}traffic.append(stats);text(traffic,'p','Pouze verimtomu.fyi. Blokované požadavky odpovídají akci block; nejde o počet všech bezpečnostních událostí. Počet návštěvníků neměříme.');text(traffic,'p','Samostatné bezpečnostní události: data zatím nejsou dostupná.');text(traffic,'p','Aktualizováno '+new Date(data.traffic.updated).toLocaleString('cs-CZ'));if(data.traffic.status==='stale')text(traffic,'p','Poslední obnovení se nepodařilo. Zobrazujeme dříve získaná data.');}else{text(traffic,'p','Data zatím nejsou dostupná');text(traffic,'p',data.traffic.issue==='not_configured'?'Cloudflare API ještě není připojeno.':'Cloudflare data se nepodařilo načíst.');}renderUsage(data.usage);document.querySelector('#operations').textContent='Dashboard odpovídá · běží '+Math.floor(data.operations.uptimeSeconds/60)+' minut';sources.cloudflare=data.traffic.status;sources.usage=data.usage.status;renderSources();notice.textContent='Přehled načten '+new Date().toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'})+'.';}catch{notice.textContent='Přehled se nepodařilo načíst. Obnovte stránku nebo se znovu přihlaste přes Cloudflare Access.';}}
+// Stage 11: compact status line built only from states the APIs already report.
+const sources={cloudflare:null,usage:null,google:null};
+const SOURCE_TEXT={available:'aktuální',stale:'neobnovuje se',unavailable:'nedostupné',not_configured:'nepřipojeno',pending:'probíhá synchronizace',no_data:'bez dat',sync_error:'poslední synchronizace selhala'};
+function renderSources(){const box=document.querySelector('#status-sources');box.replaceChildren();
+ for(const [label,key] of [['Cloudflare','cloudflare'],['Ověření','usage'],['Google','google']]){if(!sources[key])continue;const s=document.createElement('span');s.className='source source-'+(sources[key]==='available'?'ok':'warn');s.textContent=label+': '+(SOURCE_TEXT[sources[key]]||SOURCE_TEXT.unavailable);box.append(s);}}
+
+// Stage 11: tabs (WAI-ARIA tabs pattern, automatic activation). Panels keep their content; switching
+// never reloads the page. The selected tab is kept in the URL fragment (#cloudflare, #google, #overeni, #ai).
+const TABS=[...document.querySelectorAll('[role=tab]')],DEFAULT_TAB='overeni';
+function selectTab(name,{focus=false,remember=true}={}){
+ const tab=TABS.find(t=>t.dataset.tab===name)||TABS.find(t=>t.dataset.tab===DEFAULT_TAB);
+ for(const t of TABS){const on=t===tab;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!on;}
+ if(focus)tab.focus();
+ if(remember&&location.hash!=='#'+tab.dataset.tab)history.replaceState(null,'','#'+tab.dataset.tab);
+}
+for(const t of TABS){
+ t.addEventListener('click',()=>selectTab(t.dataset.tab));
+ t.addEventListener('keydown',e=>{const i=TABS.indexOf(t);const next={ArrowRight:i+1,ArrowLeft:i-1,Home:0,End:TABS.length-1}[e.key];
+  if(next===undefined)return;e.preventDefault();selectTab(TABS[(next+TABS.length)%TABS.length].dataset.tab,{focus:true});});
+}
+selectTab(location.hash.slice(1)||DEFAULT_TAB,{remember:false});
+addEventListener('hashchange',()=>selectTab(location.hash.slice(1),{remember:false}));
+
 load();setInterval(load,60000);
 
 function renderUsage(data){const ai=document.querySelector('#ai-usage');ai.replaceChildren();text(ai,'p','Data zatím nejsou dostupná');const target=document.querySelector('#usage');target.replaceChildren();if(!['available','stale'].includes(data.status)){text(target,'p','Data zatím nejsou dostupná');return;}ai.replaceChildren();text(ai,'p','Dokončené AI kontroly dnes: '+data.today.ai);text(ai,'p','Náhradní vyhodnocení dnes: '+data.today.fallback);text(ai,'p','Dokončené AI kontroly za 7 dní: '+data.week.ai);if(data.status==='stale')text(ai,'p','Zobrazujeme poslední dostupné počty.');if(data.status==='stale')text(target,'p','Statistiky se nyní neobnovují. Zobrazujeme poslední dostupné počty.');const table=document.createElement('table');const head=document.createElement('tr');for(const label of ['Období','Pravidla','AI','Náhradní','Celkem'])text(head,'th',label);table.append(head);for(const [label,key]of [['Dnes','today'],['7 dní','week'],['30 dní','month']]){const tr=document.createElement('tr');text(tr,'th',label+(data[key].partial?' *':''));for(const metric of ['rules','ai','fallback','total'])text(tr,'td',new Intl.NumberFormat('cs-CZ').format(data[key][metric]));table.append(tr);}target.append(table);text(target,'p','Měření od '+data.startedDay+'. * Období pokrývá jen dobu od začátku měření.');text(target,'p','Náhradní = AI se neprovedla a odpověď vytvořila pravidla. Kontrola bez souhlasu s AI se počítá mezi pravidla.');const chart=document.createElement('div');chart.className='usage-chart';chart.setAttribute('role','img');chart.setAttribute('aria-label','Denní počty dokončených kontrol za 30 dní');const max=Math.max(1,...data.series.map(r=>r.total||0));for(const r of data.series){const column=document.createElement('div');column.className='usage-day';const bar=document.createElement('meter');bar.min=0;bar.max=max;bar.value=r.total||0;bar.title=r.day+': '+(r.total===null?'před začátkem měření':r.total);bar.setAttribute('aria-label',bar.title);if(r.total===null)column.classList.add('unmeasured');column.append(bar);text(column,'small',r.day.slice(8));chart.append(column);}target.append(chart);text(target,'p','Denní součty podle času Europe/Prague. Šedé dny jsou před začátkem měření.');}
@@ -51,6 +74,7 @@ function seoChart(parent,series){
  wrap.append(details);parent.append(wrap);
 }
 function renderSeo(data){
+ sources.google=data.status==='available'&&data.sync?.status==='error'?'sync_error':data.status;renderSources();
  const target=document.querySelector('#seo');target.replaceChildren();
  for(const b of document.querySelectorAll('.seo-periods button'))b.setAttribute('aria-pressed',String(Number(b.dataset.days)===data.days));
  if(data.status==='not_configured'){text(target,'p',SEO_REASON.not_configured);if(data.setupError&&data.setupError!=='not_configured')text(target,'p',SEO_REASON[data.setupError]||'');return;}
@@ -76,7 +100,7 @@ function renderSeo(data){
 async function loadSeo(days=seoDays){
  seoDays=days;
  try{const r=await fetch('/api/seo?days='+days,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error();renderSeo(await r.json());}
- catch{const t=document.querySelector('#seo');t.replaceChildren();text(t,'p','Data zatím nejsou dostupná.');}
+ catch{const t=document.querySelector('#seo');t.replaceChildren();text(t,'p','Data zatím nejsou dostupná.');sources.google='unavailable';renderSources();}
 }
 for(const b of document.querySelectorAll('.seo-periods button'))b.addEventListener('click',()=>loadSeo(Number(b.dataset.days)));
 loadSeo();setInterval(()=>loadSeo(),300000);
