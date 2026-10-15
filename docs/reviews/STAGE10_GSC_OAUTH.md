@@ -126,6 +126,8 @@ Chyby nástroje jsou krátké kódy:
 | `port_in_use` | Na VPS je port 8765 obsazený; najděte a ukončete proces |
 
 ## 6. Nasazení na staging (po schválení, jen admin)
+> ⚠ **Aktualizace:** skutečný staging na VPS neběží z `admin/compose.yaml` (síť `verimtomu-admin-stage1`, volume `verimtomu-admin-stage1-data`, mount usage exportu). Pro nasazení použijte `admin/stage10-staging.sh` podle `docs/reviews/STAGE10_DEPLOY_STAGING.md`. Kroky níže s `docker compose` na VPS nepoužívejte.
+
 Navazuje na `docs/reviews/STAGE10_GSC.md` §4 B. Platí z něj body 1, 2, 4, 6, 7 a 8; body 3 a 5 nahrazuje toto:
 1. **Stav před změnou a záloha** (B1, B2): `docker tag <Image ID> verimtomu-admin:pre-stage10`, `docker cp … /root/admin-pre-stage10.sqlite`.
 2. **Autorizace:** §5 tohoto dokumentu.
