@@ -142,3 +142,7 @@ test('image sharing refuses untrusted supplied files; cancellation remains final
  nav.share=async()=>{throw Object.assign(Error('cancel'),{name:'AbortError'});};assert.equal((await shareResult('firm','attention',{nav,file})).outcome,'cancelled');assert.equal(copied,0);
  nav.canShare=()=>false;nav.share=async d=>{payload=d;};await shareResult('firm','attention',{nav,file});assert.equal(payload.files,undefined);
 });
+
+test('optional image caption has bounded plain text and never changes canonical text/link sharing',async()=>{
+ const {normalizeShareCaption}=await import('../public/share-result.js');assert.equal(normalizeShareCaption('  Nájemní\n smlouva\u202e  '),'Nájemní smlouva');assert.equal(Array.from(normalizeShareCaption('a'.repeat(100))).length,64);assert.throws(()=>normalizeShareCaption({name:'secret'}));assert(!buildShare('firm','attention').full.includes('Ukázková firma'));
+});
