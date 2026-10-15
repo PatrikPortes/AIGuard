@@ -81,7 +81,9 @@ test('M9: content needs no scripts, forms, input, external resources or characte
   assert.ok(targets.length > 0);
   const approvedTargets = ['/', '/style.css', 'tel:158', '/privacy', '/uz-se-to-stalo',
     '/favicon.ico', '/assets/brand/favicon.png', '/assets/brand/apple-touch-icon.png', '/assets/brand/logo.png',
-    'https://verimtomu.fyi/uz-se-to-stalo', '/o-projektu', '/kontakt', '/#how-it-works', 'https://growmate.cz/index-cz'];
+    'https://verimtomu.fyi/uz-se-to-stalo', '/o-projektu', '/kontakt', '/#how-it-works', 'https://growmate.cz/index-cz',
+    // Stage 9: the shared footer lists the six checkers (same-origin, non-loading links only).
+    '/overit-zpravu', '/proverit-web', '/proverit-firmu', '/proverit-pujcku', '/proverit-investici', '/proverit-smlouvu'];
   assert.ok(targets.every(target => approvedTargets.includes(target)), JSON.stringify(targets));
   assert.equal([...html.matchAll(/href=["']tel:158["']/gu)].length, 1);
   assert.match(html, /href="tel:158" aria-label="158 – zavolat Policii ČR">158<\/a>/u);

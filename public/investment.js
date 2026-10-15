@@ -56,6 +56,8 @@ if(typeof document!=='undefined'&&document.querySelector('#investment-form')){
   if(message){showError(message);(message.startsWith('IČO')?ico:offer).focus();return;}
   busy=true;submit.disabled=true;submit.setAttribute('aria-busy','true');
   entry.hidden=true;result.hidden=false;checklist.hidden=true;
+  // Start reading at the result (static guidance below the tool makes the page longer).
+  result.scrollIntoView({block:'start'});
   try{
    await startInvestmentCheck(combined,{offer:offer.value,ico:icoValue||undefined,evaluateInvestment,fromInvestment,checkWebUrl,coiResult,coiData});
    checklist.hidden=false;
