@@ -24,6 +24,7 @@ async function dashboard(state){
  if(state==='available'){const r=await syncGsc({client:fakeGoogle,db:store.db,now:NOW,sleep:async()=>{}});assert.equal(r.status,'ok');}
  if(state==='no_data')await syncGsc({client:{searchAnalytics:async()=>({rows:[]})},db:store.db,now:NOW,sleep:async()=>{}});
  if(state==='unavailable')store.db.prepare("INSERT INTO gsc_sync(started,finished,status,error) VALUES(1,2,'error','permissions')").run();
+ if(state==='reauth')store.db.prepare("INSERT INTO gsc_sync(started,finished,status,error) VALUES(1,2,'error','reauth_required')").run();
  const settings={host:'127.0.0.1',port:0,zone:'',token:''};
  const app=createDashboard({settings,verify,store,analytics:{totals:async()=>({})},seo:state==='not_configured'?{configured:false,setupError:'invalid_credentials'}:{configured:true,setupError:null}});
  await new Promise(r=>app.server.listen(0,'127.0.0.1',r));settings.port=app.server.address().port;
@@ -32,7 +33,7 @@ async function dashboard(state){
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true});
 let checks=0;
 try{
- for(const [state,expected] of [['not_configured',/Google Search Console zatím není připojeno\.[\s\S]*Klíč služby chybí, je neplatný nebo nečitelný\./],['pending',/Probíhá první synchronizace/],['unavailable',/Účet služby nemá v Google Search Console přístup/],['no_data',/Google zatím neposkytuje dostatek dat\./]]){
+ for(const [state,expected] of [['not_configured',/Google Search Console zatím není připojeno\.[\s\S]*Přihlašovací údaje Google chybí, jsou neplatné nebo nečitelné\./],['pending',/Probíhá první synchronizace/],['unavailable',/Autorizovaný účet Google nemá v Google Search Console přístup/],['reauth',/Přístup ke Google Search Console vypršel nebo byl odvolán\. Je potřeba jednorázově znovu autorizovat/],['no_data',/Google zatím neposkytuje dostatek dat\./]]){
   const d=await dashboard(state);const page=await browser.newPage({extraHTTPHeaders:{'cf-access-jwt-assertion':jwt}});
   await page.goto(d.url+'/');await page.locator('#seo').filter({hasText:expected}).waitFor({timeout:5000});
   assert.equal(await page.locator('#seo .seo-kpi').count(),0,'no numbers without data');
@@ -69,5 +70,5 @@ try{
  // Without the Access JWT nothing is served.
  const anon=await browser.newPage();const res=await anon.goto(d.url+'/api/seo?days=28');assert.equal(res.status(),403);await anon.close();
  await d.close();checks++;
- console.log(`Admin SEO browser: PASS (${checks} checks; 4 empty states without numbers, data view at 320/375/430/1280 px, KPIs with comparison, chart with gaps and table, checkers, pages, queries as text, devices, keyboard period switch, 48 px targets, no overflow, no external requests, no CSP errors, JWT required)`);
+ console.log(`Admin SEO browser: PASS (${checks} checks; 5 empty states without numbers incl. revoked OAuth token, data view at 320/375/430/1280 px, KPIs with comparison, chart with gaps and table, checkers, pages, queries as text, devices, keyboard period switch, 48 px targets, no overflow, no external requests, no CSP errors, JWT required)`);
 }finally{await browser.close();}

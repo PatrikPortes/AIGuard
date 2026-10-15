@@ -57,4 +57,4 @@ Oddělené moduly access, cloudflare, store a server. Připravená daily_totals 
 
 ## Stage 10 — Google Search Console (volitelné)
 
-Sekce „SEO & Návštěvnost“ čte Google Search Console přes service account (read-only). Bez `GSC_CREDENTIALS_FILE` dashboard funguje jako dosud. Návrh: `docs/specs/STAGE10_GSC_DASHBOARD.md`; nasazení, rollback a kontrola Access: `docs/reviews/STAGE10_GSC.md`; klíč ukládat jen přes `store-gsc-key.sh`.
+Sekce „SEO & Návštěvnost“ čte Google Search Console přes OAuth 2.0 s refresh tokenem (scope `webmasters.readonly`, offline přístup, automatická obnova access tokenu). Bez `GSC_CREDENTIALS_FILE` dashboard funguje jako dosud. Návrh: `docs/specs/STAGE10_GSC_DASHBOARD.md` a `docs/specs/STAGE10_GSC_OAUTH.md`; nasazení, rollback a kontrola Access: `docs/reviews/STAGE10_GSC.md` a `docs/reviews/STAGE10_GSC_OAUTH.md`. Refresh token vzniká jen jednorázovou autorizací přes `gsc-oauth-authorize.sh` (SSH tunel na VPS) a nikdy se neukládá do repozitáře.

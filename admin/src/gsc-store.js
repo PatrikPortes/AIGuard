@@ -5,7 +5,7 @@ export const KNOWN_PATHS=Object.freeze(['/',...Object.keys(CHECKER_PATHS),'/uz-s
 export const OTHER_PATH='__other__';
 export const DEVICES=Object.freeze(['DESKTOP','MOBILE','TABLET']);
 export const QUERY_WINDOWS=Object.freeze([7,28,90]);
-export const ERROR_CODES=Object.freeze(['not_configured','invalid_credentials','invalid_site','auth','permissions','rate_limited','upstream','invalid_response','budget']);
+export const ERROR_CODES=Object.freeze(['not_configured','invalid_credentials','invalid_site','auth','permissions','rate_limited','upstream','invalid_response','budget','reauth_required','invalid_scope']);
 
 export function ensureGscSchema(db){
  db.exec(`

@@ -1,6 +1,6 @@
 # Stage 10 – přechod Google autentizace na OAuth 2.0 (návrh)
 
-*Stav 2026-10-15: pouze návrh. Nic není implementováno ani nasazeno.*
+*Stav 2026-10-15: návrh schválen a implementován ve větvi `feat/stage10-gsc-oauth` (není mergováno ani nasazeno). Odchylky od návrhu a runbook: `docs/reviews/STAGE10_GSC_OAUTH.md`.*
 
 - **Výchozí stav:** `feat/stage10-gsc-dashboard` @ `9eed1a1`, kde se autentizuje service account klíčem JSON.
 - **Důvod změny:** v projektu `verimtomu-search-console` organizační politika `iam.disableServiceAccountKeyCreation` blokuje JSON klíče. Politiku neměníme.

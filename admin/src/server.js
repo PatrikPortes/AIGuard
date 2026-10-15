@@ -3,7 +3,7 @@ import{usageSummary}from'./usage.js';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { config } from './config.js';import {accessVerifier} from './access.js';import {Store} from './store.js';import {CloudflareAnalytics} from './cloudflare.js';
-import {seoReport,PERIODS} from './gsc-report.js';import {loadServiceAccount,GscClient,GscError} from './gsc.js';import {syncGsc,createGscScheduler} from './gsc-sync.js';
+import {seoReport,PERIODS} from './gsc-report.js';import {loadGoogleCredentials,GscClient,GscError} from './gsc.js';import {syncGsc,createGscScheduler} from './gsc-sync.js';
 const headers={'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY','Permissions-Policy':'camera=(), microphone=(), geolocation=()'};
 // seo: {configured, setupError} — Stage 10 Search Console state; absent means not configured.
 export function createDashboard({settings,verify,store,analytics,seo={configured:false,setupError:'not_configured'}}){
@@ -39,8 +39,8 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  // Stage 10: optional Search Console. Failures disable only the SEO section; nothing secret is logged.
  const seo={configured:false,setupError:'not_configured'};let scheduler=null;
  if(settings.gsc.credentialsFile){
-  try{const account=await loadServiceAccount(settings.gsc.credentialsFile);const client=new GscClient({siteUrl:settings.gsc.siteUrl,account});
-   seo.configured=true;seo.setupError=null;scheduler=createGscScheduler({run:()=>syncGsc({client,db:store.db})});}
+  try{const account=await loadGoogleCredentials(settings.gsc.credentialsFile);const client=new GscClient({siteUrl:settings.gsc.siteUrl,account});
+   seo.configured=true;seo.setupError=null;scheduler=createGscScheduler({run:async()=>{const r=await syncGsc({client,db:store.db});if(r.status!=='ok')console.log('Search Console sync failed: '+r.error+'.');return r;}});}
   catch(e){seo.setupError=e instanceof GscError?e.code:'invalid_credentials';console.log('Search Console disabled: '+seo.setupError+'.');}
  }
  const app=createDashboard({settings,store,seo,verify:accessVerifier(settings),analytics:new CloudflareAnalytics(settings)});

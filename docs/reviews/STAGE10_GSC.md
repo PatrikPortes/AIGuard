@@ -6,6 +6,8 @@
 - **Rozsah:** S10.1–S10.4 implementace a S10.6 příprava nasazení. S10.5 (URL Inspection) podle zadání vynecháno.
 - Nic nebylo mergováno ani nasazeno. Žádný skutečný Google klíč nebyl použit ani vyžádán.
 
+> **Aktualizace (OAuth 2.0):** organizační politika `iam.disableServiceAccountKeyCreation` blokuje JSON klíče service accountu. Autentizace proto přešla na OAuth 2.0 s refresh tokenem (větev `feat/stage10-gsc-oauth`). Kroky s klíčem service accountu (§4 A, B3, B5, C3) **nahrazuje** `docs/reviews/STAGE10_GSC_OAUTH.md`. `admin/store-gsc-key.sh` byl odstraněn. Ostatní části tohoto runbooku platí dál.
+
 ## Verdikt
 **GO pro nasazení na staging** po krocích vlastníka (§4). Kritické ani vysoké nálezy nejsou.
 
@@ -79,7 +81,7 @@
 ## 4. Postup nasazení na staging (po schválení)
 
 ### A. Vlastník – Google (jednorázově, mimo repozitář)
-Přesné kroky jsou ve specifikaci §10:
+⚠ Nahrazeno OAuth postupem v `docs/reviews/STAGE10_GSC_OAUTH.md` §4. Původní kroky (service account, ve specifikaci §10):
 1. GCP projekt, zapnout Search Console API.
 2. Service account bez rolí, JSON klíč.
 3. V Search Console přidat e-mail service accountu jako uživatele s oprávněním **Omezené**.
@@ -97,13 +99,13 @@ Přesné kroky jsou ve specifikaci §10:
    ```
    docker cp verimtomu-admin-staging:/data/admin.sqlite /root/admin-pre-stage10.sqlite
    ```
-3. **Klíč:**
+3. **Klíč** (⚠ nahrazeno: OAuth autorizace podle `STAGE10_GSC_OAUTH.md` §5):
    - nahrát JSON na VPS do `/root/gsc-key-upload.json` (scp, `chmod 600`);
    - spustit `bash admin/store-gsc-key.sh /root/gsc-key-upload.json`;
    - skript ověří strukturu, uloží `/opt/verimtomu/admin-secrets/gsc-service-account.json` (`0400`, 1000:1000), nahraný soubor smaže a nic nevypisuje.
 4. **Kód:** v adresáři compose stagingu nahradit `src/`, `public/`, `compose.yaml` a skripty obsahem `admin/` z release SHA této větve (`git archive <SHA> admin`).
    - **Existující `.env` nepřepisovat**: AUD `59d367…7456`, issuer, `ADMIN_HOSTNAME=staging.verimtomu.fyi`, `CF_ZONE_ID` a mount Cloudflare tokenu ponechat.
-5. **Konfigurace:**
+5. **Konfigurace** (⚠ s OAuth je mount `gsc-oauth.json:ro` a `GSC_CREDENTIALS_FILE=/run/secrets/gsc-oauth.json`, viz `STAGE10_GSC_OAUTH.md` §6):
    - v `compose.yaml` odkomentovat **jen** řádek mountu `gsc-service-account.json:ro`;
    - do `.env` přidat:
      ```
@@ -142,5 +144,5 @@ Přesné kroky jsou ve specifikaci §10:
 2. Úplný návrat: v `compose.yaml` nastavit `image: verimtomu-admin:pre-stage10`, odstranit `build:` a GSC mount, pak `docker compose up -d`.
    - Tabulky `gsc_*` v SQLite stará verze ignoruje.
    - Případně obnovit zálohu `admin-pre-stage10.sqlite` (`docker cp` zpět při zastaveném kontejneru).
-3. **Klíč:** při podezření na únik smazat klíč v GCP (Service account → Keys) a odebrat uživatele v GSC. Soubor na VPS: `shred -u /opt/verimtomu/admin-secrets/gsc-service-account.json`.
+3. **Klíč** (⚠ s OAuth platí odvolání podle `STAGE10_GSC_OAUTH.md` §7): při podezření na únik smazat klíč v GCP (Service account → Keys) a odebrat uživatele v GSC. Soubor na VPS: `shred -u /opt/verimtomu/admin-secrets/gsc-service-account.json`.
 4. Veřejný web rollback nepotřebuje, protože se ho Stage 10 nedotýká.

@@ -82,15 +82,19 @@ export async function syncGsc({client,db,now=Date.now(),sleep=ms=>new Promise(r=
  }
 }
 
+// Failures that only a person can fix (new authorization, Search Console permission): retrying
+// sooner than the next daily run would only repeat the same refused token request.
+export const MANUAL_FIX_ERRORS=Object.freeze(['reauth_required','auth','permissions','invalid_scope']);
+
 // In-process scheduler: first run shortly after start (HTTP is already listening), then every 24 h;
-// after a failure one retry after 1 h. Never overlapping, timers are unref'd.
+// after a transient failure one retry after 1 h. Never overlapping, timers are unref'd.
 export function createGscScheduler({run,initialDelay=15000,interval=24*3600000,retry=3600000,timers={setTimeout,clearTimeout}}){
  let timer=null,busy=false,stopped=false;
  const schedule=ms=>{if(stopped)return;timer=timers.setTimeout(tick,ms);timer?.unref?.();};
  async function tick(){
-  if(busy||stopped)return;busy=true;let ok=false;
-  try{ok=(await run())?.status==='ok';}catch{ok=false;}
-  finally{busy=false;schedule(ok?interval:retry);}
+  if(busy||stopped)return;busy=true;let wait=retry;
+  try{const r=await run();if(r?.status==='ok'||MANUAL_FIX_ERRORS.includes(r?.error))wait=interval;}catch{wait=retry;}
+  finally{busy=false;schedule(wait);}
  }
  return {start(){schedule(initialDelay);},stop(){stopped=true;if(timer)timers.clearTimeout(timer);},get busy(){return busy;}};
 }

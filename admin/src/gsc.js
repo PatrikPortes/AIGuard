@@ -1,6 +1,7 @@
-// Stage 10 (S10.1): Google Search Console client. Service account (JWT bearer) via the existing
-// `jose` dependency; read-only scope; fixed Google hosts only; bounded responses; errors carry
-// only a short code (never a response body, token or key).
+// Stage 10 (S10.1): Google Search Console client. OAuth 2.0 refresh token of an authorized user
+// (offline access, see docs/specs/STAGE10_GSC_OAUTH.md) or a service account (JWT bearer via the
+// existing `jose` dependency); read-only scope; fixed Google hosts only; bounded responses; errors
+// carry only a short code (never a response body, token, secret or key).
 import {readFile} from 'node:fs/promises';
 import {importPKCS8,SignJWT} from 'jose';
 
@@ -12,16 +13,40 @@ const TOKEN_MAX=65536,QUERY_MAX=1048576,TIMEOUT=15000;
 
 export class GscError extends Error{constructor(code){super(code);this.code=code;}}
 
-// Reads and validates the service-account JSON. Only client_email and private_key are used.
-export async function loadServiceAccount(path){
+async function readCredentials(path){
  let raw;try{raw=await readFile(path);}catch{throw new GscError('not_configured');}
  if(raw.length>16384)throw new GscError('invalid_credentials');
- let data;try{data=JSON.parse(raw.toString('utf8'));}catch{throw new GscError('invalid_credentials');}
+ try{return JSON.parse(raw.toString('utf8'));}catch{throw new GscError('invalid_credentials');}
+}
+// OAuth client of type "Desktop app" and the refresh token written by tools/gsc-oauth-authorize.mjs
+// (the "authorized_user" format of Google's application default credentials).
+export const CLIENT_ID_PATTERN=/^[0-9]{6,30}-[a-z0-9]{10,64}\.apps\.googleusercontent\.com$/;
+const opaque=(v,max)=>typeof v==='string'&&v.length>=8&&v.length<=max&&/^[\x21-\x7e]+$/.test(v);
+function authorizedUser(data){
+ if(!CLIENT_ID_PATTERN.test(data.client_id??'')||!opaque(data.client_secret,256)||!opaque(data.refresh_token,2048)
+  ||(data.token_uri!==undefined&&data.token_uri!==TOKEN_URL))throw new GscError('invalid_credentials');
+ return Object.freeze({kind:'authorized_user',clientId:data.client_id,clientSecret:data.client_secret,refreshToken:data.refresh_token});
+}
+// Reads and validates the credentials file: an OAuth refresh token (preferred) or a service account.
+export async function loadGoogleCredentials(path){
+ const data=await readCredentials(path);
+ if(data?.type==='authorized_user')return authorizedUser(data);
+ if(data?.type==='service_account')return serviceAccount(data);
+ throw new GscError('invalid_credentials');
+}
+
+// Reads and validates the service-account JSON. Only client_email and private_key are used.
+export async function loadServiceAccount(path){
+ const data=await readCredentials(path);
+ if(data?.type!=='service_account')throw new GscError('invalid_credentials');
+ return serviceAccount(data);
+}
+async function serviceAccount(data){
  if(!data||data.type!=='service_account'||typeof data.client_email!=='string'||!/^[a-z0-9-]{6,30}@[a-z0-9-]{6,30}\.iam\.gserviceaccount\.com$/.test(data.client_email)
   ||typeof data.private_key!=='string'||!data.private_key.startsWith('-----BEGIN PRIVATE KEY-----')||(data.token_uri!==undefined&&data.token_uri!==TOKEN_URL))
   throw new GscError('invalid_credentials');
  let key;try{key=await importPKCS8(data.private_key,'RS256');}catch{throw new GscError('invalid_credentials');}
- return Object.freeze({email:data.client_email,key});
+ return Object.freeze({kind:'service_account',email:data.client_email,key});
 }
 
 async function boundedJson(response,limit){
@@ -41,16 +66,29 @@ export class GscClient{
  async token(){
   const now=this.clock();
   if(this.cached&&this.cached.expires-60000>now)return this.cached.value;
-  const iat=Math.floor(now/1000);
-  const assertion=await new SignJWT({scope:SCOPE}).setProtectedHeader({alg:'RS256',typ:'JWT'})
-   .setIssuer(this.account.email).setAudience(TOKEN_URL).setIssuedAt(iat).setExpirationTime(iat+3600).sign(this.account.key);
+  const oauth=this.account.kind==='authorized_user';
+  let form;
+  if(oauth)form={grant_type:'refresh_token',client_id:this.account.clientId,client_secret:this.account.clientSecret,refresh_token:this.account.refreshToken};
+  else{
+   const iat=Math.floor(now/1000);
+   const assertion=await new SignJWT({scope:SCOPE}).setProtectedHeader({alg:'RS256',typ:'JWT'})
+    .setIssuer(this.account.email).setAudience(TOKEN_URL).setIssuedAt(iat).setExpirationTime(iat+3600).sign(this.account.key);
+   form={grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion};
+  }
   let response;
   try{response=await this.fetcher(TOKEN_URL,{method:'POST',redirect:'error',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-   body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}).toString(),signal:AbortSignal.timeout(TIMEOUT)});}
+   body:new URLSearchParams(form).toString(),signal:AbortSignal.timeout(TIMEOUT)});}
   catch{throw new GscError('upstream');}
-  if(!response.ok){await response.body?.cancel().catch(()=>{});throw new GscError(response.status===400||response.status===401?'auth':codeFor(response.status));}
+  if(!response.ok){
+   // A revoked, expired (6 months unused, Testing mode) or superseded refresh token is "invalid_grant":
+   // only a new one-time authorization helps. Only the OAuth error code is read, never echoed.
+   if(oauth&&response.status===400){let error=null;try{error=(await boundedJson(response,TOKEN_MAX))?.error;}catch{}
+    throw new GscError(error==='invalid_grant'?'reauth_required':'auth');}
+   await response.body?.cancel().catch(()=>{});throw new GscError(response.status===400||response.status===401?'auth':codeFor(response.status));}
   const data=await boundedJson(response,TOKEN_MAX);
   if(typeof data.access_token!=='string'||!data.access_token||data.access_token.length>4096||!Number.isFinite(data.expires_in)||data.expires_in<=0)throw new GscError('invalid_response');
+  // The grant must stay read-only: any scope other than webmasters.readonly is refused.
+  if(oauth&&data.scope!==undefined&&(typeof data.scope!=='string'||data.scope.trim().split(/\s+/).some(s=>s!==SCOPE)))throw new GscError('invalid_scope');
   this.cached={value:data.access_token,expires:now+Math.min(data.expires_in,3600)*1000};
   return this.cached.value;
  }

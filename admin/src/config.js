@@ -9,6 +9,7 @@ export function config(env=process.env) {
  if(token&&(!/^[A-Za-z0-9_-]{20,256}$/.test(token)))throw Error('Invalid analytics token file');
  // Stage 10: Search Console is optional. Without a credentials file the dashboard works as before;
  // an invalid file or site disables only the SEO section (validated when loaded, never fatal here).
+ // The file is the OAuth refresh token written by tools/gsc-oauth-authorize.mjs (read-only mount).
  const gsc={credentialsFile:env.GSC_CREDENTIALS_FILE||'',siteUrl:env.GSC_SITE_URL||'sc-domain:verimtomu.fyi'};
  return {issuer,audience,host,port,bind:env.HOST||'0.0.0.0',db:env.ADMIN_DB_PATH||'/data/admin.sqlite',zone,token,publicHostname:'verimtomu.fyi',usageSnapshot:env.USAGE_SNAPSHOT_PATH||'',gsc};
 }

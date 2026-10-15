@@ -19,9 +19,9 @@ services:
       - admin-data:/data
       # Add ONLY an analytics-token file mount after a read-only token is prepared.
       # - /opt/verimtomu/admin-secrets/cloudflare-token:/run/secrets/cloudflare-token:ro
-      # Stage 10 (optional): ONLY the Search Console service-account key file, read-only.
-      # Then set GSC_CREDENTIALS_FILE=/run/secrets/gsc-service-account.json in .env.
-      # - /opt/verimtomu/admin-secrets/gsc-service-account.json:/run/secrets/gsc-service-account.json:ro
+      # Stage 10 (optional): ONLY the Search Console OAuth refresh-token file written by
+      # gsc-oauth-authorize.sh, read-only. Then set GSC_CREDENTIALS_FILE=/run/secrets/gsc-oauth.json in .env.
+      # - /opt/verimtomu/admin-secrets/gsc-oauth.json:/run/secrets/gsc-oauth.json:ro
     tmpfs: [/tmp:rw,noexec,nosuid,nodev,size=8m]
     logging:
       driver: local

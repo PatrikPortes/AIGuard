@@ -14,7 +14,7 @@ function fake(handler){const calls=[];return {calls,fetcher:async(url,init)=>{ca
 const tokenOk=()=>json({access_token:'ya29.test-access-token',expires_in:3599,token_type:'Bearer'});
 
 test('service-account file: strict validation; only email and key are used', async () => {
- const a=await loadServiceAccount(writeAccount());assert.equal(a.email,EMAIL);assert.deepEqual(Object.keys(a).sort(),['email','key']);
+ const a=await loadServiceAccount(writeAccount());assert.equal(a.email,EMAIL);assert.deepEqual(Object.keys(a).sort(),['email','key','kind']);assert.equal(a.kind,'service_account');
  await assert.rejects(()=>loadServiceAccount(join(dir,'missing.json')),e=>e.code==='not_configured');
  for(const bad of [{type:'authorized_user'},{client_email:'someone@gmail.com'},{private_key:'not a key'},{token_uri:'https://evil.example/token'}])
   await assert.rejects(()=>loadServiceAccount(writeAccount(bad,'bad.json')),e=>e.code==='invalid_credentials');
